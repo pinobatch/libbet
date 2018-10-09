@@ -13,5 +13,6 @@ project's completion schedule among those who follow my work.
 At first, I tried to use the confused perspective common among 8-bit
 overhead games, where the background is semi-overhead but the moving
 characters are drawn as if viewed from the side.  It looked fine for
-rolling and for hopping sideways, but not for hopping up or down.
+rolling and for hopping sideways, but not for hopping up or down
+until I added a shadow.
 

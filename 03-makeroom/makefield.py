@@ -29,12 +29,9 @@ Constraints:
 1. [Nocash] A field's area must not exceed its total score.
 2. [Pino] At least two tiles in the back row must be round trip
    reachable.
-
-Proposed constraints:
-
-3. At least half the tiles must be round trip reachable.
-4. The count of tiles of a given pattern must differ by no more than
-   1 from the count of tiles of a different pattern.
+3. [Pino] At least half the tiles must be round trip reachable.
+4. [Pino] The count of tiles of a given pattern must differ by no
+   more than 1 from the count of tiles of a different pattern.
 
 """
 import random
