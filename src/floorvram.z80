@@ -1,0 +1,208 @@
+include "src/hardware.inc"
+include "src/global.inc"
+
+section "load_floor_chr",ROM0
+
+decomppos equ $9800-12*16
+harrow_chr equ decomppos+8*16
+varrow_chr equ decomppos+9*16
+deadend_chr equ decomppos+10*16
+
+load_floor_chr::
+  ; Stage 1: Unpack
+  ld de,floortiles_pb16
+  ld hl,decomppos
+  ld b,12
+  call pb16_unpack_block
+
+  ; Produce versions with horizontal arrow overlaid
+  ld hl,decomppos
+  ld de,CHRRAM2
+  ld bc,$0004
+  .colorloop:
+    ; $9000-$90FF: Normal tile
+    push bc
+    push de  ; stack: start of this color in VRAM, colors left
+    ld bc,32
+    call memcpy
+    pop de
+    push hl  ; stack: next color src data, colors left
+    ld h,d
+    ld l,e
+    inc d
+
+    ; $9100-$91FF: Add horizontal arrows
+    call add1harrow
+
+    ; $9200-$92FF: Add vertical arrows
+    ld bc,varrow_chr
+    call add1arrow
+
+    ; $9300-$93FF: Add vertical arrows to horizontal arrows
+    ld h,d
+    ld l,e
+    dec h
+    call add1harrow
+    
+    ; $9400-$94FF: Add holes
+    ld h,$90
+    push de
+    ld bc,32
+    call memcpy
+    pop de
+    ld hl,deadend_chr
+
+    .addholeloop:
+      ; load mask
+      ld a,[hl+]  ; load andmask
+      ld c,a
+      ld a,[hl+]  ; load ormask
+      ld b,a
+
+      ; apply to sliver 0
+      ld a,[de]
+      and c
+      or b
+      ld [de],a
+      inc e
+
+      ; apply andmask (only) to sliver 1
+      ld a,[de]
+      and c
+      ld [de],a
+      inc de
+
+      ld a,$1F
+      and e
+      jr nz,.addholeloop
+    
+    ; Move to next color
+    ld hl,$9040-$9420
+    add hl,de
+    ld d,h
+    ld e,l
+    pop hl
+    pop bc
+    dec c
+    jr nz,.colorloop
+
+  ; Now generate the flipped tiles
+  ld de,CHRRAM2
+  ld hl,CHRRAM2+2*16
+  ld c,$20
+  .fliploop:
+    .flipbyteloop:
+      ld a,[de]
+      inc de
+
+      ; bitreverse
+      ld b,a
+      rlca          ; 6 5 4 3 2 1 0 7
+      rlca          ; 5 4 3 2 1 0 7 6
+      xor b         ; 7564534231201706
+      and $55       ; __64__42__20__06
+      xor b         ; 7 4 5 2 3 0 1 6
+      ld b,a
+      swap a        ; 3 0 1 6 7 4 5 2
+      xor b         ; 7340512637041562
+      and $66       ; __0415____0415__
+      xor b         ; 7 0 1 2 3 4 5 6
+      rlca          ; 0 1 2 3 4 5 6 7
+
+      ld [hl+],a
+      dec c
+      jr nz,.flipbyteloop
+    ld bc,$20
+    ld d,h
+    ld e,l
+    add hl,bc
+    ld a,h
+    cp $95
+    jr c,.fliploop
+
+  ; Cover up the decompression with border tiles at $74-$7F
+  ld de,floorborder_pb16
+  ld hl,decomppos
+  ld b,12
+  jp pb16_unpack_block
+
+add1harrow:
+  ld bc,harrow_chr
+;;
+; Overlays 1 arrow at BC and its vertical flip onto the data at HL
+; forming 32 bytes at (16-byte aligned) DE.
+; Advances DE by $0100 and leaves HL unchanged.
+add1arrow:
+  push hl
+  push bc
+  push de
+  ld bc,32
+  call memcpy
+  pop de
+  pop hl
+
+  .downloop:
+    ; load mask
+    ld a,[hl+]  ; load andmask
+    ld c,a
+    ld a,[hl+]  ; load ormask
+    ld b,a
+
+    ; apply to sliver 0
+    ld a,[de]
+    and c
+    or b
+    ld [de],a
+    inc e
+
+    ; apply to sliver 1
+    ld a,[de]
+    and c
+    or b
+    ld [de],a
+    inc de
+
+    ld a,$0F
+    and e
+    jr nz,.downloop
+
+  dec hl
+  .uploop:  
+
+    ; load mask
+    ld a,[hl-]  ; load ormask
+    ld b,a
+    ld a,[hl-]  ; load andmask
+    ld c,a
+
+    ; apply to sliver 0
+    ld a,[de]
+    and c
+    or b
+    ld [de],a
+    inc e
+
+    ; apply to sliver 1
+    ld a,[de]
+    and c
+    or b
+    ld [de],a
+    inc de
+
+    ld a,$0F
+    and e
+    jr nz,.uploop
+
+  ; Move destination to next arrow type
+  ld a,224
+  add e
+  ld e,a
+  jr nc,.noewrap
+    inc d
+  .noewrap:
+  pop hl
+  ret
+
+section "floortiledata", ROM0
+floortiles_pb16: incbin "obj/gb/floorpieces-h.chrgb.pb16"
+floorborder_pb16: incbin "obj/gb/floorborder-h.chrgb.pb16"

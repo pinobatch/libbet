@@ -82,7 +82,8 @@ obj/gb/%-dedent.z80: src/%.z80
 
 # Files that will be included with incbin
 
-obj/gb/floorvram.o: obj/gb/floorpieces-h.chrgb.pb16
+obj/gb/floorvram.o: \
+  obj/gb/floorpieces-h.chrgb.pb16 obj/gb/floorborder-h.chrgb.pb16
 
 # Graphics conversion
 

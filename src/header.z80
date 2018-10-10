@@ -26,15 +26,25 @@ include "src/global.inc"
 ; 8 bytes apart.  There are eight for short encodings of CALL with
 ; specific addresses ($C7, $CF, ..., $FF) and five for interrupt
 ; service routines (ISR).  Fill them with JPs to the actual handlers.
+if 0
 SECTION "rst00", ROM0[$0000]
-  ds 40
+  ret
+SECTION "rst08", ROM0[$0008]
+  ret
+SECTION "rst10", ROM0[$0010]
+  ret
+SECTION "rst18", ROM0[$0018]
+  ret
+SECTION "rst20", ROM0[$0020]
+  ret
 SECTION "rst28", ROM0[$0028]
-  ld l,l
   ret
 SECTION "rst30", ROM0[$0030]
   ret
 SECTION "rst38", ROM0[$0038]
   ret
+endc
+
 SECTION "rst40", ROM0[$0040]
   jp vblank_handler
 SECTION "rst48", ROM0[$0048]

@@ -1,5 +1,7 @@
 /theirs/
 /renders/
 __pycache__
-*.gb
+/*.gb
 /obj/gb/
+/*.map
+/*.sym

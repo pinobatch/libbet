@@ -1,0 +1,69 @@
+include "src/hardware.inc"
+include "src/global.inc"
+
+section "main", ROM0
+
+timer_handler::
+serial_handler::
+joypad_handler::
+  reti
+
+main::
+  call load_floor_chr
+
+  ; Clear the map
+  ld de,_SCRN0
+  ld bc,32*16
+  ld h,$76  ; brick wall border tile
+  call memset
+  ld bc,32*8
+  ld h,$77  ; blank tile
+  call memset
+
+  ; Draw all 20 tiles
+  ld hl,_SCRN0+32*2+6
+  xor a
+  ld bc,$0805
+  ld de,24
+  .rowloop:
+    call d1row
+    sub 15
+    call d1row
+    dec a
+    dec c
+    jr nz,.rowloop
+  
+  ; Draw an open door
+  ld hl,_SCRN0+32*0+10
+  ld a,$7C
+  ld [hl+],a
+  add a,2
+  ld [hl+],a
+  dec a
+  ld bc,30
+  add hl,bc
+  ld [hl+],a
+  add a,2
+  ld [hl+],a
+
+
+  ld a,%00011011
+  ldh [rBGP],a
+  ld a,LCDCF_ON|LCDCF_BG9800|LCDCF_BG8800|LCDCF_BGON
+  ldh [rLCDC],a
+
+forever:
+  halt
+  jr forever
+
+
+d1row:
+  push bc
+  .tileloop:
+    ld [hl+],a
+    add 2
+    dec b
+    jr nz,.tileloop
+  add hl,de
+  pop bc
+  ret
