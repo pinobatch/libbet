@@ -1,2 +1,5 @@
 /theirs/
 /renders/
+__pycache__
+*.gb
+/obj/gb/

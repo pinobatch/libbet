@@ -1,0 +1,200 @@
+;
+; Init code for Game Boy
+;
+; Copyright 2018 Damian Yerrick
+; 
+; This software is provided 'as-is', without any express or implied
+; warranty.  In no event will the authors be held liable for any damages
+; arising from the use of this software.
+; 
+; Permission is granted to anyone to use this software for any purpose,
+; including commercial applications, and to alter it and redistribute it
+; freely, subject to the following restrictions:
+; 
+; 1. The origin of this software must not be misrepresented; you must not
+;    claim that you wrote the original software. If you use this software
+;    in a product, an acknowledgment in the product documentation would be
+;    appreciated but is not required.
+; 2. Altered source versions must be plainly marked as such, and must not be
+;    misrepresented as being the original software.
+; 3. This notice may not be removed or altered from any source distribution.
+;
+include "src/hardware.inc"
+include "src/global.inc"
+
+; It is not strictly necessary to completely clear the display list,
+; as lcd_clear_oam writes a "hide this sprite" value to all unused
+; sprites.  But when Options > Exceptions > Unitialized RAM >
+; break on read (reset) is on, BGB complains about copying
+; uninitialized data to OAM even if said data is provably unused.
+; So put "shut BGB up" commands behind a conditional.
+bgbcompat equ 1
+
+; Like the NES and Super NES, DMA on the Game Boy takes access to RAM
+; and ROM away from the CPU.  But unlike those two, the CPU continues
+; to run.  So store a tiny subroutine in HRAM (tightly coupled
+; memory) to keep the CPU busy until OAM DMA is done.
+section "hram_init", HRAM[$FFF4]
+run_dma:: ds 11
+
+; For the purpose of hLocals, see a fairly long rant in global.inc
+section "hram_locals", HRAM[hLocals]
+  ds locals_size
+
+STACK_SIZE EQU 64
+section "stack", WRAM0[$D000-STACK_SIZE]
+stack_top: ds STACK_SIZE
+
+section "bootregs", WRAM0
+initial_a:: ds 1
+initial_b:: ds 1
+
+section "rom_init", ROM0
+reset_handler::
+  di  ; Disable interrupts
+  ld sp, stack_top + STACK_SIZE  ; Set up stack pointer (full descending)
+
+  ; A and B used for DMG, SGB, GB Pocket, GBC, or GBA detection.
+  ; Useful for motion blur compensation, palette adjustment,
+  ; music adjustment on original SGB, etc.
+  ; A=01: DMG or SGB
+  ; A=FF: Game Boy Pocket or SGB2
+  ; A=11, B.0=0: GBC
+  ; A=11, B.0=1: GBA
+  ld [initial_a], a
+  ld c,a
+  ld a,b
+  ld [initial_b], a
+
+  ; Release the key matrix right now
+  ld a,P1F_NONE
+  ldh [rP1],a
+
+  ; Initialize controller-related variables so that holding a button
+  ; at power-on doesn't produce inconsistent results
+  xor a
+  ld [cur_keys],a
+  ld [das_keys],a
+  ld [das_timer],a
+
+  ; Fade out the IPL logo.  Skip it on GBC because IPL already faded.
+  ld b,1
+  ld a,c
+  cp a,$11
+  call nz,fadelogo
+
+  ; Rendering can be turned off only during blanking.
+  call busy_wait_vblank
+  xor a
+  ldh [rLCDC], a  ; turn off rendering
+  ldh [rSCY], a   ; clear scroll
+  ldh [rSCX], a   ; clear scroll
+  ldh [rNR52], a  ; disable (and reset) audio
+
+  ; Copy the sprite DMA routine to HRAM
+  ld hl,run_dma_master
+  ld de,run_dma
+  ld bc,run_dma_end-run_dma_master
+  call memcpy
+
+  if bgbcompat
+    ; BGB triggers spurious "reading uninitialized WRAM" exceptions
+    ; when DMAing the X, tile number, and attribute of an OAM entry
+    ; whose Y is offscreen.
+    xor a
+    ld hl,SOAM
+    ld c,160
+    call memset_tiny
+  endc
+
+  jp main
+
+fadelogo:
+  ld a,%00001000  ; bits 3-2: dark gray
+  call .fadestep
+  ld a,%00000100  ; bits 3-2: light gray
+.fadestep:
+  ldh [rBGP],a
+  ld b,10
+.fadeloop:
+  call wait_not_vblank
+.isgbc:
+  call busy_wait_vblank  ; Spin because interrupts are not yet set up
+  dec b
+  jr nz,.fadeloop
+  ret
+
+
+;;
+; Writes BC bytes of value H starting at DE.
+memset::
+  ; Increment B if C is nonzero
+  dec bc
+  inc b
+  inc c
+  ld a, h
+.loop:
+  ld [de],a
+  inc de
+  dec c
+  jr nz,.loop
+  dec b
+  jr nz,.loop
+  ret
+
+;;
+; Copies BC bytes from HL to DE.
+memcpy::
+  ; Increment B if C is nonzero
+  dec bc
+  inc b
+  inc c
+.loop:
+  ld a, [hl+]
+  ld [de],a
+  inc de
+  dec c
+  jr nz,.loop
+  dec b
+  jr nz,.loop
+  ret
+
+;;
+; The routine gets copied to high RAM.  While OAM DMA is running,
+; both ROM and WRAM are inaccessible; only HRAM is readable.
+; But unlike on the NES, the CPU continues to fetch and execute
+; instructions.  So a program needs to run 160 mcycles' worth of
+; code from HRAM until this finishes.  Thus to present a display
+; list, the program will call run_dma, not run_dma_master.
+run_dma_master:
+  ld a,SOAM >> 8
+  ldh [rDMA],a
+  ld a,40
+.loop:
+  dec a
+  jr nz,.loop
+  ret
+run_dma_end:
+
+; If we stuff these in their own sections, RGBLINK might be able to
+; pack them between the unused IRQ/RST vectors, at least until we
+; figure out which to make into RSTs.
+
+section "memset_tiny",ROM0
+;;
+; Writes C bytes of value A starting at HL.
+memset_tiny::
+  ld [hl+],a
+  dec c
+  jr nz,memset_tiny
+  ret
+
+section "memset_inc",ROM0
+;;
+; Writes C bytes of value A, A+1, ..., A+C-1 starting at HL.
+memset_inc::
+  ld [hl+],a
+  inc a
+  dec c
+  jr nz,memset_inc
+  ret
