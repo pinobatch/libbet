@@ -1,5 +1,8 @@
 # hello
 
+backdrop #99F
+palette 0 #000 #FFF=3
+
 frame Libbet_standS  32  36 12 12
 strip 0 34 35 8 8
 strip 0 30 43 16 5
@@ -97,7 +100,7 @@ strip 0 82 112 8 16
 hotspot 86 126
 
 frame Libbet_jumpE4  92 116 12 12
-strip 0 94 115 8 4
+strip 0 94 115 4 8
 strip 0 95 119 8 8
 hotspot 99 127
 
