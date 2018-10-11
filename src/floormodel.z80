@@ -88,12 +88,12 @@ make_shuffled_floor::
     ld a,0
     adc h
     ld d,a
-    ld b,a
+    ld a,b
     add l
-    ld d,a
+    ld l,a
     ld a,0  ; preserve carry!
     adc h
-    ld e,a
+    ld h,a
 
     ; And swap them
     ld a,[hl]
@@ -115,9 +115,16 @@ make_shuffled_floor::
   ; And break it into rows.  At the end of the last row, HL still
   ; points at the last element.
   ; So set up DE
-  ld de,floor_map + MAX_WIDTH*MAX_HEIGHT - 1
+  ld de,floor_map - 1
   ld a,[floor_height]
   ld c,a
+  add a
+  add a
+  add a
+  add e
+  ld e,a
+  jr nc,.rowify_rowloop
+    inc d
   .rowify_rowloop:
     ld a,[floor_width]
     sub MAX_WIDTH
@@ -149,17 +156,18 @@ make_shuffled_floor::
 ; @param cursor_y distance from far wall
 ; @return HL: pointer to cell; A: value of cell; DE: offset into map;
 ;   BC: unchanged
-read_cell_at_cursor::
+floor_read_at_cursor::
   ld d,0
+  ld hl,floor_map
   ld a,[cursor_y]
   add a
   add a
   add a
   ld e,a
+  add hl,de
   ld a,[cursor_x]
-  add e
   ld e,a
-  ld hl,floor_map
+  add hl,de
   ld a,[hl]
   ret
 
@@ -281,7 +289,7 @@ hCurMovedir rb 1
 ; Finds all reachable cells in a freshly generated floor.
 find_reachable::
   call cursor_to_home
-  call read_cell_at_cursor
+  call floor_read_at_cursor
   or FWDREACHED|REVREACHED
   ld [hl],a
   
@@ -295,7 +303,7 @@ find_reachable::
       ld [cursor_x],a
       ; Is there anything to do?
       ; Need REVREACHED&!REVCHECKED or FWDREACHED&!FWDCHECKED
-      call read_cell_at_cursor
+      call floor_read_at_cursor
       ld b,a
       cpl
       and REVCHECKED|FWDCHECKED  ; which are unchecked?
@@ -382,7 +390,7 @@ find_deadends::
   ld c,a
   .rowloop:
     ld [cursor_y],a
-    call read_cell_at_cursor
+    call floor_read_at_cursor
     ld a,[cursor_x]
     ld b,a
     .cellloop:
@@ -449,7 +457,7 @@ count_max_score::
     xor a
     .tileloop:
       ld [cursor_x],a
-      call read_cell_at_cursor
+      call floor_read_at_cursor
       bit 2,a
       jr nz,.cell_has_no_score
       

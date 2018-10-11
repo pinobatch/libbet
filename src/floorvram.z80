@@ -1,6 +1,14 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
+section "floorupdate_hram",HRAM
+hDrawCellDstLo: ds 1
+hDrawCellDstHi:: ds 1
+hDrawCellTL: ds 1
+hDrawCellTR: ds 1
+hDrawCellBL: ds 1
+hDrawCellBR: ds 1
+
 section "load_floor_chr",ROM0
 
 decomppos equ $9800-12*16
@@ -206,3 +214,133 @@ add1arrow:
 section "floortiledata", ROM0
 floortiles_pb16: incbin "obj/gb/floorpieces-h.chrgb.pb16"
 floorborder_pb16: incbin "obj/gb/floorborder-h.chrgb.pb16"
+
+;Formula for map address of a cell:
+;_SCRN0 + 32 * (y * 2 + 8 - height) + (x * 2 + 10 - width)
+
+section "floor_tilemap",ROM0
+prepare_hDrawCell::
+  ; Calculate which tile row: A = y * 2 + 8 - height
+  ld a,[floor_height]
+  ld b,a
+  ld a,[cursor_y]
+  add a
+  add 8
+  sub b
+
+  ; fast mul by 32 to get which tile row
+  swap a
+  add a  ; save the carry!
+  ld c,a
+  ld a,high(_SCRN0) >> 1
+  rla
+  ldh [hDrawCellDstHi],a
+
+  ; Seek to tile within row: A = x * 2 + 10 - width
+  ld a,[floor_width]
+  ld b,a
+  ld a,[cursor_x]
+  add a
+  add 10
+  sub b
+  add c
+  ldh [hDrawCellDstLo],a
+
+  ; Find the shape
+  call floor_read_at_cursor
+  ld b,a
+
+  ; Calculate base tile ID (shades: 0, 4, 8, C; deadends: 40, 44, 48, 4C)
+  and $07  ; save only deadend and bits
+  add a
+  add a
+  ; move deadend bit from bit 4 to bit 6
+  add $30
+  and $4C
+
+  ; construct 4 corners of tile
+  ; E D
+  ; L H
+  ld e,a
+  inc a
+  ld l,a
+  inc a
+  ld d,a
+  inc a
+  ld h,a
+
+  ; Turn on tracks at sides of tiles
+  bit 4,b
+  jr z,.no_right_track
+    set 4,d
+    set 4,h
+  .no_right_track:
+  bit 5,b
+  jr z,.no_left_track
+    set 4,e
+    set 4,l
+  .no_left_track:
+  bit 6,b
+  jr z,.no_up_track
+    set 5,e
+    set 5,d
+  .no_up_track:
+  bit 7,b
+  jr z,.no_down_track
+    set 5,l
+    set 5,h
+  .no_down_track:
+
+  ld a,e
+  ldh [hDrawCellTL],a
+  ld a,d
+  ldh [hDrawCellTR],a
+  ld a,l
+  ldh [hDrawCellBL],a
+  ld a,h
+  ldh [hDrawCellBR],a
+  ret
+
+write_hDrawCell::
+  ldh a,[hDrawCellDstHi]
+  bit 7,a
+  ret z
+  ld h,a
+  ldh a,[hDrawCellDstLo]
+  ld l,a
+  ld de,32
+  ldh a,[hDrawCellTL]
+  ld [hl+],a
+  ldh a,[hDrawCellTR]
+  ld [hl-],a
+  add hl,de
+  ldh a,[hDrawCellBL]
+  ld [hl+],a
+  ldh a,[hDrawCellBR]
+  ld [hl],a
+  xor a
+  ldh [hDrawCellDstHi],a
+  ret
+
+draw_whole_floor::
+  xor a
+  .rowloop:
+    ld [cursor_y],a
+    xor a
+    .tileloop:
+      ld [cursor_x],a
+      call prepare_hDrawCell
+      call write_hDrawCell
+      ld a,[floor_width]
+      ld b,a
+      ld a,[cursor_x]
+      inc a
+      cp b
+      jr nz,.tileloop
+    ld a,[floor_height]
+    ld b,a
+    ld a,[cursor_y]
+    inc a
+    cp b
+    jr nz,.rowloop
+  ret

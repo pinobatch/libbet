@@ -22,32 +22,12 @@ main::
   ld h,$77  ; blank tile
   call memset
 
-  ; Draw all 20 tiles
-  ld hl,_SCRN0+32*2+6
-  xor a
-  ld bc,$0805
-  ld de,24
-  .rowloop:
-    call d1row
-    sub 15
-    call d1row
-    dec a
-    dec c
-    jr nz,.rowloop
-  
-  ; Draw an open door
-  ld hl,_SCRN0+32*0+10
-  ld a,$7C
-  ld [hl+],a
-  add a,2
-  ld [hl+],a
-  dec a
-  ld bc,30
-  add hl,bc
-  ld [hl+],a
-  add a,2
-  ld [hl+],a
-
+  ld a,6
+  ld [floor_width],a
+  ld a,4
+  ld [floor_height],a
+  call make_shuffled_floor
+  call draw_whole_floor
 
   ld a,%00011011
   ldh [rBGP],a
