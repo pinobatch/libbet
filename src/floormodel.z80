@@ -1,0 +1,506 @@
+include "src/global.inc"
+
+; Map constraints:
+; 1. Floor no larger than 48 cells (more is tedious)
+; 2. Floor fits in an 8x8 square
+; 3. Cells of four shades distributed such that no shade's population
+;    exceeds others' by 1 (guaranteed by make_shuffled_floor)
+; 4. At least half of cells are round trip reachable from bottom center
+; 5. At least two cells in top row are reachable
+; 6. Max score at least cell count
+
+; Possible floor sizes are 2x8, 4x4, 6x4, and 8x6
+MAX_WIDTH equ 8
+MAX_HEIGHT equ 8
+
+section "floor_map",WRAM0,ALIGN[3]
+floor_map:: ds MAX_WIDTH*MAX_HEIGHT
+floor_width:: ds 1
+floor_height:: ds 1
+cursor_x:: ds 1
+cursor_y:: ds 1
+max_score:: ds 1
+cur_score:: ds 1
+
+section "makefloor",ROM0
+
+; None of this is tested.
+
+;;
+; Calculate width * height
+; @return A: area; B: 0; C: height
+calc_floor_area::
+  ld hl,floor_width
+  ld a,[hl+]
+  ld b,a
+  ld c,[hl]
+  xor a
+  .calcarealoop:
+    add c
+    dec b
+    jr nz,.calcarealoop
+  ret
+
+make_shuffled_floor::
+  ; Generate a uniform pattern to be shuffled
+  call calc_floor_area
+  ld b,a
+  ld c,a
+  ld hl,floor_map
+  .fillloop:
+    inc a
+    and %00000011
+    ld [hl+],a
+    dec b
+    jr nz,.fillloop
+
+  ; Fill the rest with $FF for movement logic
+  ld a,MAX_WIDTH*MAX_HEIGHT
+  sub c
+  ld b,a
+  ld a,$FF
+  .endffloop:
+    ld [hl+],a
+    dec b
+    jr nz,.endffloop
+
+  ; Now shuffle the pattern using an approximation of Fisher-Yates
+  ; that doesn't require division
+  ld b,0
+  ; B: current index; C: area
+  .shuffleloop:
+    ; Choose an element to swap with B: (B + randrange(16)) % C
+    push bc
+    call rand
+    swap a
+    and $0F
+    pop bc
+    add b
+    .modcloop:
+      sub c
+      jr nc,.modcloop
+    add c
+
+    ; Seek to elements A and B
+    ld hl,floor_map
+    add l
+    ld e,a
+    ld a,0
+    adc h
+    ld d,a
+    ld b,a
+    add l
+    ld d,a
+    ld a,0  ; preserve carry!
+    adc h
+    ld e,a
+
+    ; And swap them
+    ld a,[hl]
+    push af
+    ld a,[de]
+    ld [hl],a
+    pop af
+    ld [de],a
+
+    inc b
+    ld a,b
+    cp c
+    jr c,.shuffleloop
+
+  ld a,[floor_width]
+  cp MAX_WIDTH
+  jr z,.already_rowified
+
+  ; And break it into rows.  At the end of the last row, HL still
+  ; points at the last element.
+  ; So set up DE
+  ld de,floor_map + MAX_WIDTH*MAX_HEIGHT - 1
+  ld a,[floor_height]
+  ld c,a
+  .rowify_rowloop:
+    ld a,[floor_width]
+    sub MAX_WIDTH
+    ld b,a
+    ld a,$FF
+    .rowify_clrloop:
+      ld [de],a
+      dec de
+      inc b
+      jr nz,.rowify_clrloop
+    ld a,[floor_width]
+    ld b,a
+    .rowify_copyloop:
+      ld a,[hl-]
+      ld [de],a
+      dec de
+      dec b
+      jr nz,.rowify_copyloop
+    dec c
+    jr nz,.rowify_rowloop
+  .already_rowified:
+
+  ret
+
+;;
+; Reads the cell at the cursor.  During evaluation, the cursor is
+; all over the floor, but during play, it's under Libbet.
+; @param cursor_x distance from left wall
+; @param cursor_y distance from far wall
+; @return HL: pointer to cell; A: value of cell; DE: offset into map;
+;   BC: unchanged
+read_cell_at_cursor::
+  ld d,0
+  ld a,[cursor_y]
+  add a
+  add a
+  add a
+  ld e,a
+  ld a,[cursor_x]
+  add e
+  ld e,a
+  ld hl,floor_map
+  ld a,[hl]
+  ret
+
+;;
+; Reads element A of an array of unsigned short *.
+; @param A the index
+; @param DE pointer to the array, unchanged
+; @return HL the value at [DE+A*2]; A=L
+de_index_a::
+  ld l,a
+  ld h,0
+  add hl,hl
+  add hl,de
+  ld a,[hl+]
+  ld h,[hl]
+  ld l,a
+  ret
+
+movedirs:
+  ; right 1, left 1, up 1, down 1
+  db $01,$00, $FF,$00, $00,$FF, $00,$01
+  ; right 2, left 2, up 2, down 2
+  db $02,$00, $FE,$00, $00,$FE, $00,$02
+
+;;
+; Calculates whether a move in a particular direction
+; from (cursor_x, cursor_y) is a valid move.
+; @param cursor_x horizontal starting point
+; @param cursor_y vertical starting point
+; @param A move direction (0-7)
+; @param B 0 for normal move or nonzero for reverse move
+; @return B: value of source cell
+;   C: value of destination cell
+;   HL: pointer to destination cell
+;   CF: 1 if OK or 0 if blocked
+;   A: 0 for same shade, 1 for next shade, or 2+ if blocked
+is_valid_move::
+  ld de,movedirs
+  call de_index_a
+  ; B: 0 or $FF
+  ; L: xmovedir
+  ; H: xmovedir
+
+  ; First off, is the move in bounds?
+  ld a,[floor_width]
+  ld c,a
+  ld a,[cursor_x]
+  add l
+  cp c
+  jr nc,.out_of_bounds
+  ld d,a
+
+  ld a,[floor_height]
+  ld c,a
+  ld a,[cursor_y]
+  add h
+  cp c
+  jr c,.y_in_bounds
+  .out_of_bounds:
+    xor a
+    ld b,a
+    ld c,2
+    cpl
+    ret
+  .y_in_bounds:
+  add a
+  add a
+  add a
+  add d
+  ld c,a  ; C: index of destination cell
+
+  ld a,[cursor_x]
+  ld e,a
+  ld a,[cursor_y]
+  add a
+  add a
+  add a
+  add e
+  ld e,a  ; E: index of source cell
+
+  ; Regmap here: C: index of destination cell; D: 0;
+  ; E: index of source cell.  Fetch both cells
+  ld hl,floor_map
+  add hl,de
+  ld b,[hl]  ; B: value of source cell
+  ld e,c
+  ld hl,floor_map
+  add hl,de
+  ld c,[hl]  ; C: value of destination cell
+
+  ; A move is valid if (destination - source) % 4 < 2
+  ld a,c
+  sub b
+  and %00000011
+  cp 2
+  ret
+
+cursor_to_home::
+  ld a,[floor_height]
+  dec a
+  ld [cursor_y],a
+  ld a,[floor_width]
+  or a
+  rra
+  ld [cursor_x],a
+  ret
+
+FWDCHECKED equ $10
+FWDREACHED equ $20
+REVCHECKED equ $40
+REVREACHED equ $80
+DEADEND equ $04
+
+  rsset hLocals
+hFound rb 1
+hCurMovedir rb 1
+
+;;
+; Finds all reachable cells in a freshly generated floor.
+find_reachable::
+  call cursor_to_home
+  call read_cell_at_cursor
+  or FWDREACHED|REVREACHED
+  ld [hl],a
+  
+.tryagain:
+  xor a
+  ldh [hFound],a
+  .rowloop:
+    ld [cursor_y],a
+    xor a
+    .tileloop:
+      ld [cursor_x],a
+      ; Is there anything to do?
+      ; Need REVREACHED&!REVCHECKED or FWDREACHED&!FWDCHECKED
+      call read_cell_at_cursor
+      ld b,a
+      cpl
+      and REVCHECKED|FWDCHECKED  ; which are unchecked?
+      add a
+      and b  ; which are unchecked and reached?
+      jr nz,.search_cell
+      .search_cell_done:
+
+      ; Move to next cell in row
+      ld a,[floor_width]
+      ld b,a
+      ld a,[cursor_x]
+      inc a
+      cp b
+      jr c,.tileloop
+
+    ; Move to next row
+    ld a,[floor_height]
+    ld b,a
+    ld a,[cursor_y]
+    inc a
+    cp b
+    jr c,.rowloop
+
+  ; If any cells were searched, there may be more to check
+  ldh a,[hFound]
+  or a
+  jr nz,.tryagain
+  jp find_deadends
+
+.search_cell:
+  ldh [hFound],a
+  xor a
+  .movedirloop:
+    ldh [hCurMovedir],a
+    call is_valid_move
+
+    ; If checking forward, and the forward move is valid,
+    ; mark HL as forward reached    
+    ldh a,[hFound]
+    bit 5,a
+    jr z,.noCheckForward
+    ld a,c
+    sub b
+    and %00000011
+    cp 2
+    jr nc,.noCheckForward
+      set 5,[hl]
+    .noCheckForward:
+
+    ; If checking reverse, and the reverse move is valid,
+    ; mark HL as reverse reached
+    ldh a,[hFound]
+    bit 7,a
+    jr z,.noCheckReverse
+    ld a,b
+    sub c
+    and %00000011
+    cp 2
+    jr nc,.noCheckReverse
+      set 7,[hl]
+    .noCheckReverse:
+
+    ldh a,[hCurMovedir]
+    inc a
+    cp 8
+    jr c,.movedirloop
+
+  ; Mark as checked that which was reached
+  ld a,[hl]
+  and REVREACHED|FWDREACHED
+  rra
+  or [hl]
+  ld [hl],a
+  jp .search_cell_done
+
+;;
+; Marks all cells in a floor not marked reachable as dead ends,
+; freeing up the reached and checked bits.
+; @return C: area occupied by dead ends
+find_deadends::
+  xor a
+  ld [cursor_x],a
+  ld c,a
+  .rowloop:
+    ld [cursor_y],a
+    call read_cell_at_cursor
+    ld a,[cursor_x]
+    ld b,a
+    .cellloop:
+      ld a,[hl]
+      xor $F0  ; if not forward+reverse reached and checked
+      cp $10
+      jr c,.not_deadend
+        and $03
+        or $04
+        inc c
+      .not_deadend:
+      ld [hl+],a
+      dec b
+      jr nz,.cellloop
+
+    ; Move to next row
+    ld a,[floor_height]
+    ld b,a
+    ld a,[cursor_y]
+    inc a
+    cp b
+    jr c,.rowloop
+
+  ret
+
+;;
+; Counts cells in the top row that aren't dead ends
+; @return A: the count; B: 0; HL: one to right of first row
+count_top_row_reachable::
+  ld hl,floor_map
+  ld a,[floor_width]
+  ld b,a
+  xor a
+  .loop:
+    bit 2,[hl]
+    jr nz,.nocount
+      add 1
+    .nocount:
+    inc hl
+    dec b
+    jr nz,.loop
+  ret
+
+;;
+; @param A movedir
+; @return B: track bit ($10: r, $20, l, $40: u, $80: d); A: 0
+movedir_to_trackbit::
+  and $03  ; chop off distance leaving direction
+  inc a
+  ld b,$08
+  .shiftloop:
+    sla b
+    dec a
+    jr nz,.shiftloop
+  ret
+
+;;
+; Put the field's maximum score in A
+count_max_score::
+  xor a
+  ld [max_score],a
+  .rowloop:
+    ld [cursor_y],a
+    xor a
+    .tileloop:
+      ld [cursor_x],a
+      call read_cell_at_cursor
+      bit 2,a
+      jr nz,.cell_has_no_score
+      
+      ; So the cel is reachable
+      xor a
+      ldh [hFound],a  ; found: which movedirs are possible
+      .moveloop:
+        ; If this is a valid move onto the next shade, add the track
+        ldh [hCurMovedir],a
+        call is_valid_move
+        cp 1
+        jr nz,.not_scoring_move
+          ; Find which track this move grants
+          ldh a,[hCurMovedir]
+          call movedir_to_trackbit
+          ldh a,[hFound]
+          or b
+          ldh [hFound],a
+        .not_scoring_move:
+        ldh a,[hCurMovedir]
+        inc a
+        cp 8
+        jr nz,.moveloop
+
+      ; Add count of track bits to score
+      ld a,[hFound]
+      or a
+      jr z,.cell_has_no_score
+      ld hl,max_score
+      .weightloop:
+        inc [hl]
+        ld b,a
+        dec a
+        and b
+        jr nz,.weightloop
+      .cell_has_no_score:
+
+      ; Move to next cell in row
+      ld a,[floor_width]
+      ld b,a
+      ld a,[cursor_x]
+      inc a
+      cp b
+      jr c,.tileloop
+
+    ; Move to next row
+    ld a,[floor_height]
+    ld b,a
+    ld a,[cursor_y]
+    inc a
+    cp b
+    jr c,.rowloop
+  ret
+

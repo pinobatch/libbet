@@ -10,6 +10,8 @@ joypad_handler::
 
 main::
   call load_floor_chr
+  ld bc,1
+  call srand
 
   ; Clear the map
   ld de,_SCRN0

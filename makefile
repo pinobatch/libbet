@@ -16,8 +16,8 @@ version:=wip
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
 objlist := header init \
-  main floorvram \
-  ppuclear pads unpb16
+  main floorvram floormodel \
+  ppuclear pads unpb16 rand
 pngfile := tilesets/Sukey.png
 
 ifdef COMSPEC
