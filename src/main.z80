@@ -10,7 +10,7 @@ joypad_handler::
 
 main::
   call load_floor_chr
-  ld bc,3
+  ld bc,1
   call srand
 
   ; Clear the map
@@ -26,8 +26,7 @@ main::
   ld [floor_width],a
   ld a,4
   ld [floor_height],a
-  call make_shuffled_floor
-  call find_reachable
+  call make_good_floor
 
   call draw_whole_floor
 

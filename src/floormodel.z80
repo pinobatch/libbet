@@ -28,7 +28,7 @@ section "makefloor",ROM0
 
 ;;
 ; Calculate width * height
-; @return A: area; B: 0; C: height
+; @return A: area; B: 0; C: height; HL clobbered; DE unchanged
 calc_floor_area::
   ld hl,floor_width
   ld a,[hl+]
@@ -433,7 +433,7 @@ count_top_row_reachable::
   .loop:
     bit 2,[hl]
     jr nz,.nocount
-      add 1
+      inc a
     .nocount:
     inc hl
     dec b
@@ -518,3 +518,29 @@ count_max_score::
     jr c,.rowloop
   ret
 
+make_good_floor::
+  call make_shuffled_floor
+  call find_reachable
+
+  ; Dead ends count (in C) must be no more than half the floor's area
+  ld a,c
+  add a
+  ld d,a
+  call calc_floor_area
+  ; A is area; D: double deadends
+  cp d
+  jr c,make_good_floor
+
+  ; At least 2 on the top row must be round trip reachable
+  call count_top_row_reachable
+  cp 2
+  jr c,make_good_floor
+
+  ; Score must be at least the area
+  call count_max_score
+  call calc_floor_area
+  ld b,a
+  ld a,[max_score]
+  cp b
+  jr c,make_good_floor
+  ret
