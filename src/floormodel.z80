@@ -218,7 +218,7 @@ is_valid_move::
   add l
   cp c
   jr nc,.out_of_bounds
-  ld d,a
+  ld d,a  ; D = destination X
 
   ld a,[floor_height]
   ld c,a
@@ -247,6 +247,7 @@ is_valid_move::
   add a
   add e
   ld e,a  ; E: index of source cell
+  ld d,0
 
   ; Regmap here: C: index of destination cell; D: 0;
   ; E: index of source cell.  Fetch both cells
@@ -292,6 +293,8 @@ find_reachable::
   call floor_read_at_cursor
   or FWDREACHED|REVREACHED
   ld [hl],a
+  ldh [hFound],a
+  jr .start_from_home
   
 .tryagain:
   xor a
@@ -301,6 +304,7 @@ find_reachable::
     xor a
     .tileloop:
       ld [cursor_x],a
+.start_from_home:
       ; Is there anything to do?
       ; Need REVREACHED&!REVCHECKED or FWDREACHED&!FWDCHECKED
       call floor_read_at_cursor
@@ -337,6 +341,7 @@ find_reachable::
 .search_cell:
   ldh [hFound],a
   xor a
+  push hl
   .movedirloop:
     ldh [hCurMovedir],a
     call is_valid_move
@@ -373,6 +378,7 @@ find_reachable::
     jr c,.movedirloop
 
   ; Mark as checked that which was reached
+  pop hl
   ld a,[hl]
   and REVREACHED|FWDREACHED
   rra
@@ -391,7 +397,7 @@ find_deadends::
   .rowloop:
     ld [cursor_y],a
     call floor_read_at_cursor
-    ld a,[cursor_x]
+    ld a,[floor_width]
     ld b,a
     .cellloop:
       ld a,[hl]

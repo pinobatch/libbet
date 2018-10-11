@@ -322,6 +322,8 @@ write_hDrawCell::
   ldh [hDrawCellDstHi],a
   ret
 
+;;
+; TODO: Some distinction between seen and unseen deadends
 draw_whole_floor::
   xor a
   .rowloop:
