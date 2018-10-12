@@ -67,16 +67,16 @@ load_floor_chr::
       ld a,[hl+]  ; load ormask
       ld b,a
 
-      ; apply to sliver 0
+      ; apply andmask to sliver 0
       ld a,[de]
       and c
-      or b
       ld [de],a
       inc e
 
-      ; apply andmask (only) to sliver 1
+      ; apply andmask and ormask to sliver 1
       ld a,[de]
       and c
+      or b
       ld [de],a
       inc de
 
