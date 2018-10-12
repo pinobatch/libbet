@@ -128,10 +128,10 @@ load_floor_chr::
     cp $95
     jr c,.fliploop
 
-  ; Cover up the decompression with border tiles at $74-$7F
+  ; Cover up the decompression with border tiles
   ld de,floorborder_pb16
-  ld hl,decomppos
-  ld b,12
+  ld hl,CHRRAM2+$6C*16
+  ld b,20
   jp pb16_unpack_block
 
 add1harrow:
@@ -215,35 +215,54 @@ section "floortiledata", ROM0
 floortiles_pb16: incbin "obj/gb/floorpieces-h.chrgb.pb16"
 floorborder_pb16: incbin "obj/gb/floorborder-h.chrgb.pb16"
 
-;Formula for map address of a cell:
-;_SCRN0 + 32 * (y * 2 + 8 - height) + (x * 2 + 10 - width)
+; Drawing cells to tile map ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section "floor_tilemap",ROM0
-prepare_hDrawCell::
+
+;;
+; Sets HL to the tilemap address of the cursor
+goto_tile_at_cursor:
+  ld a,[cursor_y]
+  ld d,a
+  ld a,[cursor_x]
+  ld e,a
+  ; fall through
+
+;;
+; Sets HL to the tilemap address of cell (E, D)
+; _SCRN0 + 32 * (y * 2 + 8 - height) + (x * 2 + 10 - width)
+; BCDE unchanged
+goto_tile_e_d::
   ; Calculate which tile row: A = y * 2 + 8 - height
   ld a,[floor_height]
-  ld b,a
-  ld a,[cursor_y]
-  add a
-  add 8
-  sub b
+  cpl
+  add 8+1  ; A = 8 - height
+  add d
+  add d
 
   ; fast mul by 32 to get which tile row
   swap a
   add a  ; save the carry!
-  ld c,a
+  ld l,a
   ld a,high(_SCRN0) >> 1
   rla
-  ldh [hDrawCellDstHi],a
+  ld h,a
 
   ; Seek to tile within row: A = x * 2 + 10 - width
   ld a,[floor_width]
-  ld b,a
-  ld a,[cursor_x]
-  add a
-  add 10
-  sub b
-  add c
+  cpl
+  add 10+1  ; A = 10 - width
+  add e
+  add e
+  add l
+  ld l,a
+  ret
+
+prepare_hDrawCell::
+  call goto_tile_at_cursor
+  ld a,h
+  ldh [hDrawCellDstHi],a
+  ld a,l
   ldh [hDrawCellDstLo],a
 
   ; Find the shape
@@ -345,4 +364,82 @@ draw_whole_floor::
     inc a
     cp b
     jr nz,.rowloop
+  ret
+
+draw_floor_border::
+  ; Bottom row of back wall
+  ld a,[floor_height]
+  cp 8
+  jr nc,.no_back_wall
+    ld a,$77
+    ld bc,($71 << 8)|(-33 & $FF)
+    call .do_one_top_row
+
+  ; Top row of back wall
+  ld a,[floor_height]
+  cp 7
+  jr nc,.no_back_wall
+    ld a,$77
+    ld bc,($70 << 8)|(-65 & $FF)
+    call .do_one_top_row
+  .no_back_wall:
+
+  ; Left wall
+  ld de,0
+  call goto_tile_e_d
+  dec hl
+  ld a,[floor_height]
+  ld c,a
+  ld a,$77
+  call .do_one_side_wall
+
+  ld a,[floor_width]
+  ld e,a
+  call goto_tile_e_d
+  ld a,$76
+  ; fall through
+
+;;
+; @param HL top tile address
+; @param C height in tile pairs
+; @param A tile ID
+.do_one_side_wall:
+  ld b,c
+  ld de,32
+  .sidewallloop:
+    ld [hl],a
+    add hl,de
+    ld [hl],a
+    add hl,de
+    dec b
+    jr nz,.sidewallloop
+  ret
+
+;;
+; @param B top left tile ID
+; @param C signed amount to add to HL: -33 or -65
+.do_one_top_row:
+  ld de,0
+  call goto_tile_e_d
+  dec d
+  ld e,c
+  add hl,de
+
+  ; Top left corner
+  ld a,b
+  ld [hl+],a
+  ; Body of top
+  ld a,[floor_width]
+  ld c,a
+  ld a,b
+  add 2
+  .toprowloop:
+    ld [hl+],a
+    ld [hl+],a
+    dec c
+    jr nz,.toprowloop
+  ; Top right corner
+  ld a,b
+  add 4
+  ld [hl+],a
   ret

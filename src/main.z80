@@ -16,12 +16,13 @@ main::
   ; Clear the map
   ld de,_SCRN0
   ld bc,32*16
-  ld h,$76  ; brick wall border tile
+  ld h,$6F  ; background tile
   call memset
   ld bc,32*8
-  ld h,$77  ; blank tile
+  ld h,$01  ; blank tile for score area (subject to change)
   call memset
 
+  ; Generate the floor
   ld a,6
   ld [floor_width],a
   ld a,4
@@ -29,6 +30,7 @@ main::
   call make_good_floor
 
   call draw_whole_floor
+  call draw_floor_border
 
   ld a,%00011011
   ldh [rBGP],a
