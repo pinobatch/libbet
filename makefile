@@ -16,8 +16,8 @@ version:=wip
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
 objlist := header init \
-  main floorvram floormodel \
-  ppuclear pads unpb16 rand
+  main floorvram floormodel statusbar \
+  ppuclear pads unpb16 rand bcd
 pngfile := tilesets/Sukey.png
 
 ifdef COMSPEC
@@ -84,6 +84,8 @@ obj/gb/%-dedent.z80: src/%.z80
 
 obj/gb/floorvram.o: \
   obj/gb/floorpieces-h.chrgb.pb16 obj/gb/floorborder-h.chrgb.pb16
+obj/gb/statusbar.o: \
+  obj/gb/bigdigits-h.chr1
 
 # Graphics conversion
 
@@ -96,6 +98,9 @@ obj/gb/%.chrgb: tilesets/%.png
 
 obj/gb/%-h.chrgb: tilesets/%.png
 	rgbgfx -h -o $@ $<
+
+obj/gb/%-h.chr1: tilesets/%.png
+	rgbgfx -d1 -h -o $@ $<
 
 %.pb16: tools/pb16.py %
 	$(PY) $^ $@

@@ -18,6 +18,7 @@ main::
   ei
 
   call load_floor_chr
+  call load_statusbar_chr
   ld bc,1
   call srand
 
@@ -36,12 +37,9 @@ another_floor:
   ld bc,32*16
   ld h,$6F  ; background tile
   call memset
-  ld bc,32*2
-  ld h,$01  ; blank tile for score area (subject to change)
-  call memset
-
   call draw_whole_floor
   call draw_floor_border
+  call draw_statusbar_tilemap
 
   ld a,%00011011
   ldh [rBGP],a

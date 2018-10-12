@@ -1,0 +1,75 @@
+include "src/hardware.inc"
+include "src/global.inc"
+
+section "load_statusbar", ROM0
+
+SMALL_DIGIT_BASE equ $D0
+STATUS_SLASH equ $DA
+STATUS_BLANK equ $DB
+BIG_DIGIT_BASE equ $DC
+STATUS_PERCENT equ $F0
+
+SMALL_SCORE_POS equ _SCRN0+32*17+14
+PCTAGE_POS equ _SCRN0+32*16+10
+
+;;
+; Expands 1bpp tiles to shadowed 2bpp
+load_statusbar_chr::
+  ld de,$8000 + SMALL_DIGIT_BASE * 16
+  ld hl,bigdigits_chr
+  ld bc,(34<<8)|$FF  ; B: tilecount; C: notlastbyte
+  .byteloop:
+    ; Plane 0 is thisbyte | ~lastbyte
+    ld a,[hl]
+    or c
+    ld [de],a
+    inc de
+    ; Plane 1 is thisbyte
+    ld a,[hl+]
+    ld [de],a
+    inc de
+    rra
+    cpl
+    ld c,a
+    ; 16 byte units
+    ld a,e
+    and $0F
+    jr nz,.byteloop
+    dec b
+    jr nz,.byteloop
+  ret
+
+draw_statusbar_tilemap::
+  ld hl,_SCRN0+32*16
+  ld a,STATUS_BLANK
+  ld c,52
+  call memset_tiny
+
+  ld a,BIG_DIGIT_BASE
+  ld [PCTAGE_POS+1],a
+  inc a
+  ld [PCTAGE_POS+33],a
+
+  ld a,STATUS_PERCENT
+  ld [PCTAGE_POS+2],a
+  inc a
+  ld [PCTAGE_POS+34],a
+
+  ld hl,SMALL_SCORE_POS+1
+  ld a,SMALL_DIGIT_BASE
+  ld [hl+],a
+  ld a,STATUS_SLASH
+  ld [hl+],a
+  ld a,[max_score]
+  call bcd8bit
+  or SMALL_DIGIT_BASE
+  ld [hl+],a
+  ld a,c
+  or SMALL_DIGIT_BASE
+  ld [hl+],a
+
+
+  ret
+
+section "bigdigits_chr", ROM0, align[3]
+bigdigits_chr: incbin "obj/gb/bigdigits-h.chr1"

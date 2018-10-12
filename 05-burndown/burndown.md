@@ -1,6 +1,5 @@
 It's actually happening.
 
-- Draw max score
 - Draw undetailed sprite circle
 - Player moves undetailed circle on legal paths
 - Instructions screen
