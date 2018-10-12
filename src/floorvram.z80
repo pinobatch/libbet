@@ -235,8 +235,13 @@ goto_tile_at_cursor:
 goto_tile_e_d::
   ; Calculate which tile row: A = y * 2 + 8 - height
   ld a,[floor_height]
+  ; don't make room for back wall if already 8 cells tall
+  cp 8
+  jr nz,.notfullht
+    inc a
+  .notfullht:
   cpl
-  add 8+1  ; A = 8 - height
+  add 9+1  ; A = 9 - height
   add d
   add d
 
@@ -367,19 +372,13 @@ draw_whole_floor::
   ret
 
 draw_floor_border::
-  ; Bottom row of back wall
   ld a,[floor_height]
   cp 8
   jr nc,.no_back_wall
-    ld a,$77
+    ; Bottom row
     ld bc,($71 << 8)|(-33 & $FF)
     call .do_one_top_row
-
-  ; Top row of back wall
-  ld a,[floor_height]
-  cp 7
-  jr nc,.no_back_wall
-    ld a,$77
+    ; Top row
     ld bc,($70 << 8)|(-65 & $FF)
     call .do_one_top_row
   .no_back_wall:
