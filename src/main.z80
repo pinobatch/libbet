@@ -9,19 +9,19 @@ joypad_handler::
   reti
 
 main::
+  ; Set up vblank handler
+  ld a,IEF_VBLANK
+  ldh [rIE],a  ; enable IRQs
+  xor a
+  ldh [rIF],a  ; Acknowledge any pending IRQs
+  ld [nmis],a
+  ei
+
   call load_floor_chr
   ld bc,1
   call srand
 
-  ; Clear the map
-  ld de,_SCRN0
-  ld bc,32*16
-  ld h,$6F  ; background tile
-  call memset
-  ld bc,32*8
-  ld h,$01  ; blank tile for score area (subject to change)
-  call memset
-
+another_floor:
   ; Generate the floor
   ld a,6
   ld [floor_width],a
@@ -29,26 +29,30 @@ main::
   ld [floor_height],a
   call make_good_floor
 
+  call lcd_off
+
+  ; Clear the map
+  ld de,_SCRN0
+  ld bc,32*16
+  ld h,$6F  ; background tile
+  call memset
+  ld bc,32*2
+  ld h,$01  ; blank tile for score area (subject to change)
+  call memset
+
   call draw_whole_floor
   call draw_floor_border
 
   ld a,%00011011
   ldh [rBGP],a
   ld a,LCDCF_ON|LCDCF_BG9800|LCDCF_BG8800|LCDCF_BGON
+  ld [vblank_lcdc_value],a
   ldh [rLCDC],a
 
 forever:
-  halt
-  jr forever
-
-
-d1row:
-  push bc
-  .tileloop:
-    ld [hl+],a
-    add 2
-    dec b
-    jr nz,.tileloop
-  add hl,de
-  pop bc
-  ret
+  call wait_vblank_irq
+  call read_pad
+  ld a,[new_keys]
+  bit PADB_SELECT, a
+  jr z,forever
+  jp another_floor
