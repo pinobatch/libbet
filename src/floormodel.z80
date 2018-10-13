@@ -154,8 +154,8 @@ make_shuffled_floor::
 ; all over the floor, but during play, it's under Libbet.
 ; @param cursor_x distance from left wall
 ; @param cursor_y distance from far wall
-; @return HL: pointer to cell; A: value of cell; DE: offset into map;
-;   BC: unchanged
+; @return HL: pointer to cell; A: value of cell; BC: unchanged;
+;   DE: offset into map (5-3: Y, 2-0: X)
 floor_read_at_cursor::
   ld d,0
   ld hl,floor_map
@@ -186,7 +186,7 @@ de_index_a::
   ld l,a
   ret
 
-movedirs:
+movedirs::
   ; right 1, left 1, up 1, down 1
   db $01,$00, $FF,$00, $00,$FF, $00,$01
   ; right 2, left 2, up 2, down 2
@@ -204,6 +204,8 @@ movedirs:
 ;   HL: pointer to destination cell
 ;   CF: 1 if OK or 0 if blocked
 ;   A: 0 for same shade, 1 for next shade, or 2+ if blocked
+;   DE: offset into map of destination cell (5-3: Y, 2-0: X)
+;     if move is not OOB
 is_valid_move::
   ld de,movedirs
   call de_index_a

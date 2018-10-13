@@ -19,8 +19,13 @@ main::
 
   call load_floor_chr
   call load_statusbar_chr
+  ld hl,plain_boulder
+  ld de,CHRRAM0
+  ld bc,16
+  call memcpy
   ld bc,1
   call srand
+  call run_dma  ; shut up BGB
 
 another_floor:
   ; Generate the floor
@@ -29,6 +34,8 @@ another_floor:
   ld a,4
   ld [floor_height],a
   call make_good_floor
+  xor a
+  ld [cur_score],a
 
   call lcd_off
 
@@ -38,19 +45,148 @@ another_floor:
   ld h,$6F  ; background tile
   call memset
   call draw_whole_floor
+  call cursor_to_home
   call draw_floor_border
   call draw_statusbar_tilemap
 
   ld a,%00011011
   ldh [rBGP],a
-  ld a,LCDCF_ON|LCDCF_BG9800|LCDCF_BG8800|LCDCF_BGON
+  ld a,%00011111
+  ldh [rOBP0],a
+  ld a,LCDCF_ON|LCDCF_BG9800|LCDCF_BG8800|LCDCF_BGON|LCDCF_OBJON
   ld [vblank_lcdc_value],a
   ldh [rLCDC],a
 
 forever:
+  ; Draw plain cursor
+  ld a,[cursor_y]
+  swap a
+  ld b,a
+  ld a,[floor_height]
+  cp 8
+  cpl  ; 2: FD+C; 4: FB+C; 6: F9+C; 7: F8+C; 8: F7+NC
+  adc 9  ; 2: 7; 4: 5; 6: 3; 7: 2; 8: 0
+  add a
+  add a
+  add a
+  add b
+  add 20
+  ld [SOAM+0],a
+
+  ld a,[cursor_x]
+  swap a
+  ld b,a
+  ld a,[floor_width]
+  cpl  ; 2: FD; 4: FB; 6: F9; 8: F7
+  add 9  ; 2: 6; 4: 4; 6: 2; 7: 1; 8: 0
+  add a
+  add a
+  add a
+  add b
+  add 28
+  ld [SOAM+1],a
+
+  ld a,$00
+  ld [SOAM+2],a
+
+  xor a
+  ld [SOAM+3],a
+
+  ld a,4
+  ld [oam_used],a
+  call lcd_clear_oam
+
   call wait_vblank_irq
+  call run_dma
+  call write_hDrawCell
+
   call read_pad
   ld a,[new_keys]
+  ld b,a
+  and PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
+  jr z, .notmove
+    ld c,$FF
+    swap a
+    .ctzloop:
+      inc c
+      rra
+      jr nc,.ctzloop
+    ld a,[cur_keys]
+    bit PADB_A,a  ; key A
+    jr z,.notjump
+      set 2,c  ; mark
+    .notjump:
+    push bc
+    ld a,c
+    call is_valid_move
+    pop bc
+    jr nc,.notmove
+
+    ; A: 1 for possibly scoring; 0 for not
+    ; E[5:3]: new Y; E[2:0]: new X
+    ; B: move attempted
+    ; HL: pointer to destination cell
+    or a
+    jr z,.move_to_cell_e
+      push de
+      push hl
+
+      ; Get which track bit corresponds to this move ID
+      ld a,c
+      and $03
+      ld b,a
+      inc b
+      ld a,$08
+      .shlloop:
+        rla
+        dec b
+        jr nz,.shlloop
+      ld b,a
+
+      ; See if that track bit is set
+      call floor_read_at_cursor
+      ld a,[hl]
+      cpl
+      and b
+      jr z,.already_have_track_bit
+        or [hl]
+        ld [hl],a
+        ld hl,cur_score
+        inc [hl]
+        call prepare_hDrawCell
+      .already_have_track_bit:
+
+      pop hl
+      pop de
+
+      ; Is it a dead end?
+      bit 2,[hl]
+      jr z,.move_to_cell_e
+      call cursor_to_home
+      jr .notmove
+    .move_to_cell_e:
+    ld a,e
+    rra
+    rra
+    rra
+    and $07
+    ld [cursor_y],a
+    ld a,e
+    and $07
+    ld [cursor_x],a
+  .notmove:
+  ld a,[new_keys]
   bit PADB_SELECT, a
-  jr z,forever
+  jp z,forever
   jp another_floor
+
+
+plain_boulder:
+  dw `00111100
+  dw `01333310
+  dw `13333331
+  dw `13333331
+  dw `13333331
+  dw `13333331
+  dw `01333310
+  dw `00111100
