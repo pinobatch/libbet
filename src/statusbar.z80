@@ -1,7 +1,12 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-section "load_statusbar", ROM0
+section "statusbarbuf",HRAM
+
+hPctOnes: ds 1
+hPctTens:: ds 1
+hScoreOnes: ds 1
+hScoreTens: ds 1
 
 SMALL_DIGIT_BASE equ $D0
 STATUS_SLASH equ $DA
@@ -11,6 +16,8 @@ STATUS_PERCENT equ $F0
 
 SMALL_SCORE_POS equ _SCRN0+32*17+14
 PCTAGE_POS equ _SCRN0+32*16+10
+
+section "load_statusbar", ROM0
 
 ;;
 ; Expands 1bpp tiles to shadowed 2bpp
@@ -45,19 +52,12 @@ draw_statusbar_tilemap::
   ld c,52
   call memset_tiny
 
-  ld a,BIG_DIGIT_BASE
-  ld [PCTAGE_POS+1],a
-  inc a
-  ld [PCTAGE_POS+33],a
-
   ld a,STATUS_PERCENT
   ld [PCTAGE_POS+2],a
   inc a
   ld [PCTAGE_POS+34],a
 
-  ld hl,SMALL_SCORE_POS+1
-  ld a,SMALL_DIGIT_BASE
-  ld [hl+],a
+  ld hl,SMALL_SCORE_POS+2
   ld a,STATUS_SLASH
   ld [hl+],a
   ld a,[max_score]
@@ -67,8 +67,115 @@ draw_statusbar_tilemap::
   ld a,c
   or SMALL_DIGIT_BASE
   ld [hl+],a
+  ; fall through
 
+prepare_pctage::
+  ld a,[cur_score]
+  call bcd8bit
+  or a
+  jr nz,.score_more_than_ten
+    ld a,STATUS_BLANK-SMALL_DIGIT_BASE
+  .score_more_than_ten:
+  add SMALL_DIGIT_BASE
+  ldh [hScoreTens],a
+  ld a,c
+  add SMALL_DIGIT_BASE
+  ldh [hScoreOnes],a
 
+  ; Convert cur_score/max_score to pctage
+  ld a,[max_score]
+  ld c,a
+  ld a,[cur_score]
+  ld b,a
+  call pctdigit
+  add a
+  jr nz,.pctage_tens_nonblank
+    ld a, STATUS_BLANK-BIG_DIGIT_BASE
+  .pctage_tens_nonblank:
+  add BIG_DIGIT_BASE
+  ldh [hPctTens],a
+  call pctdigit
+  add a
+  add BIG_DIGIT_BASE
+  ldh [hPctOnes],a
+
+  ret
+
+pctdigit::
+  ld de,$1000
+
+  ; bit 3: A.E = B * 1.25
+  ld a,b
+  srl a
+  rr e
+  srl a
+  rr e
+  adc b
+  jr c,.yessub3
+  cp c
+  jr c,.nosub3
+  .yessub3:
+    sub c
+    or a
+  .nosub3:
+  rl d
+
+  ; bits 2-0: mul A.E by 2
+  .bit210loop:
+    rl e
+    adc a
+    jr c,.yessub210
+    cp c
+    jr c,.nosub210
+    .yessub210:
+      sub c
+      or a
+    .nosub210:
+    rl d
+    jr nc,.bit210loop
+
+  ld b,a
+  ; Binary to decimal subtracts if trial subtraction has no borrow.
+  ; 6502/ARM carry: 0: borrow; 1: no borrow
+  ; 8080 carry: 1: borrow; 0: borrow
+  ; The 6502 interpretation is more convenient for binary to decimal
+  ; conversion, so convert to 6502 discipline
+  ld a,$0F
+  xor d
+  ret
+
+write_pctage::
+  ldh a,[hPctTens]
+  or a
+  jr z,.skip
+  cp STATUS_PERCENT
+  jr nz,.not_hundred_pct
+    ld a,BIG_DIGIT_BASE+2
+    ld [PCTAGE_POS-1],a
+    inc a
+    ld [PCTAGE_POS+31],a
+    ld a,BIG_DIGIT_BASE
+  .not_hundred_pct:
+  ld [PCTAGE_POS],a
+  cp STATUS_BLANK
+  jr z,.pctage_tens_nonblank
+    inc a
+  .pctage_tens_nonblank:
+  ld [PCTAGE_POS+32],a
+  ldh a,[hPctOnes]
+  ld [PCTAGE_POS+1],a
+  inc a
+  ld [PCTAGE_POS+33],a
+
+  ldh a,[hScoreTens]
+  ld [SMALL_SCORE_POS],a
+  ldh a,[hScoreOnes]
+  ld [SMALL_SCORE_POS+1],a
+
+  ; Mark this update as applied
+  xor a
+  ldh [hPctTens],a
+.skip:
   ret
 
 section "bigdigits_chr", ROM0, align[3]
