@@ -17,7 +17,7 @@ version:=wip
 # (use a backslash to continue on the next line)
 objlist := header init \
   main floorvram floormodel statusbar \
-  ppuclear pads unpb16 rand bcd
+  ppuclear pads unpb16 rand bcd metasprite
 pngfile := tilesets/Sukey.png
 
 ifdef COMSPEC

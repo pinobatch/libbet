@@ -1,7 +1,6 @@
 It's actually happening.
 
 - Instructions screen
-- Draw score
 - Draw door opening once quota reached
 - Distinguish entered and unentered dead ends visually
 - Devise sprite cel output format

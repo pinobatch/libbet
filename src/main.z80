@@ -94,6 +94,19 @@ forever:
 
   ld a,4
   ld [oam_used],a
+
+  ld a,8
+  ldh [hmsprXLo],a
+  ldh [hmsprYLo],a
+  xor a
+  ldh [hmsprXHi],a
+  ldh [hmsprYHi],a
+  ldh [hmsprSheetID],a
+  ldh [hmsprAttr],a
+  ldh [hmsprFrame],a
+  ldh [hmsprBaseTile],a
+  call draw_metasprite
+
   call lcd_clear_oam
 
   call wait_vblank_irq

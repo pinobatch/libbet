@@ -1,0 +1,210 @@
+; generic metasprite engine for GB
+include "src/hardware.inc"
+include "src/global.inc"
+
+SPRITEHT = 8
+
+; args
+  rsset hLocals
+hmsprYLo rb 1
+hmsprYHi rb 1
+hmsprXLo rb 1
+hmsprXHi rb 1
+hmsprAttr rb 1
+hmsprSheetID rb 1
+hmsprFrame rb 1
+hmsprBaseTile rb 1
+global hmsprYLo, hmsprYHi, hmsprXLo, hmsprXHi
+global hmsprAttr, hmsprSheetID, hmsprFrame, hmsprBaseTile
+
+
+; internal
+hmsprYAdd rb 1
+hmsprXAdd rb 1
+hmsprStripY rb 1
+hmsprStripXLo rb 1
+hmsprStripXHi rb 1
+
+section "metasprite", ROM0
+
+draw_metasprite::
+  ; Subtract 119 if flipped else 112 from each coord
+  ; so that ones' complement addition works as expected
+;  ld b,b
+  ret
+  ldh a,[hmsprAttr]
+  ld c,a
+
+  ld d,112
+  bit OAMB_YFLIP,c
+  jr z,.noycoordflipcorrect
+    ld d,111 + SPRITEHT
+  .noycoordflipcorrect:
+  ldh a,[hmsprYLo]
+  sub d
+  ldh [hmsprYLo],a
+  ldh a,[hmsprYHi]
+  sbc 0
+  ldh [hmsprYHi],a
+
+  ld de,112 * 256 + 8
+  bit OAMB_XFLIP,c
+  jr z,.noxcoordflipcorrect
+    ld de,(111 + 8) * 256 + (256 - 8)
+  .noxcoordflipcorrect:
+  ldh a,[hmsprXLo]
+  sub d
+  ldh [hmsprXLo],a
+  ldh a,[hmsprXHi]
+  sbc 0
+  ldh [hmsprXHi],a
+  ld a,e
+  ldh [hmsprXAdd],a
+
+  ld de,sheet_msprtables
+  ldh a,[hmsprSheetID]
+  call de_index_a
+  ld d,h
+  ld e,l
+  ldh a,[hmsprFrame]
+  call de_index_a
+
+  .rowloop:
+    ; Invariants here:
+    ; HL at start of sprite strip
+    ; C equals [hmsprAttr], not modified by a strip
+    ; Load Y strip offset
+
+    ld a,[hl+]
+    or a
+    ret z
+    bit OAMB_YFLIP,c
+    jr z,.noystripflipcorrect
+      cpl
+    .noystripflipcorrect:
+    ld b,a
+    ldh a,[hmsprYLo]
+    add b
+    ld b,a
+    ldh a,[hmsprYHi]
+    adc 0
+    jr nz,.strip_below_screen
+    ld a,b
+    cp 144+16
+    jr nc,.strip_within_y_range
+    .strip_below_screen:
+      inc hl  ; skip X position
+      ld a,[hl+]  ; load length and attributes
+      and $E0  ; strip PVH bits contain width-1
+      rlca
+      rlca
+      rlca
+      inc a
+      add l
+      ld l,a
+      jr nc,.rowloop
+      inc h
+      jr .rowloop
+    .strip_within_y_range:
+    ldh [hmsprStripY],a
+
+    ; Load X strip offset
+    ld a,[hl+]
+    bit OAMB_YFLIP,c
+    jr z,.noxstripflipcorrect
+      cpl
+    .noxstripflipcorrect:
+    ld b,a
+    ldh a,[hmsprXLo]
+    add b
+    ldh [hmsprStripXLo],a
+    ldh a,[hmsprXHi]
+    adc 0
+    ldh [hmsprStripXHi],a
+
+    ; Third byte of strip is just palette and length
+    ; 7654 3210
+    ; |||| |+++- GBC palette ID
+    ; |||| +---- GBC bank ID
+    ; |||+------ DMG palette ID
+    ; +++------- Length
+    ld a,[hl]
+    and $1F
+    xor c
+    ld c,a
+    ld a,[hl]
+    and $E0  ; strip PVH bits contain width-1
+    rlca
+    rlca
+    rlca
+    inc a
+    ld b,a
+
+    ; Prepare to copy sprites to OAM
+    ld a,[oam_used]
+    ld e,a
+    ld d,0
+    .spriteloop:
+      push bc  ; sprite count and strip attribute
+      ld a,[hmsprStripY]
+      ld [de],a
+      ld a,[hmsprStripXHi]
+      or a
+      jr nz,.skip_one_tile
+      ld a,[hmsprStripXLo]
+      cp 9
+      jr c,.skip_one_tile
+      cp 176
+      jr nc,.skip_one_tile
+
+      ; We're in range, and Y is already written.
+      ; Acknowledge writing Y, and write X, tile, and attribute
+      inc e
+      ld [de],a
+      inc e
+      ld a,[hl]
+      and $3F
+      ld b,a
+      ld a,[hmsprBaseTile]
+      add b
+      ld [de],a
+      inc e
+      ld a,[hl]
+      and $C0
+      rrca
+      xor c
+      ld [de],a
+      inc e
+      
+    .skip_one_tile:
+      ld a,[hmsprXAdd]
+      ld b,a
+      ld a,[hmsprStripXLo]
+      add b
+      ld [hmsprStripXLo],a
+      ld a,[hmsprStripXHi]
+      add 0
+      bit 7,b
+      jr z,.anoneg
+        dec a
+      .anoneg:
+      ld [hmsprStripXHi],a
+      pop bc
+      inc hl
+      dec b
+      jr nz,.spriteloop
+    ld a,e
+    ld [oam_used],a
+    ld a,[hmsprAttr]
+    ld c,a
+    jp .rowloop
+
+sheet_msprtables:
+  dw Libbet_mspraddrs
+
+Libbet_mspraddrs:
+  dw mspr_Libbet_default
+
+mspr_Libbet_default:
+  db 128-8,128-4,$00,$00
+  db 0
