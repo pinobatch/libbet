@@ -86,6 +86,10 @@ obj/gb/floorvram.o: \
   obj/gb/floorpieces-h.chrgb.pb16 obj/gb/floorborder-h.chrgb.pb16
 obj/gb/statusbar.o: \
   obj/gb/bigdigits-h.chr1
+obj/gb/metasprite.o: \
+  obj/gb/Libbet.z80
+obj/gb/main.o: \
+  obj/gb/Libbet.chrgb.pb16
 
 # Graphics conversion
 
@@ -104,3 +108,13 @@ obj/gb/%-h.chr1: tilesets/%.png
 
 %.pb16: tools/pb16.py %
 	$(PY) $^ $@
+
+# One Make quirk that's very annoying to work around is that it's
+# remotely possible for recipes with multiple outputs to fall out
+# of sync.
+
+obj/gb/Libbet.chrgb: tools/extractcels.py tilesets/Libbet.ec tilesets/Libbet.png
+	$(PY) $^ $@ obj/gb/Libbet.z80
+
+obj/gb/Libbet.z80: obj/gb/Libbet.chrgb
+	touch $@

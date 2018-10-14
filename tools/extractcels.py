@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Extract sprite cels from an image
 
@@ -21,7 +21,6 @@ import sys
 import re
 import argparse
 from collections import OrderedDict
-sys.path.append("../../thwaite-nes/tools")
 import pilbmp2nes
 
 # Parsing the strips file
@@ -157,7 +156,7 @@ class InputParser(object):
 
     def add_strip(self, words):
         frame = self.frames[self.cur_frame]
-        palette, cliprect = int(words[0]), None
+        palette, rect = int(words[0]), frame.cliprect
         if len(words) == 5 and all(x.isdigit() for x in words[1:5]):
             rect = tuple(int(x) for x in words[1:5])
         elif len(words) != 1:
@@ -377,12 +376,40 @@ def gbtilestoim(tiles):
     im.putpalette(previewpalette)
     return im
 
+def emit_frames(framestrips, nt, framenames):
+    ntoffset = 0
+    out = [" dw mspr_" + n for n  in framenames]
+    for framename, strips in zip(framenames, framestrips):
+        out.append("mspr_%s:" % framename)
+        for palette, tiles, x, y in strips:
+            ntiles = len(tiles)
+            y += 128
+            x += 128
+            palette |= (ntiles - 1) << 5
+            ntend = ntoffset + ntiles
+            tiles = ",".join(
+                "$%02x" % (((x & 0x6000) >> 7) | (x & 0x3F))
+                for x in nt[ntoffset:ntend]
+            )
+            ntoffset = ntend
+            out.append(" db %3d,%3d,$%02x,%s" % (y, x, palette, tiles))
+        out.append(" db 0\n")
+    out.extend("FRAME_%s equ %d" % (n, i) for i, n in enumerate(framenames))
+    out.extend(" global FRAME_%s" % (n,) for n in framenames)
+    return "\n".join(out)
+
 # CLI front end
 
 def parse_argv(argv):
     p = argparse.ArgumentParser()
     p.add_argument("STRIPSFILE")
     p.add_argument("CELIMAGE")
+    p.add_argument("CHRFILE", nargs="?",
+                   help="where to write unique tiles")
+    p.add_argument("ASMFILE", nargs="?",
+                   help="where to write asm")
+    p.add_argument("-v", "--verbose", action="store_true",
+                   help="print debug info and write preview images")
     return p.parse_args(argv[1:])
 
 def main(argv=None):
@@ -397,14 +424,22 @@ def main(argv=None):
         tile for frame in framestrips for row in frame for tile in row[1]
     ]
     utiles, nt = flipuniq(alltiles)
-    print("%d tiles, %d unique" % (len(nt), len(utiles)))
 
-    stripsvis(im, doc.frames).save("_stripsvis.png")
-    gbtilestoim(alltiles).save("_alltiles.png")
-    gbtilestoim(utiles).save("_utiles.png")
+    if args.verbose:
+        print("%d tiles, %d unique" % (len(nt), len(utiles)),
+              file=sys.stderr)
+        stripsvis(im, doc.frames).save("_stripsvis.png")
+        gbtilestoim(alltiles).save("_alltiles.png")
+        gbtilestoim(utiles).save("_utiles.png")
+    if args.CHRFILE:
+        with open(args.CHRFILE, "wb") as outfp:
+            outfp.writelines(utiles)
+    if args.ASMFILE:
+        with open(args.ASMFILE, "w") as outfp:
+            outfp.write(emit_frames(framestrips, nt, list(doc.frames)))
 
 if __name__=='__main__':
-    if "idlelib" in sys.modules:
+    if "idlelib" in sys.modules and len(sys.argv) < 2:
         main("""
 extractcels.py Libbet.ec.txt spritesheet-side.png
 """.split())

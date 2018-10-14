@@ -3,6 +3,7 @@ include "src/hardware.inc"
 include "src/global.inc"
 
 SPRITEHT = 8
+SPRITEWID = 8
 
 ; args
   rsset hLocals
@@ -28,37 +29,31 @@ hmsprStripXHi rb 1
 section "metasprite", ROM0
 
 draw_metasprite::
-  ; Subtract 119 if flipped else 112 from each coord
-  ; so that ones' complement addition works as expected
-  ldh a,[hmsprAttr]
-  ld c,a
-
-  ld d,112
-  bit OAMB_YFLIP,c
-  jr z,.noycoordflipcorrect
-    ld d,111 + SPRITEHT
-  .noycoordflipcorrect:
+  ; Correct coordinates for offset binary representation
   ldh a,[hmsprYLo]
-  sub d
+  sub 128-16
   ldh [hmsprYLo],a
   ldh a,[hmsprYHi]
   sbc 0
   ldh [hmsprYHi],a
-
-  ld de,120 * 256 + 8
-  bit OAMB_XFLIP,c
-  jr z,.noxcoordflipcorrect
-    ld de,(119 + 8) * 256 + (256 - 8)
-  .noxcoordflipcorrect:
   ldh a,[hmsprXLo]
-  sub d
+  sub 128-8
   ldh [hmsprXLo],a
   ldh a,[hmsprXHi]
   sbc 0
   ldh [hmsprXHi],a
-  ld a,e
+
+  ; Set increase direction for X flip
+  ldh a,[hmsprAttr]
+  ld c,a
+  ld a,8
+  bit OAMB_XFLIP,c
+  jr z,.noxcoordflipcorrect
+    ld a,-8
+  .noxcoordflipcorrect:
   ldh [hmsprXAdd],a
 
+  ; Look up metasprite address for this cel
   ld de,sheet_msprtables
   ldh a,[hmsprSheetID]
   call de_index_a
@@ -67,8 +62,13 @@ draw_metasprite::
   ldh a,[hmsprFrame]
   call de_index_a
 
+  ; Load destination address
+  ld a,[oam_used]
+  ld e,a
+  ld d,high(SOAM)
   .rowloop:
     ; Invariants here:
+    ; DE is multiple of 4 and within shadow OAM
     ; HL at start of sprite strip
     ; C equals [hmsprAttr], not modified by a strip
     ; Load Y strip offset
@@ -140,10 +140,7 @@ draw_metasprite::
     inc a
     ld b,a
 
-    ; Prepare to copy sprites to OAM
-    ld a,[oam_used]
-    ld e,a
-    ld d,high(SOAM)
+    ; Copy sprites to OAM
     .spriteloop:
       push bc  ; sprite count and strip attribute
       ld a,[hmsprStripY]
@@ -205,8 +202,4 @@ sheet_msprtables:
   dw Libbet_mspraddrs
 
 Libbet_mspraddrs:
-  dw mspr_Libbet_default
-
-mspr_Libbet_default:
-  db 128-8,128-4,$00,$00
-  db 0
+  include "obj/gb/Libbet.z80"

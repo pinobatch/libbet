@@ -1,6 +1,9 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
+section "movevars", WRAM0
+cur_facing: ds 1
+
 section "main", ROM0
 
 timer_handler::
@@ -19,10 +22,10 @@ main::
 
   call load_floor_chr
   call load_statusbar_chr
-  ld hl,plain_boulder
-  ld de,CHRRAM0
-  ld bc,16
-  call memcpy
+  ld hl,CHRRAM0
+  ld de,Libbet_pb16
+  ld b,40
+  call pb16_unpack_block
   ld bc,2
   call srand
   call run_dma  ; shut up BGB
@@ -36,6 +39,8 @@ another_floor:
   call make_good_floor
   xor a
   ld [cur_score],a
+  ld a,2
+  ld [cur_facing],a
 
   call lcd_off
 
@@ -88,15 +93,21 @@ forever:
   add b
   add 24
   ldh [hmsprXLo],a
-  
+
+  ld a,[cur_facing]
+  ld de,Libbet_facing_to_frame
+  call de_index_a
+  ld a,l
+  ldh [hmsprAttr],a
+  ld a,h
+  ldh [hmsprFrame],a
+
   xor a
   ldh [hmsprXHi],a
   ldh [hmsprYHi],a
 
   ld a,$00
   ldh [hmsprSheetID],a
-  ldh [hmsprAttr],a
-  ldh [hmsprFrame],a
   ldh [hmsprBaseTile],a
   call draw_metasprite
 
@@ -129,6 +140,8 @@ forever:
       inc c
       rra
       jr nc,.ctzloop
+    ld a,c
+    ld [cur_facing],a
     ld a,[cur_keys]
     bit PADB_A,a  ; key A
     jr z,.notjump
@@ -198,12 +211,8 @@ forever:
   jp another_floor
 
 
-plain_boulder:
-  dw `00111100
-  dw `01333310
-  dw `13333331
-  dw `13333331
-  dw `13333331
-  dw `13333331
-  dw `01333310
-  dw `00111100
+Libbet_pb16:
+  incbin "obj/gb/Libbet.chrgb.pb16"
+
+Libbet_facing_to_frame:
+  dw $0E00, $0E20, $1C00, $0000
