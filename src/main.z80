@@ -23,7 +23,7 @@ main::
   ld de,CHRRAM0
   ld bc,16
   call memcpy
-  ld bc,1
+  ld bc,2
   call srand
   call run_dma  ; shut up BGB
 
@@ -108,6 +108,17 @@ forever:
   call write_pctage
 
   call read_pad
+
+  ; Sitting on a dead end after last move?
+  call floor_read_at_cursor
+  bit 2,a
+  jr z,.not_on_deadend
+    set 3,a
+    call prepare_hDrawCell
+    call cursor_to_home
+    jr .notmove
+  .not_on_deadend:
+
   ld a,[new_keys]
   ld b,a
   and PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
@@ -167,11 +178,8 @@ forever:
       pop hl
       pop de
 
-      ; Is it a dead end?
-      bit 2,[hl]
-      jr z,.move_to_cell_e
-      call cursor_to_home
-      jr .notmove
+      ; Mark as entered
+      set 3,[hl]
     .move_to_cell_e:
     ld a,e
     rra
@@ -183,6 +191,7 @@ forever:
     and $07
     ld [cursor_x],a
   .notmove:
+
   ld a,[new_keys]
   bit PADB_SELECT, a
   jp z,forever

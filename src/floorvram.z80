@@ -275,11 +275,14 @@ prepare_hDrawCell::
   ld b,a
 
   ; Calculate base tile ID (shades: 0, 4, 8, C; deadends: 40, 44, 48, 4C)
-  and $07  ; save only deadend and bits
+  and $0F  ; save only deadend and bits
   add a
   add a
+  ; If bits 2 (not round trip reachable) and 3 (entered) are both
+  ; true, this is a dead end, for which tiles $40-$4F should be used.
+  ; Otherwise, tiles $00-$0F (plus arrows) should be used.
   ; move deadend bit from bit 4 to bit 6
-  add $30
+  add $10
   and $4C
 
   ; construct 4 corners of tile
