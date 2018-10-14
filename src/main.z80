@@ -58,6 +58,9 @@ another_floor:
   ldh [rLCDC],a
 
 forever:
+  xor a
+  ld [oam_used],a
+
   ; Draw plain cursor
   ld a,[cursor_y]
   swap a
@@ -70,8 +73,8 @@ forever:
   add a
   add a
   add b
-  add 20
-  ld [SOAM+0],a
+  add 12
+  ldh [hmsprYLo],a
 
   ld a,[cursor_x]
   swap a
@@ -83,24 +86,14 @@ forever:
   add a
   add a
   add b
-  add 28
-  ld [SOAM+1],a
-
-  ld a,$00
-  ld [SOAM+2],a
-
-  xor a
-  ld [SOAM+3],a
-
-  ld a,4
-  ld [oam_used],a
-
-  ld a,8
+  add 24
   ldh [hmsprXLo],a
-  ldh [hmsprYLo],a
+  
   xor a
   ldh [hmsprXHi],a
   ldh [hmsprYHi],a
+
+  ld a,$00
   ldh [hmsprSheetID],a
   ldh [hmsprAttr],a
   ldh [hmsprFrame],a

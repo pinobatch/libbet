@@ -30,8 +30,6 @@ section "metasprite", ROM0
 draw_metasprite::
   ; Subtract 119 if flipped else 112 from each coord
   ; so that ones' complement addition works as expected
-;  ld b,b
-  ret
   ldh a,[hmsprAttr]
   ld c,a
 
@@ -47,10 +45,10 @@ draw_metasprite::
   sbc 0
   ldh [hmsprYHi],a
 
-  ld de,112 * 256 + 8
+  ld de,120 * 256 + 8
   bit OAMB_XFLIP,c
   jr z,.noxcoordflipcorrect
-    ld de,(111 + 8) * 256 + (256 - 8)
+    ld de,(119 + 8) * 256 + (256 - 8)
   .noxcoordflipcorrect:
   ldh a,[hmsprXLo]
   sub d
@@ -90,8 +88,10 @@ draw_metasprite::
     adc 0
     jr nz,.strip_below_screen
     ld a,b
+    cp 17-SPRITEHT
+    jr c,.strip_below_screen
     cp 144+16
-    jr nc,.strip_within_y_range
+    jr c,.strip_within_y_range
     .strip_below_screen:
       inc hl  ; skip X position
       ld a,[hl+]  ; load length and attributes
@@ -132,7 +132,7 @@ draw_metasprite::
     and $1F
     xor c
     ld c,a
-    ld a,[hl]
+    ld a,[hl+]
     and $E0  ; strip PVH bits contain width-1
     rlca
     rlca
@@ -143,18 +143,20 @@ draw_metasprite::
     ; Prepare to copy sprites to OAM
     ld a,[oam_used]
     ld e,a
-    ld d,0
+    ld d,high(SOAM)
     .spriteloop:
       push bc  ; sprite count and strip attribute
       ld a,[hmsprStripY]
       ld [de],a
+
+      ; Only resulting X locations in 1-167 are in range
       ld a,[hmsprStripXHi]
       or a
       jr nz,.skip_one_tile
       ld a,[hmsprStripXLo]
-      cp 9
-      jr c,.skip_one_tile
-      cp 176
+      or a
+      jr z,.skip_one_tile
+      cp 8+160
       jr nc,.skip_one_tile
 
       ; We're in range, and Y is already written.

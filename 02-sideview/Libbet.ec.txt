@@ -155,3 +155,6 @@ frame Libbet_jumpN4  92 132 12 12
 strip 0 94 130 8 8
 strip 0 90 138 16 5
 hotspot 98 143
+
+frame Libbet_shadow 130 143  8  1
+strip 0
