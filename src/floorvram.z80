@@ -183,14 +183,14 @@ add1arrow:
     ld a,[hl-]  ; load andmask
     ld c,a
 
-    ; apply to sliver 0
+    ; apply andmask to sliver 0
     ld a,[de]
     and c
     or b
     ld [de],a
     inc e
 
-    ; apply to sliver 1
+    ; apply andmask and ormask to sliver 1
     ld a,[de]
     and c
     or b
@@ -275,13 +275,18 @@ prepare_hDrawCell::
   ld b,a
 
   ; Calculate base tile ID (shades: 0, 4, 8, C; deadends: 40, 44, 48, 4C)
-  and $0F  ; save only deadend, entered, and shade bits
   add a
   add a
   ; If bits 2 (not round trip reachable) and 3 (entered) are both
   ; true, this is an entered dead end, drawn with tiles $40-$4F.
   ; Otherwise it's a regular cell, drawn with $00-$0F (plus arrows).
-  add $10
+  if SHOW_UNENTERED_DEADENDS
+    and $1C  ; save only deadend and shade bits
+    add $30
+  else
+    and $3C  ; save only deadend, entered, and shade bits
+    add $10
+  endc
   and $4C
 
   ; construct 4 corners of tile
@@ -443,4 +448,41 @@ draw_floor_border::
   ld a,b
   add 4
   ld [hl+],a
+  ret
+
+prepare_exit_door::
+  ; Only maps not taller than 8 cells have an exit door.
+  ; For taller maps, all the top cells are exits.
+  ld a,[floor_height]
+  cp 8
+  ret nc
+
+  ; Door is drawn 2 cells above exit cell
+  ld d,0
+  ld a,[exit_x]
+  ld e,a
+  call goto_tile_e_d
+  ld de,-32*2
+  add hl,de
+  ld a,h
+  ldh [hDrawCellDstHi],a
+  ld a,l
+  ldh [hDrawCellDstLo],a
+
+  ; Closed  Open
+  ; 78 7A   7C 7E
+  ; 79 7B   7D 7F
+  ld a,[exit_open]
+  or a
+  ld a,$78
+  jr z,.use_open_tile
+    ld a,$7C
+  .use_open_tile:
+  ldh [hDrawCellTL],a
+  inc a
+  ldh [hDrawCellBL],a
+  inc a
+  ldh [hDrawCellTR],a
+  inc a
+  ldh [hDrawCellBR],a
   ret

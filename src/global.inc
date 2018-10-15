@@ -28,9 +28,18 @@ drgb: macro
 ; Allowing different subroutines to share local variables in HRAM
 ; without having to declare all memory in one file requires an
 ; allocation strategy using ".rsset".
-hLocals = $FF80
-locals_size = 16
+hLocals equ $FF80
+locals_size equ 16
 
+; Bits 7-4 of floor_map entries are the same as PADF_ and PADB_
+; from hardware.inc. Bits 2 and 3 are defined thus
+FLOORB_DEADEND equ 2
+FLOORB_ENTERED equ 3
+FLOORF_DEADEND equ %00000100
+FLOORF_ENTERED equ %00001000
+
+SHOW_UNENTERED_DEADENDS equ 0
+SELECT_RESTARTS equ 0
 
   ENDC
 

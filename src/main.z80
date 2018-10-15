@@ -19,7 +19,7 @@ main::
   ldh [rIF],a  ; Acknowledge any pending IRQs
   ld [nmis],a
   ei
-  
+
   call do_instructions
 
   call lcd_off
@@ -44,6 +44,7 @@ another_floor:
   ld [cur_score],a
   ld a,2
   ld [cur_facing],a
+  call place_exit
 
   call lcd_off
 
@@ -55,6 +56,8 @@ another_floor:
   call draw_whole_floor
   call cursor_to_home
   call draw_floor_border
+  call prepare_exit_door
+  call write_hDrawCell
   call draw_statusbar_tilemap
 
   ld a,%00011011
@@ -133,6 +136,12 @@ forever:
     jr .notmove
   .not_on_deadend:
 
+  call check_exit_pct
+  jr nc,.exit_not_opened
+    call prepare_exit_door
+    jr .notmove
+  .exit_not_opened:
+
   ld a,[new_keys]
   ld b,a
   and PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
@@ -144,7 +153,7 @@ forever:
       rra
       jr nc,.ctzloop
     ld a,c
-    ld [cur_facing],a
+    ld [cur_facing],a  ; Face the pressed direction
     ld a,[cur_keys]
     bit PADB_A,a  ; key A
     jr z,.notjump
@@ -154,11 +163,19 @@ forever:
     ld a,c
     call is_valid_move
     pop bc
-    jr nc,.notmove
+    jr c,.is_valid_move
 
-    ; A: 1 for possibly scoring; 0 for not
-    ; E[5:3]: new Y; E[2:0]: new X
-    ; B: move attempted
+      ; Check whether it's a roll up from the top row
+      ; while the exit is open
+      ld a,2  ; roll up
+      xor c
+      jr nz,.notmove
+      call check_exitable_cell
+      jr nc,.notmove
+      jp another_floor
+    .is_valid_move:
+    ; A: 1 for color change (possibly scoring); 0 for not
+    ; C: move attempted; E[5:3]: new Y; E[2:0]: new X;
     ; HL: pointer to destination cell
     or a
     jr z,.move_to_cell_e
@@ -208,10 +225,13 @@ forever:
     ld [cursor_x],a
   .notmove:
 
+  if SELECT_RESTARTS
   ld a,[new_keys]
   bit PADB_SELECT, a
-  jp z,forever
-  jp another_floor
+  jp nz,another
+  endc
+
+  jp forever
 
 
 Libbet_pb16:

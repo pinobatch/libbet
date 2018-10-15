@@ -21,6 +21,8 @@ cursor_x:: ds 1
 cursor_y:: ds 1
 max_score:: ds 1
 cur_score:: ds 1
+exit_x:: ds 1
+exit_open:: ds 1
 
 section "makefloor",ROM0
 
@@ -545,4 +547,108 @@ make_good_floor::
   ld a,[max_score]
   cp b
   jr c,make_good_floor
+  ret
+
+;;
+; Finds a reachable cell on the top row close to the center.
+;
+; Returns the first cell in the following sequence that is
+; not marked as a dead end:
+; x[0] = floor(w/2)
+; x[2n+1] = w - 1 - x[2n]
+; x[2n+2] = w - x[2n+1]
+;
+; Width 6 example: 3, 2, 4, 1, 5, 0
+; Width 7 example: 3, 3, 4, 2, 5, 1, 6, 0
+;
+; @return A = E = x position of cell; HL = pointer to cell;
+; D = width
+find_exit_cell:
+  xor a   ; this is as fast as ld d,0 and clears carry
+  ld d,a  ; so that rra behaves
+  ld a,[floor_width]
+  ld b,a  ; B = width
+  rra
+
+  ; A time space tradeoff is possible.  For 2 bytes, we can
+  ; skip the redundant test of x[0] for odd widths.
+  ; jr c,.test2n1
+
+  .test2n:
+    ; test x[2n]
+    ld e,a  ; DE = X
+    ld hl,floor_map
+    add hl,de
+    bit FLOORF_DEADEND,[hl]
+    ret z
+
+    ; move to x[2n+1]
+    ld a,b
+    dec a
+    sub e
+  .test2n1:
+    ; test x[2n+1]
+    ld e,a
+    ld hl,floor_map
+    add hl,de
+    bit FLOORF_DEADEND,[hl]
+    ret z
+
+    ; Move to x[2n+2] which becomes the new x[2n]
+    ld a,b
+    sub e
+    jr nz,.test2n
+  ret
+
+place_exit::
+  xor a
+  ld [exit_open],a
+  call find_exit_cell
+  ld [exit_x],a
+  ret
+
+;;
+; If the exit is closed, and the floor is over 90% traced,
+; opens the exit.
+; @return CF true iff exit just opened
+check_exit_pct::
+  ld a,[exit_open]
+  or a
+  ret nz
+  ld a,[max_score]
+  ld c,a
+  ld a,[cur_score]
+  ld b,a
+  call pctdigit
+  cp 9
+  ccf
+  ret nc
+  ld [exit_open],a
+  ret
+
+;;
+; Checks whether a roll up from the current space reaches the exit.
+; @return CF true iff exit ready
+check_exitable_cell::
+  ; Must be on top row
+  ld a,[cursor_y]
+  or a
+  ret nz
+  ; Exit must be open
+  ld a,[exit_open]
+  or a
+  ret z
+
+  ; Either the height must be 8...
+  ld a,[floor_height]
+  cp 8
+  scf
+  ret nc
+  ; or Libbet must be horizontally aligned with the door
+  ld a,[exit_x]
+  ld b,a
+  ld a,[cursor_x]
+  xor b
+  ret nz
+  scf
   ret
