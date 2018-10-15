@@ -101,49 +101,6 @@ prepare_pctage::
 
   ret
 
-pctdigit::
-  ld de,$1000
-
-  ; bit 3: A.E = B * 1.25
-  ld a,b
-  srl a
-  rr e
-  srl a
-  rr e
-  adc b
-  jr c,.yessub3
-  cp c
-  jr c,.nosub3
-  .yessub3:
-    sub c
-    or a
-  .nosub3:
-  rl d
-
-  ; bits 2-0: mul A.E by 2
-  .bit210loop:
-    rl e
-    adc a
-    jr c,.yessub210
-    cp c
-    jr c,.nosub210
-    .yessub210:
-      sub c
-      or a
-    .nosub210:
-    rl d
-    jr nc,.bit210loop
-
-  ld b,a
-  ; Binary to decimal subtracts if trial subtraction has no borrow.
-  ; 6502/ARM carry: 0: borrow; 1: no borrow
-  ; 8080 carry: 1: borrow; 0: borrow
-  ; The 6502 interpretation is more convenient for binary to decimal
-  ; conversion, so convert to 6502 discipline
-  ld a,$0F
-  xor d
-  ret
-
 write_pctage::
   ldh a,[hPctTens]
   or a
