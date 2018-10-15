@@ -19,6 +19,8 @@ main::
   ldh [rIF],a  ; Acknowledge any pending IRQs
   ld [nmis],a
   ei
+  
+  call do_instructions
 
   call load_floor_chr
   call load_statusbar_chr

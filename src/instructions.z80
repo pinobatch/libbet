@@ -1,0 +1,50 @@
+include "src/hardware.inc"
+include "src/global.inc"
+
+LF equ $0A
+
+section "instructions", ROM0
+
+do_instructions::
+  call lcd_off
+
+  ret
+
+section "instructionstxt", ROM0
+
+pages:
+ dw page1txt, page2txt, page3txt
+
+page1txt:
+ db "Libbet and the M. F.",LF
+ db LF
+ db $82," 2002, 2016 Martin Korth",LF
+ db $82,"2016 Damian Yerrick",LF
+ db LF
+ db "One day, Libbet was",LF
+ db "rearranging her basement",LF
+ db "when she discovered a",LF
+ db "passage to an empty",LF
+ db "hall whose floor had a",LF
+ db "peculiar pattern. She",LF
+ db "rolled in to investigate.",0
+page2txt:
+ db "The floor tiles have four",LF
+ db "shades. Libbet can roll",LF
+ db "or jump between tiles of",LF
+ db "the same shade. She can",LF
+ db "also roll or jump onto",LF
+ db "the next brighter shade",LF
+ db "or from white to black,",LF
+ db "which leaves a track.",LF
+ db "Tiles with no exits",LF
+ db "contain a trap door that",LF
+ db "leads to the entrance.",LF
+ db "Leave 90 percent of",LF
+ db "possible tracks and",LF
+ db "roll to the exit to win.",0
+page3txt:
+ db "Controls",LF
+ db LF
+ db $84,$85,$86,$87,": Roll",LF
+ db "A + ",$84,$85,$86,$87,": Jump",0

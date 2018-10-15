@@ -16,8 +16,8 @@ version:=wip
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
 objlist := header init \
-  main floorvram floormodel statusbar \
-  ppuclear pads unpb16 rand bcd metasprite
+  main floorvram floormodel statusbar instructions rolling \
+  ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7
 pngfile := tilesets/Sukey.png
 
 ifdef COMSPEC
@@ -107,6 +107,9 @@ obj/gb/%-h.chr1: tilesets/%.png
 	rgbgfx -d1 -h -o $@ $<
 
 %.pb16: tools/pb16.py %
+	$(PY) $^ $@
+
+obj/gb/vwf7.z80: tools/vwfbuild.py tilesets/vwf7_cp144p.png
 	$(PY) $^ $@
 
 # One Make quirk that's very annoying to work around is that it's
