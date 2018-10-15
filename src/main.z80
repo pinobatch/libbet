@@ -22,6 +22,7 @@ main::
   
   call do_instructions
 
+  call lcd_off
   call load_floor_chr
   call load_statusbar_chr
   ld hl,CHRRAM0

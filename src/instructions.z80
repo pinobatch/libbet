@@ -5,21 +5,118 @@ LF equ $0A
 
 section "instructions", ROM0
 
+first_vwf_tileid = 256 - 8 * 14
+
 do_instructions::
   call lcd_off
+  xor a
+  ld [cursor_x],a
+  ld de,_SCRN0
+  ld h,$80
+  ld bc,32*18
+  call memset
+  ld hl,$8800
+  ld c,16
+  xor a
+  call memset_tiny
 
+  ld de,18
+  ld b,16
+  ld a,first_vwf_tileid
+  ld hl,_SCRN0+32*1+3
+  .filltilemaploop:
+    ld c,14
+    call memset_inc
+    add hl,de
+    dec b
+    jr nz,.filltilemaploop
+
+.page:
+
+  ; Draw the text
+  call lcd_off
+  ld a,[cursor_x]
+  ld de,pages
+  call de_index_a
+  ld de,CHRRAM0 + first_vwf_tileid * 16
+  .lineloop:
+    push hl
+    call vwfClearBuf
+    pop hl
+    push de
+    ld b,0
+    call vwfPuts
+    pop de
+    push hl
+    ld h,d
+    ld l,e
+    ld bc,14
+    call vwfPutBuf03_lenC
+    ld d,h
+    ld e,l
+    pop hl
+    ld a,[hl+]
+    or a
+    jr nz,.lineloop
+
+  call vwfClearBuf
+  .clrrestloop:
+    ld h,0
+    ld bc,14*16
+    call memset
+    ld hl,$10000-(CHRRAM0 + (224 + first_vwf_tileid) * 16)
+    add hl,de
+    jr nc,.clrrestloop
+
+  ld a,%00001100
+  ldh [rBGP],a
+  ld a,LCDCF_ON|LCDCF_BGON|LCDCF_BG8800|LCDCF_BG9800
+  ld [vblank_lcdc_value],a
+  ldh [rLCDC],a
+
+.loop:
+  call wait_vblank_irq
+  call read_pad
+  ld a,[new_keys]
+  ld b,a
+
+  ; Page movement
+  ld a,[cursor_x]
+  ld c,a
+  bit PADB_RIGHT, b
+  jr z,.notRight
+  cp (pages_end-pages)/2-1
+  jr nc,.notRight
+    inc a
+  .notRight:
+  bit PADB_LEFT, b
+  jr z,.notLeft
+  or a
+  jr z,.notLeft
+    dec a
+  .notLeft:
+  cp c
+  jr z,.notRedraw
+    ld [cursor_x],a
+    jp .page
+  .notRedraw:
+
+  ld a,[new_keys]
+  and PADF_A|PADF_START
+  jr z,.loop
   ret
 
 section "instructionstxt", ROM0
 
 pages:
  dw page1txt, page2txt, page3txt
+pages_end:
 
 page1txt:
  db "Libbet and the M. F.",LF
  db LF
  db $82," 2002, 2016 Martin Korth",LF
- db $82,"2016 Damian Yerrick",LF
+ db $82," 2016 Damian Yerrick",LF
  db LF
  db "One day, Libbet was",LF
  db "rearranging her basement",LF
@@ -46,5 +143,7 @@ page2txt:
 page3txt:
  db "Controls",LF
  db LF
- db $84,$85,$86,$87,": Roll",LF
- db "A + ",$84,$85,$86,$87,": Jump",0
+ db $86,$87,$85,$84,": Roll",LF
+ db "A + ",$86,$87,$85,$84,": Jump",LF
+ db LF
+ db "Press Start Button",0

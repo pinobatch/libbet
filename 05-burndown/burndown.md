@@ -1,6 +1,6 @@
 It's actually happening.
 
-- Instructions screen
+- Place door
 - Draw door opening once quota reached
 - Animate Libbet rolling
 - Animate Libbet jumping
