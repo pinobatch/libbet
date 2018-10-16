@@ -76,6 +76,7 @@ forever:
   call write_hDrawCell
   call write_pctage
 
+
   call read_pad
 
   ; this will have to be converted to a "dirty" queue
@@ -87,6 +88,11 @@ forever:
 
   call player_can_start_roll
   jr z,.not_begin_move
+
+    ; cursor Y = 255 means Libbet is on the exit door
+    ld a,[cursor_y]
+    inc a
+    jp z,another_floor
 
     ; Sitting on a dead end after last move?
     call floor_read_at_cursor
@@ -100,9 +106,6 @@ forever:
     .not_on_deadend:
 
     call try_move
-    ld a,[cursor_y]
-    inc a
-    jp z,another_floor
   .not_begin_move:
 
   if SELECT_RESTARTS
@@ -148,6 +151,9 @@ try_move:
     ret nc
 
     ; Mark the level as exited
+    ld b,b
+    ld c,2
+    call player_start_roll
     ld a,$FF
     ld [cursor_y],a
     ret

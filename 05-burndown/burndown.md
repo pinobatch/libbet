@@ -1,8 +1,6 @@
 0.01 tasks
 
-- Roll into exit
 - Sequence of map sizes
-- Ask nocash what license was intended for the game
 
 0.02 tasks
 
@@ -10,10 +8,11 @@
 - Sound effect engine
 - Scoring based on clear, completion, and perfection
 - Delay between entering dead end and going home
+- Design a tutorial for attract mode
 
 0.03 tasks
 
-- ?
+- Implement changes based on feedback
 
 0.04 tasks
 
