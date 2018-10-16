@@ -2,6 +2,8 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
+TMARGIN = 16
+LMARGIN = 8
 SPRITEHT = 8
 SPRITEWID = 8
 
@@ -29,29 +31,33 @@ hmsprStripXHi rb 1
 section "metasprite", ROM0
 
 draw_metasprite::
-  ; Correct coordinates for offset binary representation
+  ldh a,[hmsprAttr]
+  ld c,a  ; C = flip flags
+
+  ; Correct coordinates for offset binary representation.
+  ; Not correcting for Y flip until a Y flip is needed in a game.
   ldh a,[hmsprYLo]
-  sub 128-16
+  sub 128-TMARGIN
   ldh [hmsprYLo],a
   ldh a,[hmsprYHi]
   sbc 0
   ldh [hmsprYHi],a
+
+  ; Convert X coordintes and set increase direction for X flip
+  ld b,128-LMARGIN
+  ld a,SPRITEWID
+  bit OAMB_XFLIP,c
+  jr z,.noxcoordflipcorrect
+    ld b,127+SPRITEWID-LMARGIN
+    ld a,-SPRITEWID
+  .noxcoordflipcorrect:
+  ldh [hmsprXAdd],a
   ldh a,[hmsprXLo]
-  sub 128-8
+  sub b
   ldh [hmsprXLo],a
   ldh a,[hmsprXHi]
   sbc 0
   ldh [hmsprXHi],a
-
-  ; Set increase direction for X flip
-  ldh a,[hmsprAttr]
-  ld c,a
-  ld a,8
-  bit OAMB_XFLIP,c
-  jr z,.noxcoordflipcorrect
-    ld a,-8
-  .noxcoordflipcorrect:
-  ldh [hmsprXAdd],a
 
   ; Look up metasprite address for this cel
   ld de,sheet_msprtables
@@ -88,9 +94,9 @@ draw_metasprite::
     adc 0
     jr nz,.strip_below_screen
     ld a,b
-    cp 17-SPRITEHT
+    cp TMARGIN+1-SPRITEHT
     jr c,.strip_below_screen
-    cp 144+16
+    cp SCRN_Y+TMARGIN
     jr c,.strip_within_y_range
     .strip_below_screen:
       inc hl  ; skip X position
@@ -110,7 +116,7 @@ draw_metasprite::
 
     ; Load X strip offset
     ld a,[hl+]
-    bit OAMB_YFLIP,c
+    bit OAMB_XFLIP,c
     jr z,.noxstripflipcorrect
       cpl
     .noxstripflipcorrect:
@@ -122,7 +128,7 @@ draw_metasprite::
     adc 0
     ldh [hmsprStripXHi],a
 
-    ; Third byte of strip is just palette and length
+    ; Third byte of strip is palette and length
     ; 7654 3210
     ; |||| |+++- GBC palette ID
     ; |||| +---- GBC bank ID
@@ -153,7 +159,7 @@ draw_metasprite::
       ld a,[hmsprStripXLo]
       or a
       jr z,.skip_one_tile
-      cp 8+160
+      cp SCRN_X+LMARGIN
       jr nc,.skip_one_tile
 
       ; We're in range, and Y is already written.
@@ -169,7 +175,7 @@ draw_metasprite::
       ld [de],a
       inc e
       ld a,[hl]
-      and $C0
+      and $C0  ; combine with tile flip attribute
       rrca
       xor c
       ld [de],a

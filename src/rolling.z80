@@ -42,7 +42,7 @@ Libbet_framelist:
   db 0|FRLF_READY, 30|FRHF_LAST
 frame_roll_begin:
   ; 1: Tuck toward rolling
-  db 1, 2
+  db 1, 4
 frame_roll_continue:
   ; 2-9: Roll toward X
   db 2|FRLF_MOVE, 2
@@ -58,6 +58,7 @@ frame_roll_continue:
   db 1|FRLF_READY|FRLF_KEEPROLL, 4|FRHF_LAST
 frame_jump_begin:
   ; 12: Jump
+  db 1, 2
   db 1|FRLF_MOVE, 2
   db 10|FRLF_MOVE|FRLF_JUMP, 3
   db 11|FRLF_MOVE, 8
@@ -83,7 +84,7 @@ init_player_pos::
 set_roll_start_pos:
   ld a,[cursor_y]
   swap a
-  ld b,a
+  ld d,a
   ld a,[floor_height]
   cp 8
   cpl  ; 2: FD+C; 4: FB+C; 6: F9+C; 7: F8+C; 8: F7+NC
@@ -91,20 +92,20 @@ set_roll_start_pos:
   add a
   add a
   add a
-  add b
+  add d
   add 12
   ld [roll_y],a
 
   ld a,[cursor_x]
   swap a
-  ld b,a
+  ld d,a
   ld a,[floor_width]
   cpl  ; 2: FD; 4: FB; 6: F9; 8: F7
   add 9  ; 2: 6; 4: 4; 6: 2; 7: 1; 8: 0
   add a
   add a
   add a
-  add b
+  add d
   add 24
   ld [roll_x],a
 
@@ -118,7 +119,7 @@ set_roll_start_pos:
 ;;
 ; Set Z based on whether the animation is at a stopping point.
 ; @return ZF set for busy; clear for ok
-; ADE clobbered; HL set to current frame's data
+; ADE clobbered; HL = frame properties
 player_can_start_roll::
   ld a,[roll_frame]
   ld de,Libbet_framelist
@@ -130,25 +131,35 @@ player_can_start_roll::
 ; @param C roll direction
 ; @param cursor_x starting X position
 ; @param cursor_y starting Y position
+; @return DE clobbered; HL = frame properties; A = frame length
 player_start_roll::
   call set_roll_start_pos
+
+  ; Set velocity
+  ld a,c
+  and MOVEF_DIRECTION
+  ld de,movedirs
+  call de_index_a
+  ld a,l
+  ld [roll_dx],a
+  ld a,h
+  ld [roll_dy],a
 
   ; Decide which frame sequence to use
   ld a,(frame_jump_begin - Libbet_framelist)/2
   bit MOVEB_JUMP,c
   jr nz,.have_frame
   ld a,(frame_roll_continue - Libbet_framelist)/2
-  bit MOVEB_JUMP,l
-  jr nz,.have_frame
+  bit FRLB_KEEPROLL,l
+  jr z,.have_frame
   dec a
 .have_frame:
   ld [roll_frame],a
   ld de,Libbet_framelist
   call de_index_a
-  ld l,a
+  ld a,h
   add a
   ld [roll_frame_cd],a
-  scf
   ret
 
 move_player_anim::
@@ -196,7 +207,7 @@ move_player_anim::
   ld a,b
   dec a
   jr nz,.not_new_frame
-    xor a
+    ; If the last frame, reset to frame A (which is 0)
     bit FRHB_LAST,h
     jr nz,.is_last_frame
       ld a,[roll_frame]
@@ -205,6 +216,8 @@ move_player_anim::
     ld [roll_frame],a
 
     ; Jump if requested
+    ld de,Libbet_framelist
+    call de_index_a
     bit FRLB_JUMP,l
     jr z,.no_jump
       ld a,11
@@ -212,23 +225,40 @@ move_player_anim::
     .no_jump:
 
     ; Set duration of this frame
-    ld l,a
+    ld a,h
     add a
   .not_new_frame:
   ld [roll_frame_cd],a
+  ret
 
 draw_player::
-  call set_roll_start_pos  ; this is temporary
   ld a,[roll_x]
   ldh [hmsprXLo],a
+  ld a,[roll_z]
+  ld b,a
+  or a
+  rra
+  add b
+  and $F0
+  swap a
+  ld b,a
   ld a,[roll_y]
+  sub b
   ldh [hmsprYLo],a
+
+  ; Decide based on facing and frame list which cell to show
   ld a,[cursor_facing]
   ld de,Libbet_facing_to_frame
   call de_index_a
   ld a,l
   ldh [hmsprAttr],a
-  ld a,h
+  ld b,h
+  ld a,[roll_frame]
+  ld de,Libbet_framelist
+  call de_index_a
+  ld a,$0F
+  and l
+  add b
   ldh [hmsprFrame],a
   xor a
   ldh [hmsprXHi],a
@@ -237,5 +267,22 @@ draw_player::
   ldh [hmsprSheetID],a
   ldh [hmsprBaseTile],a
   call draw_metasprite
+
+  ; If high enough, draw a shadow for depth
+  ld a,[roll_z]
+  cp 8
+  jr c,.no_shadow
+    ld a,42
+    ldh [hmsprFrame],a
+    ld a,[roll_x]
+    ldh [hmsprXLo],a
+    ld a,[roll_y]
+    ldh [hmsprYLo],a
+    xor a
+    ldh [hmsprXHi],a
+    ldh [hmsprYHi],a
+    call draw_metasprite
+
+  .no_shadow:
 
   ret

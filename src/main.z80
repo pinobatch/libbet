@@ -40,7 +40,6 @@ another_floor:
   xor a
   ld [cur_score],a
   call place_exit
-  call init_player_pos
 
   call lcd_off
 
@@ -51,6 +50,7 @@ another_floor:
   call memset
   call draw_whole_floor
   call cursor_to_home
+  call init_player_pos
   call draw_floor_border
   call prepare_exit_door
   call write_hDrawCell
@@ -65,6 +65,7 @@ another_floor:
   ldh [rLCDC],a
 
 forever:
+  call move_player_anim
   xor a
   ld [oam_used],a
   call draw_player
@@ -77,29 +78,32 @@ forever:
 
   call read_pad
 
-  ; Sitting on a dead end after last move?
-  call floor_read_at_cursor
-  bit 2,a
-  jr z,.not_on_deadend
-    set 3,a
-    call prepare_hDrawCell
-    call cursor_to_home
-    jr .notmove
-  .not_on_deadend:
-
+  ; this will have to be converted to a "dirty" queue
   call check_exit_pct
   jr nc,.exit_not_opened
     call prepare_exit_door
-    jr .notmove
+    jr .not_begin_move
   .exit_not_opened:
 
   call player_can_start_roll
-  jr z,.notmove
+  jr z,.not_begin_move
+
+    ; Sitting on a dead end after last move?
+    call floor_read_at_cursor
+    bit 2,a
+    jr z,.not_on_deadend
+      set 3,a
+      call prepare_hDrawCell
+      call cursor_to_home
+      call init_player_pos
+      jr .not_begin_move
+    .not_on_deadend:
+
     call try_move
     ld a,[cursor_y]
     inc a
     jp z,another_floor
-  .notmove:
+  .not_begin_move:
 
   if SELECT_RESTARTS
   ld a,[new_keys]
@@ -110,7 +114,7 @@ forever:
   jp forever
 
 try_move:
-  ld a,[new_keys]
+  ld a,[cur_keys]
   ld b,a
   and PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
   ret z
@@ -133,7 +137,6 @@ try_move:
   ld a,c
   call is_valid_move
   pop bc
-
   jr c,.have_valid_move
 
     ; Check whether it's a roll up from the top row
@@ -149,6 +152,14 @@ try_move:
     ld [cursor_y],a
     ret
   .have_valid_move:
+
+  push af
+  push hl
+  push de
+  call player_start_roll
+  pop de
+  pop hl
+  pop af
 
   ; A: 1 for color change (possibly scoring); 0 for not
   ; C: move attempted; E[5:3]: new Y; E[2:0]: new X;
