@@ -1,0 +1,237 @@
+include "src/hardware.inc"
+include "src/global.inc"
+
+section "rollingstate", WRAM0
+
+roll_dx: ds 1
+roll_x: ds 1
+roll_dy: ds 1
+roll_y: ds 1
+roll_dz: ds 1
+roll_z: ds 1
+roll_frame: ds 1
+roll_frame_cd: ds 1
+cursor_facing:: ds 1
+
+section "rolling", ROM0
+
+FRLB_MOVE     equ 4
+FRLB_JUMP     equ 5
+FRLB_READY    equ 6
+FRLB_KEEPROLL equ 7
+FRLF_MOVE     equ %00010000
+FRLF_JUMP     equ %00100000
+FRLF_READY    equ %01000000
+FRLF_KEEPROLL equ %10000000
+FRHB_LAST     equ 7
+FRHF_LAST     equ %10000000
+
+framelist:
+  ; 7654 3210  Byte 0
+  ; |||| ++++- Cel ID
+  ; |||+------ Move on this frame
+  ; ||+------- Set roll_dz at start of this frame
+  ; |+-------- A move beginning with a tuck can begin here
+  ; +--------- A continued roll can begin here
+  ; 7654 3210  Byte 1
+  ; ||++-++++- Duration
+  ; |+-------- Unknown
+  ; +--------- Return to 0 after this frame expires
+
+  ; 0: Still
+  db 0|FRLF_READY, 30|FRHF_LAST
+frame_roll_begin:
+  ; 1: Tuck toward rolling
+  db 1, 2
+frame_roll_continue:
+  ; 2-9: Roll toward X
+  db 2|FRLF_MOVE, 2
+  db 3|FRLF_MOVE, 2
+  db 4|FRLF_MOVE, 2
+  db 5|FRLF_MOVE, 2
+  db 6|FRLF_MOVE, 2
+  db 7|FRLF_MOVE, 2
+  db 8|FRLF_MOVE, 2
+  db 9|FRLF_MOVE, 2
+  ; 10: Untuck after roll
+  db 2|FRLF_READY|FRLF_KEEPROLL, 30
+  db 1|FRLF_READY|FRLF_KEEPROLL, 4|FRHF_LAST
+frame_jump_begin:
+  ; 12: Jump
+  db 1|FRLF_MOVE, 2
+  db 10|FRLF_MOVE|FRLF_JUMP, 3
+  db 11|FRLF_MOVE, 8
+  db 12|FRLF_MOVE, 8
+  db 13|FRLF_MOVE, 7
+  db 8|FRLF_MOVE, 2
+  db 9|FRLF_MOVE, 2
+  ; 19: Untuck after jump
+  db 2|FRLF_READY|FRLF_KEEPROLL, 30
+  db 1|FRLF_READY|FRLF_KEEPROLL, 4|FRHF_LAST
+
+Libbet_facing_to_frame:
+  dw $0E00, $0E20, $1C00, $0000
+
+init_player_pos::
+  xor a
+  ld [roll_frame_cd],a
+  ld [roll_frame],a
+  ld a,2
+  ld [cursor_facing],a
+  ; fall through
+
+set_roll_start_pos:
+  ld a,[cursor_y]
+  swap a
+  ld b,a
+  ld a,[floor_height]
+  cp 8
+  cpl  ; 2: FD+C; 4: FB+C; 6: F9+C; 7: F8+C; 8: F7+NC
+  adc 9  ; 2: 7; 4: 5; 6: 3; 7: 2; 8: 0
+  add a
+  add a
+  add a
+  add b
+  add 12
+  ld [roll_y],a
+
+  ld a,[cursor_x]
+  swap a
+  ld b,a
+  ld a,[floor_width]
+  cpl  ; 2: FD; 4: FB; 6: F9; 8: F7
+  add 9  ; 2: 6; 4: 4; 6: 2; 7: 1; 8: 0
+  add a
+  add a
+  add a
+  add b
+  add 24
+  ld [roll_x],a
+
+  xor a
+  ld [roll_dx],a
+  ld [roll_dy],a
+  ld [roll_dz],a
+  ld [roll_z],a
+  ret
+
+;;
+; @param C roll direction
+; @return CF set if moved
+player_start_roll:
+  ; See if the current frame allows another move
+  ld a,[roll_frame]
+  ld de,movedirs
+  call de_index_a
+  or a
+  bit FRLB_READY,l
+  ret z
+
+  call set_roll_start_pos
+
+  ; Decide which frame sequence to use
+  ld a,(frame_jump_begin - framelist)/2
+  bit MOVEB_JUMP,c
+  jr nz,.have_frame
+  ld a,(frame_roll_continue - framelist)/2
+  bit MOVEB_JUMP,l
+  jr nz,.have_frame
+  dec a
+.have_frame:
+  ld [roll_frame],a
+  ld de,framelist
+  call de_index_a
+  ld l,a
+  add a
+  ld [roll_frame_cd],a
+  scf
+  ret
+
+move_player:
+  ld a,[roll_frame]
+  ld de,framelist
+  call de_index_a
+  ; B: remaining duration
+  ; L: move on this frame
+  ; H: reset on zero
+
+  ; Actual movement is at 30 fps
+  ld a,[roll_frame_cd]
+  ld b,a
+  bit 0,b
+  jr z,.no_move
+  bit FRLB_MOVE,l
+  jr z,.no_move
+    ld a,[roll_dx]
+    ld c,a
+    ld a,[roll_x]
+    add c
+    ld [roll_x],a
+    ld a,[roll_dy]
+    ld c,a
+    ld a,[roll_y]
+    add c
+    ld [roll_y],a
+
+    ; Gravity
+    ld a,[roll_dz]
+    dec a
+    ld [roll_dz],a
+    ld c,a
+    ld a,[roll_z]
+    add c
+    ; If bit 7 is set, has landed
+    bit 7,a
+    jr z,.no_land
+      xor a
+      ld [roll_dz],a
+    .no_land:
+    ld [roll_z],a
+  .no_move:
+
+  ld a,b
+  dec a
+  jr nz,.not_new_frame
+    xor a
+    bit FRHB_LAST,h
+    jr nz,.is_last_frame
+      ld a,[roll_frame]
+      inc a
+    .is_last_frame:
+    ld [roll_frame],a
+
+    ; Jump if requested
+    bit FRLB_JUMP,l
+    jr z,.no_jump
+      ld a,11
+      ld [roll_dz],a
+    .no_jump:
+
+    ; Set duration of this frame
+    ld l,a
+    add a
+  .not_new_frame:
+  ld [roll_frame_cd],a
+
+draw_player::
+  call set_roll_start_pos  ; this is temporary
+  ld a,[roll_x]
+  ldh [hmsprXLo],a
+  ld a,[roll_y]
+  ldh [hmsprYLo],a
+  ld a,[cursor_facing]
+  ld de,Libbet_facing_to_frame
+  call de_index_a
+  ld a,l
+  ldh [hmsprAttr],a
+  ld a,h
+  ldh [hmsprFrame],a
+  xor a
+  ldh [hmsprXHi],a
+  ldh [hmsprYHi],a
+  ld a,$00
+  ldh [hmsprSheetID],a
+  ldh [hmsprBaseTile],a
+  call draw_metasprite
+
+  ret
