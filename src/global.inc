@@ -42,8 +42,23 @@ MOVEB_JUMP      equ 2
 MOVEF_JUMP      equ %00000100
 MOVEF_DIRECTION equ %00000011
 
+; 1: show dead ends when map starts
+; 0: hide dead ends until entered (release)
 SHOW_UNENTERED_DEADENDS equ 0
+
+; 1: Select button restarts this level; 0: disable (release)
 SELECT_RESTARTS equ 0
+
+; 1: require score>area, half reachable, and 2 back row reachable
+;    (release)
+; 0: require only score>area
+USE_PINO_CONSTRAINTS equ 1
+
+; 1: use time-based seed (release); 0: use fixed seed
+RANDOMIZE_SEED equ 1
+
+; $0604: 4w x 6h, 0: size by level (release
+FORCE_FLOOR_SIZE equ 0
 
   ENDC
 

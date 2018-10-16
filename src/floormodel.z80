@@ -526,6 +526,7 @@ make_good_floor::
   call make_shuffled_floor
   call find_reachable
 
+if USE_PINO_CONSTRAINTS
   ; Dead ends count (in C) must be no more than half the floor's area
   ld a,c
   add a
@@ -539,6 +540,7 @@ make_good_floor::
   call count_top_row_reachable
   cp 2
   jr c,make_good_floor
+endc
 
   ; Score must be at least the area
   call count_max_score
@@ -573,13 +575,12 @@ find_exit_cell:
   ; A time space tradeoff is possible.  For 2 bytes, we can
   ; skip the redundant test of x[0] for odd widths.
   ; jr c,.test2n1
-
   .test2n:
     ; test x[2n]
     ld e,a  ; DE = X
     ld hl,floor_map
     add hl,de
-    bit FLOORF_DEADEND,[hl]
+    bit FLOORB_DEADEND,[hl]
     ret z
 
     ; move to x[2n+1]
@@ -641,9 +642,8 @@ check_exitable_cell::
 
   ; Either the height must be 8...
   ld a,[floor_height]
-  cp 8
-  scf
-  ret nc
+  add -8  ; CF clear 0-7, set 8+
+  ret c
   ; or Libbet must be horizontally aligned with the door
   ld a,[exit_x]
   ld b,a

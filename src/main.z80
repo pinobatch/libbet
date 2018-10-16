@@ -1,6 +1,9 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
+section "mainvars", WRAM0
+cur_level: ds 1
+
 section "main", ROM0
 
 timer_handler::
@@ -29,21 +32,36 @@ main::
   ld bc,2
   call srand
   call run_dma  ; shut up BGB
+  xor a
+  ld [cur_level],a
 
 another_floor:
+  if RANDOMIZE_SEED
+  call rand
+  ld a,[nmis]
+  xor b
+  ld b,a
+  call srand
+  endc
+
   ; Generate the floor
-  ld a,6
+  ld a,[cur_level]
+  ld de,level_floor_sizes
+  call de_index_a
+  if FORCE_FLOOR_SIZE
+  ld hl,FORCE_FLOOR_SIZE
+  endc
+  ld a,l
   ld [floor_width],a
-  ld a,4
+  ld a,h
   ld [floor_height],a
   call make_good_floor
   xor a
   ld [cur_score],a
   call place_exit
 
-  call lcd_off
-
   ; Clear the map
+  call lcd_off
   ld de,_SCRN0
   ld bc,32*16
   ld h,$6F  ; background tile
@@ -92,7 +110,7 @@ forever:
     ; cursor Y = 255 means Libbet is on the exit door
     ld a,[cursor_y]
     inc a
-    jp z,another_floor
+    jr z,.next_floor
 
     ; Sitting on a dead end after last move?
     call floor_read_at_cursor
@@ -115,6 +133,14 @@ forever:
   endc
 
   jp forever
+
+.next_floor:
+  ld a,[cur_level]
+  inc a
+  cp (level_floor_sizes_end - level_floor_sizes) / 2
+  jp nc,main
+  ld [cur_level],a
+  jp another_floor
 
 try_move:
   ld a,[cur_keys]
@@ -151,7 +177,6 @@ try_move:
     ret nc
 
     ; Mark the level as exited
-    ld b,b
     ld c,2
     call player_start_roll
     ld a,$FF
@@ -219,3 +244,11 @@ try_move:
 
 Libbet_pb16:
   incbin "obj/gb/Libbet.chrgb.pb16"
+
+level_floor_sizes:
+  db 2, 8
+  db 4, 4
+  db 6, 4
+  db 6, 6
+  db 8, 6
+level_floor_sizes_end:

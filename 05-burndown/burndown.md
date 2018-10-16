@@ -1,6 +1,6 @@
 0.01 tasks
 
-- Sequence of map sizes
+- None left
 
 0.02 tasks
 
