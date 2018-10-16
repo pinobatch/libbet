@@ -115,8 +115,8 @@ pages_end:
 page1txt:
  db "Libbet and the M. F.",LF
  db LF
- db $82," 2002, 2016 Martin Korth",LF
- db $82," 2016 Damian Yerrick",LF
+ db $82," 2002, 2012 Martin Korth",LF
+ db $82," 2018 Damian Yerrick",LF
  db LF
  db "One day, Libbet was",LF
  db "rearranging her basement",LF
