@@ -26,7 +26,7 @@ FRLF_KEEPROLL equ %10000000
 FRHB_LAST     equ 7
 FRHF_LAST     equ %10000000
 
-framelist:
+Libbet_framelist:
   ; 7654 3210  Byte 0
   ; |||| ++++- Cel ID
   ; |||+------ Move on this frame
@@ -116,30 +116,34 @@ set_roll_start_pos:
   ret
 
 ;;
-; @param C roll direction
-; @return CF set if moved
-player_start_roll:
-  ; See if the current frame allows another move
+; Set Z based on whether the animation is at a stopping point.
+; @return ZF set for busy; clear for ok
+; ADE clobbered; HL set to current frame's data
+player_can_start_roll::
   ld a,[roll_frame]
-  ld de,movedirs
+  ld de,Libbet_framelist
   call de_index_a
-  or a
   bit FRLB_READY,l
-  ret z
+  ret
 
+;;
+; @param C roll direction
+; @param cursor_x starting X position
+; @param cursor_y starting Y position
+player_start_roll::
   call set_roll_start_pos
 
   ; Decide which frame sequence to use
-  ld a,(frame_jump_begin - framelist)/2
+  ld a,(frame_jump_begin - Libbet_framelist)/2
   bit MOVEB_JUMP,c
   jr nz,.have_frame
-  ld a,(frame_roll_continue - framelist)/2
+  ld a,(frame_roll_continue - Libbet_framelist)/2
   bit MOVEB_JUMP,l
   jr nz,.have_frame
   dec a
 .have_frame:
   ld [roll_frame],a
-  ld de,framelist
+  ld de,Libbet_framelist
   call de_index_a
   ld l,a
   add a
@@ -147,9 +151,9 @@ player_start_roll:
   scf
   ret
 
-move_player:
+move_player_anim::
   ld a,[roll_frame]
-  ld de,framelist
+  ld de,Libbet_framelist
   call de_index_a
   ; B: remaining duration
   ; L: move on this frame

@@ -93,96 +93,112 @@ forever:
     jr .notmove
   .exit_not_opened:
 
-  ld a,[new_keys]
-  ld b,a
-  and PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
-  jr z, .notmove
-    ld c,$FF
-    swap a
-    .ctzloop:
-      inc c
-      rra
-      jr nc,.ctzloop
-    ld a,c
-    ld [cursor_facing],a  ; Face the pressed direction
-    ld a,[cur_keys]
-    bit PADB_A,a  ; key A
-    jr z,.notjump
-      set 2,c  ; mark
-    .notjump:
-    push bc
-    ld a,c
-    call is_valid_move
-    pop bc
-    jr c,.is_valid_move
-
-      ; Check whether it's a roll up from the top row
-      ; while the exit is open
-      ld a,2  ; roll up
-      xor c
-      jr nz,.notmove
-      call check_exitable_cell
-      jr nc,.notmove
-      jp another_floor
-    .is_valid_move:
-    ; A: 1 for color change (possibly scoring); 0 for not
-    ; C: move attempted; E[5:3]: new Y; E[2:0]: new X;
-    ; HL: pointer to destination cell
-    or a
-    jr z,.move_to_cell_e
-      push de
-      push hl
-
-      ; Get which track bit corresponds to this move ID
-      ld a,c
-      and $03
-      ld b,a
-      inc b
-      ld a,$08
-      .shlloop:
-        rla
-        dec b
-        jr nz,.shlloop
-      ld b,a
-
-      ; See if that track bit is set
-      call floor_read_at_cursor
-      ld a,[hl]
-      cpl
-      and b
-      jr z,.already_have_track_bit
-        or [hl]
-        ld [hl],a
-        ld hl,cur_score
-        inc [hl]
-        call prepare_hDrawCell
-        call prepare_pctage
-      .already_have_track_bit:
-
-      pop hl
-      pop de
-
-      ; Mark as entered
-      set 3,[hl]
-    .move_to_cell_e:
-    ld a,e
-    rra
-    rra
-    rra
-    and $07
-    ld [cursor_y],a
-    ld a,e
-    and $07
-    ld [cursor_x],a
+  call player_can_start_roll
+  jr z,.notmove
+    call try_move
+    ld a,[cursor_y]
+    inc a
+    jp z,another_floor
   .notmove:
 
   if SELECT_RESTARTS
   ld a,[new_keys]
   bit PADB_SELECT, a
-  jp nz,another
+  jp nz,another_floor
   endc
 
   jp forever
+
+try_move:
+  ld a,[new_keys]
+  ld b,a
+  and PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
+  ret z
+
+  ld c,$FF
+  swap a
+  .ctzloop:
+    inc c
+    rra
+    jr nc,.ctzloop
+  ld a,c
+  ld [cursor_facing],a  ; Face the pressed direction
+
+  ld a,[cur_keys]
+  bit PADB_A,a  ; key A
+  jr z,.notjump
+    set 2,c  ; mark
+  .notjump:
+  push bc
+  ld a,c
+  call is_valid_move
+  pop bc
+
+  jr c,.have_valid_move
+
+    ; Check whether it's a roll up from the top row
+    ; while the exit is open
+    ld a,2  ; roll up
+    xor c
+    ret nz
+    call check_exitable_cell
+    ret nc
+
+    ; Mark the level as exited
+    ld a,$FF
+    ld [cursor_y],a
+    ret
+  .have_valid_move:
+
+  ; A: 1 for color change (possibly scoring); 0 for not
+  ; C: move attempted; E[5:3]: new Y; E[2:0]: new X;
+  ; HL: pointer to destination cell
+  or a
+  jr z,.move_to_cell_e
+    push de
+    push hl
+
+    ; Get which track bit corresponds to this move ID
+    ld a,c
+    and $03
+     ld b,a
+    inc b
+    ld a,$08
+    .shlloop:
+      rla
+      dec b
+      jr nz,.shlloop
+    ld b,a
+
+    ; See if that track bit is set
+    call floor_read_at_cursor
+    ld a,[hl]
+    cpl
+    and b
+    jr z,.already_have_track_bit
+      or [hl]
+      ld [hl],a
+      ld hl,cur_score
+      inc [hl]
+      call prepare_hDrawCell
+      call prepare_pctage
+    .already_have_track_bit:
+    pop hl
+    pop de
+
+    ; Mark as entered
+    set 3,[hl]
+  .move_to_cell_e:
+  ld a,e
+  rra
+  rra
+  rra
+  and $07
+  ld [cursor_y],a
+  ld a,e
+  and $07
+  ld [cursor_x],a
+  ret
 
 Libbet_pb16:
   incbin "obj/gb/Libbet.chrgb.pb16"
