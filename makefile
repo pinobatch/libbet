@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 #
-# Makefile for Libbet's game
+# Makefile for Libbet and the Magic Floor
 # Copyright 2014-2018 Damian Yerrick
 #
 # Copying and distribution of this file, with or without
@@ -11,7 +11,7 @@
 
 # Used in the title of the zipfile and .gb executable
 title:=libbet
-version:=wip
+version:=0.01
 
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
