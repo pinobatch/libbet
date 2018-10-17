@@ -122,7 +122,7 @@ pages_end:
 page1txt:
  db "Libbet and the",LF
  db "Magic Floor",LF
- db "v0.01 (2018-10-06)",LF
+ db "v0.01 (2018-10-16)",LF
  db LF
  db $82," 2002, 2012 Martin Korth",LF
  db $82," 2018 Damian Yerrick",LF

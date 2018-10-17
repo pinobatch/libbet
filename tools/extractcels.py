@@ -376,24 +376,45 @@ def gbtilestoim(tiles):
     im.putpalette(previewpalette)
     return im
 
-def emit_frames(framestrips, nt, framenames):
+def pack_frames(framestrips, nt):
     ntoffset = 0
-    out = [" dw mspr_" + n for n  in framenames]
-    for framename, strips in zip(framenames, framestrips):
-        out.append("mspr_%s:" % framename)
+    out = []
+    for strips in framestrips:
+        strip = []
         for palette, tiles, x, y in strips:
             ntiles = len(tiles)
-            y += 128
-            x += 128
-            palette |= (ntiles - 1) << 5
             ntend = ntoffset + ntiles
-            tiles = ",".join(
-                "$%02x" % (((x & 0x6000) >> 7) | (x & 0x3F))
+            b = bytearray([y + 128, x + 128, palette | ((ntiles - 1) << 5)])
+            b.extend(
+                ((x & 0x6000) >> 7) | (x & 0x3F)
                 for x in nt[ntoffset:ntend]
             )
             ntoffset = ntend
-            out.append(" db %3d,%3d,$%02x,%s" % (y, x, palette, tiles))
-        out.append(" db 0\n")
+            strip.append(bytes(b))
+        strip.append(b"\x00")
+        out.append(strip)
+    return out
+
+def emit_frames(framestrips, nt, framenames):
+    out = [" dw mspr_" + n for n in framenames]
+    ntoffset = 0
+    packed = pack_frames(framestrips, nt)
+
+    # Consider only unique framedefs
+    allframedefs = OrderedDict()
+    for framename, framedef in zip(framenames, packed):
+        joineddef = b"".join(framedef)
+        if joineddef not in allframedefs:
+            allframedefs[joineddef] = ([], framedef)
+        allframedefs[joineddef][0].append(framename)
+
+    for thisframenames, framedef in allframedefs.values():
+        out.extend("mspr_%s:" % framename for framename in thisframenames)
+        out.extend(
+            " db " + ",".join("$%02x" % b for b in strip)
+            for strip in framedef
+        )
+
     out.extend("FRAME_%s equ %d" % (n, i) for i, n in enumerate(framenames))
     out.extend(" global FRAME_%s" % (n,) for n in framenames)
     return "\n".join(out)
@@ -435,13 +456,18 @@ def main(argv=None):
         with open(args.CHRFILE, "wb") as outfp:
             outfp.writelines(utiles)
     if args.ASMFILE:
-        with open(args.ASMFILE, "w") as outfp:
-            outfp.write(emit_frames(framestrips, nt, list(doc.frames)))
+        ef = emit_frames(framestrips, nt, list(doc.frames))
+        if args.ASMFILE == '-':
+            sys.stdout.write(ef)
+        else:
+            with open(args.ASMFILE, "w") as outfp:
+                outfp.write(ef)
 
 if __name__=='__main__':
     if "idlelib" in sys.modules and len(sys.argv) < 2:
-        main("""
-extractcels.py Libbet.ec.txt spritesheet-side.png
-""".split())
+        import shlex
+        main(shlex.split("""
+extractcels.py ../tilesets/Libbet.ec ../tilesets/Libbet.png "" -
+"""))
     else:
         main()
