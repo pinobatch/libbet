@@ -79,11 +79,13 @@ do_instructions::
   call read_pad
   ld a,[new_keys]
   ld b,a
-
-  ; Page movement
   ld a,[cursor_x]
   ld c,a
-  bit PADB_RIGHT, b
+
+  ; Page movement
+  ld a,PADF_RIGHT|PADF_A
+  and b
+  ld a,c
   jr z,.notRight
   cp (pages_end-pages)/2-1
   jr nc,.notRight
@@ -101,9 +103,14 @@ do_instructions::
     jp .page
   .notRedraw:
 
-  ld a,[new_keys]
-  and PADF_A|PADF_START
+  bit PADB_START,b
+  ret nz
+  bit PADB_A,b
   jr z,.loop
+  ; A was pressed; return
+  ld a,c
+  cp (pages_end-pages)/2-1
+  jr c,.loop
   ret
 
 section "instructionstxt", ROM0
