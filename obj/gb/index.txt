@@ -1,1 +1,1 @@
-Rooster goes where?
+Files produced by build tools go here. (This file's existence forces the unzip tool to create this folder.)

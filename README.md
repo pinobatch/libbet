@@ -1,11 +1,11 @@
 Libbet and the Magic Floor
-=======================
+==========================
 This is a port of Martin Korth's game _[Magic Floor]_ to the Game Boy
 compact video game system, introducing Libbet the boulder girl.
 
-"One day, Libbet was rearranging her basement when she discovered
+One day, Libbet was rearranging her basement when she discovered
 a passage to an empty hall whose floor had a peculiar pattern.
-She rolled in to investigate."
+She rolled in to investigate.
 
 The floor tiles have four shades. Libbet can roll or jump between
 tiles of the same shade. She can also roll or jump onto the next
@@ -22,7 +22,13 @@ The game is written in assembly language.  Building it from source
 requires [RGBDS], GNU Make, Python 3, and [Pillow] (Python Imaging
 Library).
 
-Free software license pending.
+Legal
+-----
+Copyright 2002, 2012 Martin Korth
+Copyright 2018 Damian Yerrick
+
+This program is free software.  Permission is granted to use it
+subject to the terms of the zlib License.  See the file `LICENSE`.
 
 
 [Magic Floor]: https://problemkaputt.de/magicflr.htm

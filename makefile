@@ -41,6 +41,7 @@ all: $(title).gb
 
 clean:
 	-rm obj/gb/*.z80 obj/gb/*.o obj/gb/*.chrgb obj/gb/*.pb16
+	-rm obj/gb/*.chr1
 
 # Packaging
 
@@ -50,14 +51,15 @@ zip: $(title)-$(version).zip
 # The zipfile depends on every file in zip.in, but as a shortcut,
 # mention only files on which the ROM doesn't itself depend.
 $(title)-$(version).zip: zip.in $(title).gb \
-  README.md CHANGES.txt obj/gb/index.txt
+  README.md obj/gb/index.txt
 	$(PY) tools/zipup.py $< $(title)-$(version) -o $@
 	-advzip -z3 $@
 
 # Build zip.in from the list of files in the Git tree
 zip.in: makefile
-	git ls-files | grep -e "^[^.]" > $@
-	echo $(title).gb.png >> $@
+	git ls-files | grep -e "^[^.0]" > $@
+	echo 05-burndown/note_from_nocash.md >> $@
+	echo $(title).gb >> $@
 	echo zip.in >> $@
 
 obj/gb/index.txt: makefile

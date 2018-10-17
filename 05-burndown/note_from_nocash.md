@@ -21,9 +21,9 @@ Once I secured permission, I got to work.
    distinctive enough in both shade and texture for the low-contrast
    monochrome passive-matrix STN LCD of the original Game Boy.
 2. The game's intro mentions "you are a boulder".  Design and animate
-   a "boulder girl" inspired by the pear-shaped Terra-Firmians from
-   _DuckTales_ episode "Earth Quack".  Write a Python tool to read
-   sprites off a sprite sheet.
+   Libbet, a boulder girl inspired by the pear-shaped Terra-Firmians
+   from _DuckTales_ episode "Earth Quack".  Write a Python tool to
+   read cels off a sprite sheet and combine duplicate tiles.
 3. Write a reference implementation of floor generation in Python.
    Add constraints to reject unplayable floors.  To the original,
    which only ensured maximum score >= area, I added three: same
@@ -43,5 +43,6 @@ Once I secured permission, I got to work.
    floor, move a plain boulder on the floor, track score, open a door
    at the far end once score reaches 90 percent of maximum, replace
    the plain boulder with the animated boulder girl, and sequence the
-   floor sizes.  This leaves us two weeks later with a 6502-byte
-   Game Boy game.
+   floor sizes.  Two weeks later, with a 6502-byte Game Boy game in
+   hand, come clean about the title.  But leave Libbet's name in the
+   title because `magic floor game` isn't distinctive in web search.
