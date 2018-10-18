@@ -1,9 +1,6 @@
-0.01 tasks
-
-- None left
-
 0.02 tasks
 
+- White flash fading out after completion
 - Title screen (ask gbdev discord/nesdev forum for ideas)
 - Sound effect engine
 - Scoring based on clear, completion, and perfection

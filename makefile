@@ -17,6 +17,7 @@ version:=0.01
 # (use a backslash to continue on the next line)
 objlist := header init \
   main floorvram floormodel statusbar instructions rolling \
+  fade \
   ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7
 pngfile := tilesets/Sukey.png
 
