@@ -1,0 +1,54 @@
+popslide_test:
+  ; Popslide testing!
+  ld hl,popslide_test_data
+  ld de,popslide_buf
+  ld bc,popslide_test_data_end-popslide_test_data
+  call memcpy
+  jp popslide_blit
+
+;
+; This data was used to test Popslide GB
+;
+popslide_test_data:
+  ; Even length horizontal copies
+  dw _SCRN0+32*1+1
+  db $01, 0
+  db $0C,$0E
+  dw _SCRN0+32*2+1
+  db $01, 0
+  db $0D,$0F
+
+  ; Even length vertical copies
+  dw _SCRN0+32*4+1
+  db $81, 0
+  db $08,$09
+  dw _SCRN0+32*4+2
+  db $81, 0
+  db $0A,$0B
+
+  ; Odd length horizontal copies
+  dw _SCRN0+32*7+1
+  db $02
+  db $DE,$DC,$DC
+  dw _SCRN0+32*8+1
+  db $02
+  db $DF,$DD,$DD
+
+  ; Odd length vertical copy
+  dw _SCRN0+32*6+5
+  db $82
+  db $D1,$D0,$D0
+
+  ; Horizontal run (length 3)
+  dw _SCRN0+32*10+1
+  db $42, $72
+  dw _SCRN0+32*11+1
+  db $42, $73
+
+  ; Vertical run (length 2)
+  dw _SCRN0+32*10+5
+  db $C1, $76
+
+  ; Terminator
+  dw 0
+popslide_test_data_end:

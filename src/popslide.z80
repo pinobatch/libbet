@@ -10,8 +10,16 @@
 ; +1 run: write first byte length+1 times, adding 1 to dst
 ; +32 run: write first byte length+1 times, adding 32 to dst
 
+; Untested: +1 literal even
+; Untested: +1 literal odd
+; Untested: +1 run
+; Untested: +32 literal even
+; Untested: +32 literal odd
+; Untested: +32 run
+
 section "popslide_buf",WRAM0,align[8]
-popslide_buf: ds 192
+popslide_headroom: ds 8
+popslide_buf:: ds 192
 popslide_used:: ds 1
 popslide_sp_save: ds 2
 
@@ -44,10 +52,11 @@ popslide_next_packet:
   pop hl
   bit 7,h
   jr nz,.not_done
+  ; Restore old stack pointer
   ld hl,popslide_sp_save
   ld a,[hl+]
   ld h,[hl]
-  ld a,l
+  ld l,a
   ld sp,hl
   ret
 .not_done:
@@ -72,7 +81,7 @@ popslide_next_packet:
   add a
   add c  ; A = 5 * number of copies
   cpl  ; 255 - 5 * (number of copies)
-  sub 255-low(literal_h_base)
+  sub 255-(low(literal_h_base) + 32 * 5)
   ld c,a
   ld b,high(literal_h_base)
   push bc
@@ -89,7 +98,7 @@ popslide_next_packet:
   ret
 
 .is_v:
-  bit 7,c
+  bit 6,c
   jr nz,.is_run_v
   ; $80-$BF: Literal of length C-127 written vertically
   inc c
@@ -97,7 +106,7 @@ popslide_next_packet:
   jr z,.run_v_not_odd
   ld a,b
   ld [hl],a
-  inc de
+  add hl,de
 .run_v_not_odd:
   res 7,c
   srl c
@@ -109,7 +118,7 @@ popslide_next_packet:
   add a
   sub c  ; A = 7 * number of copies
   cpl  ; 255 - 7 * (number of copies)
-  sub 255-low(literal_v_base)
+  sub 255-(low(literal_h_base) + 32 * 7)
   ld c,a
   ld b,high(literal_v_base)
   push bc
@@ -117,20 +126,14 @@ popslide_next_packet:
 
 .is_run_v:
   ; $C0-$FF: C-191 bytes of value B written vertically
-  ld a,low(run_h_base) + 126
+  ld a,low(run_v_base)
   sub c
   sub c
   ld c,a
   ld a,b
-  ld b,high(run_h_base)
+  ld b,high(run_v_base)
   push bc
   ret
-
-popslide_blit::
-  ld [popslide_sp_save],sp
-  ld sp,popslide_buf
-  ld de,32  ; for vertical packets
-  jp popslide_next_packet
 
 section "popslide_literal_v",ROM0,align[8]
 literal_v_base:
@@ -143,4 +146,11 @@ literal_v_base:
     ld [hl],a
     add hl,de
   endr
+  jp popslide_next_packet
+
+section "popslide",ROM0
+popslide_blit::
+  ld [popslide_sp_save],sp
+  ld sp,popslide_buf
+  ld de,32  ; for vertical packets
   jp popslide_next_packet
