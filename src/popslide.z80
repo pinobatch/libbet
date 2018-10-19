@@ -1,0 +1,146 @@
+; Each packet starts with a 4-byte header:
+; dst low, dst high, count/flags, first byte
+; 
+; The count/flags byte:
+; 7654 3210
+; ||++-++++- Length minus 1
+; |+-------- Type (0: literal; 1: run)
+; +--------- Add (0: 1; 1: 32)
+; 
+; +1 run: write first byte length+1 times, adding 1 to dst
+; +32 run: write first byte length+1 times, adding 32 to dst
+
+section "popslide_buf",WRAM0,align[8]
+popslide_buf: ds 192
+popslide_used:: ds 1
+popslide_sp_save: ds 2
+
+section "popslide_run_h",ROM0,align[6]
+run_h_base:
+  rept 64
+    ld [hl+],a
+  endr
+  jp popslide_next_packet
+
+section "popslide_run_v",ROM0,align[7]
+run_v_base:
+  rept 64
+    ld [hl],a
+    add hl,de
+  endr
+  ld [hl],a
+  jp popslide_next_packet
+
+section "popslide_literal_h",ROM0,align[8]
+literal_h_base::
+  rept 32
+    pop bc
+    ld a,c
+    ld [hl+],a
+    ld a,b
+    ld [hl+],a
+  endr
+popslide_next_packet:
+  pop hl
+  bit 7,h
+  jr nz,.not_done
+  ld hl,popslide_sp_save
+  ld a,[hl+]
+  ld h,[hl]
+  ld a,l
+  ld sp,hl
+  ret
+.not_done:
+  pop bc
+  bit 7,c
+  jr nz,.is_v
+  bit 6,c
+  jr nz,.is_run_h
+
+  ; $00-$3F: Literal of length C+1 written horizontally
+  inc c
+  bit 0,c
+  jr z,.run_h_not_odd
+  ld a,b
+  ld [hl+],a
+.run_h_not_odd:
+  srl c
+  jr z,popslide_next_packet
+
+  ld a,c  ; A = C = number of copies
+  add a
+  add a
+  add c  ; A = 5 * number of copies
+  cpl  ; 255 - 5 * (number of copies)
+  sub 255-low(literal_h_base)
+  ld c,a
+  ld b,high(literal_h_base)
+  push bc
+  ret
+  
+.is_run_h:
+  ; $40-$7F: C-63 bytes of value B written horizontally
+  ld a,low(run_h_base) + 127
+  sub c
+  ld c,a
+  ld a,b
+  ld b,high(run_h_base)
+  push bc
+  ret
+
+.is_v:
+  bit 7,c
+  jr nz,.is_run_v
+  ; $80-$BF: Literal of length C-127 written vertically
+  inc c
+  bit 0,c
+  jr z,.run_v_not_odd
+  ld a,b
+  ld [hl],a
+  inc de
+.run_v_not_odd:
+  res 7,c
+  srl c
+  jr z,popslide_next_packet
+
+  ld a,c  ; A = C = number of copies
+  add a
+  add a
+  add a
+  sub c  ; A = 7 * number of copies
+  cpl  ; 255 - 7 * (number of copies)
+  sub 255-low(literal_v_base)
+  ld c,a
+  ld b,high(literal_v_base)
+  push bc
+  ret
+
+.is_run_v:
+  ; $C0-$FF: C-191 bytes of value B written vertically
+  ld a,low(run_h_base) + 126
+  sub c
+  sub c
+  ld c,a
+  ld a,b
+  ld b,high(run_h_base)
+  push bc
+  ret
+
+popslide_blit::
+  ld [popslide_sp_save],sp
+  ld sp,popslide_buf
+  ld de,32  ; for vertical packets
+  jp popslide_next_packet
+
+section "popslide_literal_v",ROM0,align[8]
+literal_v_base:
+  rept 32
+    pop bc
+    ld a,c
+    ld [hl],a
+    add hl,de
+    ld a,b
+    ld [hl],a
+    add hl,de
+  endr
+  jp popslide_next_packet

@@ -1,9 +1,11 @@
 0.02 tasks
 
-- White flash fading out after completion
+- Popslide updater
+- Arrows appear at 90%
+- White flash fading out after 90% and 100%
 - Title screen (ask gbdev discord/nesdev forum for ideas)
 - Sound effect engine
-- Scoring based on clear, completion, and perfection
+- Overall scoring based on clear, completion, and perfection
 - Delay between entering dead end and going home
 - Design a tutorial for attract mode
 

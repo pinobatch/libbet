@@ -18,7 +18,7 @@ version:=0.01
 objlist := header init \
   main floorvram floormodel statusbar instructions rolling \
   fade \
-  ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7
+  ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 popslide
 pngfile := tilesets/Sukey.png
 
 ifdef COMSPEC
