@@ -1,7 +1,6 @@
 0.02 tasks
 
-- Popslide updater
-- Arrows appear at 90%
+- Draw score with Popslide
 - White flash fading out after 90% and 100%
 - Title screen (ask gbdev discord/nesdev forum for ideas)
 - Sound effect engine

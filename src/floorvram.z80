@@ -462,10 +462,11 @@ draw_floor_border::
 
 prepare_exit_door::
   ; Only maps not taller than 8 cells have an exit door.
-  ; For taller maps, all the top cells are exits.
+  ; For taller maps, all the top cells are exits, and arrows
+  ; at the top indicate that the exit is open.
   ld a,[floor_height]
   cp 8
-  ret nc
+  jr nc,prepare_exit_arrows
 
   ; Door is drawn 2 cells above exit cell
   ld d,0
@@ -519,6 +520,45 @@ prepare_exit_door::
   ld [hl+],a
   add 2
   ld [hl+],a
+  ld a,l
+  ld [popslide_used],a
+  ret
+
+prepare_exit_arrows:
+  ld a,[exit_open]
+  or a
+  ret z
+  ld de,0
+  call goto_tile_e_d
+  ld d,h
+  ld e,l
+  ld hl,popslide_used
+  ld l,[hl]
+
+  ; Draw arrow on left
+  ld a,e
+  sub 2
+  ld [hl+],a
+  ld a,d
+  ld [hl+],a
+  xor a
+  ld [hl+],a
+  ld a,$6E  ; arrow tile
+  ld [hl+],a
+
+  ; Draw arrow on right
+  ld a,[floor_width]
+  add a
+  inc a
+  add e
+  ld [hl+],a
+  ld a,d
+  ld [hl+],a
+  xor a
+  ld [hl+],a
+  ld a,$6E  ; arrow tile
+  ld [hl+],a
+
   ld a,l
   ld [popslide_used],a
   ret

@@ -33,7 +33,6 @@ main::
   call srand
   call run_dma  ; shut up BGB
   xor a
-  inc a ; DEBUG
   ld [cur_level],a
 
 another_floor:
