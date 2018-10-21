@@ -1,0 +1,58 @@
+include "src/hardware.inc"
+
+section "fadewram", WRAM0
+fade_level: ds 1
+fade_dir: ds 1
+fade_bgp:: ds 1
+
+section "fade",ROM0
+fade_in::
+  ld hl,fade_level
+  xor a
+  ld [hl+],a
+  ld [hl],8   ; fade rate: 32 frames to full
+  ret
+
+fade_out::
+  ld hl,fade_level
+  ld a,248
+  ld [hl+],a
+  ld [hl],-8
+  ret
+
+fade_update::
+  ld hl,fade_level
+  ld a,[hl+]
+  ld b,[hl]
+  ld c,a
+  add b
+  ld d,a
+  ; C: old fade level
+  ; B: fade rate
+  ; A, D: new fade level
+  ; If new fade level's sign matches that of fade rate, but
+  ; old fade level's sign does not, there was an overflow.
+  xor b
+  rla
+  jr c,.new_fade_level_is_d
+  ld a,b
+  xor c
+  rla
+  jr nc,.new_fade_level_is_d
+    ; There was an overflow.  Set the level to not bit 7 of the rate
+    ; and the rate to 0.
+    xor a
+    ld [hl],a
+    rl b
+    adc $FF
+    ld d,a
+  .new_fade_level_is_d:
+  dec hl
+  ld [hl],d
+
+  ; TODO: Convert fade level in D to a BGP word
+
+  ; old behavior
+  ld a,%00011011
+  ld [fade_bgp],a
+  ret

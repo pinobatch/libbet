@@ -73,9 +73,8 @@ another_floor:
   call draw_floor_border
   call prepare_exit_door  ; leave exit door in popslide buffer
   call draw_statusbar_tilemap
+  call fade_in
 
-  ld a,%00011011
-  ldh [rBGP],a
   ld a,%00011111
   ldh [rOBP0],a
   ld a,LCDCF_ON|LCDCF_BG9800|LCDCF_BG8800|LCDCF_BGON|LCDCF_OBJON
@@ -88,19 +87,21 @@ forever:
   ld [oam_used],a
   call draw_player
   call lcd_clear_oam
+  call fade_update
 
   call wait_vblank_irq
   call run_dma
   call popslide_terminate_blit
   call write_pctage
-
+  ld a,[fade_bgp]
+  ldh [rBGP],a
 
   call read_pad
 
   call check_exit_pct
   jr nc,.exit_not_opened
     call prepare_exit_door
-    ; TODO: fade
+    call fade_in
   .exit_not_opened:
 
   call player_can_start_roll
@@ -180,7 +181,7 @@ try_move:
     call player_start_roll
     ld a,$FF
     ld [cursor_y],a
-    ret
+    jp fade_out
   .have_valid_move:
 
   push af
@@ -220,7 +221,12 @@ try_move:
       or [hl]
       ld [hl],a
       ld hl,cur_score
-      inc [hl]
+      ld b,[hl]
+      inc b
+      ld [hl],b
+      ld a,[max_score]
+      cp b
+      call z,fade_in
       call prepare_hDrawCell
       call prepare_pctage
     .already_have_track_bit:
