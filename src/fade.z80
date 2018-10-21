@@ -51,8 +51,28 @@ fade_update::
   ld [hl],d
 
   ; TODO: Convert fade level in D to a BGP word
+  ; Bit 1-0: Bit 7-6 of D
+  ; Bit 3-2: Bit 7-6 of 3/4 of D
+  ; Bit 4: Bit 7 of D
+  ld b,b
+  ld a,$C0
+  and d
+  rlca
+  jr nc,.nobit4
+    set 3,a
+  .nobit4:
+  rlca
+  ld b,a
 
-  ; old behavior
-  ld a,%00011011
+  ; Now the 3/4 bit
+  ld a,d
+  or a
+  rra
+  add d
+  rra
+  and $C0
+  swap a
+
+  or b
   ld [fade_bgp],a
   ret
