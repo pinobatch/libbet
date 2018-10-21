@@ -54,7 +54,6 @@ fade_update::
   ; Bit 1-0: Bit 7-6 of D
   ; Bit 3-2: Bit 7-6 of 3/4 of D
   ; Bit 4: Bit 7 of D
-  ld b,b
   ld a,$C0
   and d
   rlca

@@ -5,8 +5,6 @@ section "statusbarbuf",HRAM
 
 hPctOnes: ds 1
 hPctTens:: ds 1
-hScoreOnes: ds 1
-hScoreTens: ds 1
 
 SMALL_DIGIT_BASE equ $D0
 STATUS_SLASH equ $DA
@@ -15,7 +13,7 @@ BIG_DIGIT_BASE equ $DC
 STATUS_PERCENT equ $F0
 
 SMALL_SCORE_POS equ _SCRN0+32*17+14
-PCTAGE_POS equ _SCRN0+32*16+10
+PCTAGE_POS equ _SCRN0+32*16+9
 
 section "load_statusbar", ROM0
 
@@ -53,9 +51,9 @@ draw_statusbar_tilemap::
   call memset_tiny
 
   ld a,STATUS_PERCENT
-  ld [PCTAGE_POS+2],a
+  ld [PCTAGE_POS+3],a
   inc a
-  ld [PCTAGE_POS+34],a
+  ld [PCTAGE_POS+35],a
 
   ld hl,SMALL_SCORE_POS+2
   ld a,STATUS_SLASH
@@ -70,69 +68,98 @@ draw_statusbar_tilemap::
   ; fall through
 
 prepare_pctage::
+  ld hl,popslide_used
+  ld l,[hl]
+
+  ; Write packet header for raw score
+  ld a,low(SMALL_SCORE_POS)
+  ld [hl+],a
+  ld a,high(SMALL_SCORE_POS)
+  ld [hl+],a
+  ld a,1  ; h literal of 2
+  ld [hl+],a
+  inc hl
+
+  ; Convert current score to decimal
   ld a,[cur_score]
-  call bcd8bit
+  call bcd8bit  ; tens in A, ones in C
   or a
   jr nz,.score_more_than_ten
     ld a,STATUS_BLANK-SMALL_DIGIT_BASE
   .score_more_than_ten:
   add SMALL_DIGIT_BASE
-  ldh [hScoreTens],a
+  ld [hl+],a
   ld a,c
   add SMALL_DIGIT_BASE
-  ldh [hScoreOnes],a
+  ld [hl+],a
 
-  ; Convert cur_score/max_score to pctage
+  ; Top line of percentage
+  ld a,low(PCTAGE_POS)
+  ld [hl+],a
+  ld a,high(PCTAGE_POS)
+  ld [hl+],a
+  ld a,2
+  ld [hl+],a
+
+  ; Convert current score to decimal percentage
   ld a,[max_score]
   ld c,a
   ld a,[cur_score]
-  ld b,a
-  call pctdigit
-  add a
-  jr nz,.pctage_tens_nonblank
-    ld a, STATUS_BLANK-BIG_DIGIT_BASE
-  .pctage_tens_nonblank:
-  add BIG_DIGIT_BASE
-  ldh [hPctTens],a
-  call pctdigit
-  add a
-  add BIG_DIGIT_BASE
-  ldh [hPctOnes],a
+  cp c
+  jr c,.not_100percent
+    ld de,BIG_DIGIT_BASE * $101
+    ld a,BIG_DIGIT_BASE + 2
+    jr .have_pctage_tiles_ade
+  .not_100percent:
+    ld b,a
+    call pctdigit
+    add a
+    jr nz,.pctage_tens_nonblank
+      ld a, STATUS_BLANK-BIG_DIGIT_BASE
+    .pctage_tens_nonblank:
+     add BIG_DIGIT_BASE
+    ld d,a
+    push de
+    call pctdigit
+    pop de
+    add a
+    add BIG_DIGIT_BASE
+    ld e,a
+    ld a,STATUS_BLANK
+  .have_pctage_tiles_ade:
 
-  ret
-
-write_pctage::
-  ldh a,[hPctTens]
-  or a
-  jr z,.skip
-  cp STATUS_PERCENT
-  jr nz,.not_hundred_pct
-    ld a,BIG_DIGIT_BASE+2
-    ld [PCTAGE_POS-1],a
-    inc a
-    ld [PCTAGE_POS+31],a
-    ld a,BIG_DIGIT_BASE
-  .not_hundred_pct:
-  ld [PCTAGE_POS],a
+  ld c,a
+  ld [hl+],a
   cp STATUS_BLANK
-  jr z,.pctage_tens_nonblank
-    inc a
-  .pctage_tens_nonblank:
-  ld [PCTAGE_POS+32],a
-  ldh a,[hPctOnes]
-  ld [PCTAGE_POS+1],a
-  inc a
-  ld [PCTAGE_POS+33],a
+  jr z,.hundreds_is_blank
+    inc c
+  .hundreds_is_blank:
+  ld a,d
+  ld [hl+],a
+  cp STATUS_BLANK
+  jr z,.tens_is_blank
+    inc d
+  .tens_is_blank:
+  ld a,e
+  ld [hl+],a
+  inc e
 
-  ldh a,[hScoreTens]
-  ld [SMALL_SCORE_POS],a
-  ldh a,[hScoreOnes]
-  ld [SMALL_SCORE_POS+1],a
+  ; Write bottom row
+  ld a,low(PCTAGE_POS + 32)
+  ld [hl+],a
+  ld a,high(PCTAGE_POS + 32)
+  ld [hl+],a
+  ld a,2
+  ld [hl+],a
+  ld a,c
+  ld [hl+],a
+  ld a,d
+  ld [hl+],a
+  ld a,e
+  ld [hl+],a
 
-  ; Mark this update as applied
-  xor a
-  ldh [hPctTens],a
-.skip:
+  ld a,l
+  ld [popslide_used],a
   ret
 
 section "bigdigits_chr", ROM0, align[3]

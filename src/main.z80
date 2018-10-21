@@ -72,7 +72,7 @@ another_floor:
   call init_player_pos
   call draw_floor_border
   call prepare_exit_door  ; leave exit door in popslide buffer
-  call draw_statusbar_tilemap
+  call draw_statusbar_tilemap  ; leave score in popslide buffer
   call fade_in
 
   ld a,%00011111
@@ -92,7 +92,6 @@ forever:
   call wait_vblank_irq
   call run_dma
   call popslide_terminate_blit
-  call write_pctage
   ld a,[fade_bgp]
   ldh [rBGP],a
 
