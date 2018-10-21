@@ -265,13 +265,29 @@ goto_tile_e_d::
 
 prepare_hDrawCell::
   call goto_tile_at_cursor
-  ld a,h
-  ldh [hDrawCellDstHi],a
+  ld d,h
   ld a,l
-  ldh [hDrawCellDstLo],a
+
+  ; Write first packet header to popslide_buf
+  ld hl,popslide_used
+  ld l,[hl]  ; now points into popslide_buf
+  ld [hl+],a
+  add 32
+  ld e,a
+  ld a,d
+  ld [hl+],a
+  jr nc,.nodewrap
+    inc d
+  .nodewrap:
+  ld a,1
+  ld [hl+],a
+  inc hl
+  push de  ; Stack: bottom half address
 
   ; Find the shape
+  push hl
   call floor_read_at_cursor
+  pop hl
   ld b,a
 
   ; Calculate base tile ID (shades: 0, 4, 8, C; deadends: 40, 44, 48, 4C)
@@ -291,25 +307,24 @@ prepare_hDrawCell::
 
   ; construct 4 corners of tile
   ; E D
-  ; L H
+  ; C A
   ld e,a
   inc a
-  ld l,a
+  ld c,a
   inc a
   ld d,a
   inc a
-  ld h,a
 
   ; Turn on tracks at sides of tiles
   bit 4,b
   jr z,.no_right_track
     set 4,d
-    set 4,h
+    set 4,a
   .no_right_track:
   bit 5,b
   jr z,.no_left_track
     set 4,e
-    set 4,l
+    set 4,c
   .no_left_track:
   bit 6,b
   jr z,.no_up_track
@@ -318,39 +333,30 @@ prepare_hDrawCell::
   .no_up_track:
   bit 7,b
   jr z,.no_down_track
-    set 5,l
-    set 5,h
+    set 5,c
+    set 5,a
   .no_down_track:
-
+  ld b,a
   ld a,e
-  ldh [hDrawCellTL],a
+  ld [hl+],a
   ld a,d
-  ldh [hDrawCellTR],a
-  ld a,l
-  ldh [hDrawCellBL],a
-  ld a,h
-  ldh [hDrawCellBR],a
-  ret
+  ld [hl+],a
 
-write_hDrawCell::
-  ldh a,[hDrawCellDstHi]
-  bit 7,a
-  ret z
-  ld h,a
-  ldh a,[hDrawCellDstLo]
-  ld l,a
-  ld de,32
-  ldh a,[hDrawCellTL]
+  ; Write bottom row
+  pop de
+  ld a,e
   ld [hl+],a
-  ldh a,[hDrawCellTR]
-  ld [hl-],a
-  add hl,de
-  ldh a,[hDrawCellBL]
+  ld a,d
   ld [hl+],a
-  ldh a,[hDrawCellBR]
-  ld [hl],a
-  xor a
-  ldh [hDrawCellDstHi],a
+  ld a,1
+  ld [hl+],a
+  inc hl
+  ld a,c
+  ld [hl+],a
+  ld a,b
+  ld [hl+],a
+  ld a,l
+  ld [popslide_used],a
   ret
 
 ;;
@@ -359,17 +365,21 @@ draw_whole_floor::
   xor a
   .rowloop:
     ld [cursor_y],a
+
+    ; Fill Popslide buffer with a row of cells
     xor a
     .tileloop:
       ld [cursor_x],a
       call prepare_hDrawCell
-      call write_hDrawCell
       ld a,[floor_width]
       ld b,a
       ld a,[cursor_x]
       inc a
       cp b
       jr nz,.tileloop
+    call popslide_terminate_blit
+
+    ; And move to the next row
     ld a,[floor_height]
     ld b,a
     ld a,[cursor_y]
@@ -464,10 +474,23 @@ prepare_exit_door::
   call goto_tile_e_d
   ld de,-32*2
   add hl,de
-  ld a,h
-  ldh [hDrawCellDstHi],a
+  ld d,h
   ld a,l
-  ldh [hDrawCellDstLo],a
+
+  ; Form top row packet
+  ld hl,popslide_used
+  ld l,[hl]
+  ld [hl+],a
+  add 32
+  ld e,a
+  ld a,d
+  ld [hl+],a
+  jr nc,.noewrap
+    inc d
+  .noewrap:
+  ld a,1
+  ld [hl+],a
+  inc hl
 
   ; Closed  Open
   ; 78 7A   7C 7E
@@ -478,11 +501,24 @@ prepare_exit_door::
   jr z,.use_open_tile
     ld a,$7C
   .use_open_tile:
-  ldh [hDrawCellTL],a
-  inc a
-  ldh [hDrawCellBL],a
-  inc a
-  ldh [hDrawCellTR],a
-  inc a
-  ldh [hDrawCellBR],a
+  ld [hl+],a
+  add 2
+  ld [hl+],a
+  dec a
+  ld b,a
+
+  ; Second row
+  ld a,e
+  ld [hl+],a
+  ld a,d
+  ld [hl+],a
+  ld a,1
+  ld [hl+],a
+  inc hl
+  ld a,b
+  ld [hl+],a
+  add 2
+  ld [hl+],a
+  ld a,l
+  ld [popslide_used],a
   ret

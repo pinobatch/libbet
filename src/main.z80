@@ -33,6 +33,7 @@ main::
   call srand
   call run_dma  ; shut up BGB
   xor a
+  inc a ; DEBUG
   ld [cur_level],a
 
 another_floor:
@@ -62,6 +63,7 @@ another_floor:
 
   ; Clear the map
   call lcd_off
+  call popslide_init
   ld de,_SCRN0
   ld bc,32*16
   ld h,$6F  ; background tile
@@ -70,8 +72,7 @@ another_floor:
   call cursor_to_home
   call init_player_pos
   call draw_floor_border
-  call prepare_exit_door
-  call write_hDrawCell
+  call prepare_exit_door  ; leave exit door in popslide buffer
   call draw_statusbar_tilemap
 
   ld a,%00011011
@@ -91,17 +92,16 @@ forever:
 
   call wait_vblank_irq
   call run_dma
-  call write_hDrawCell
+  call popslide_terminate_blit
   call write_pctage
 
 
   call read_pad
 
-  ; this will have to be converted to a "dirty" queue
   call check_exit_pct
   jr nc,.exit_not_opened
     call prepare_exit_door
-    jr .not_begin_move
+    ; TODO: fade
   .exit_not_opened:
 
   call player_can_start_roll
@@ -120,7 +120,7 @@ forever:
       call prepare_hDrawCell
       call cursor_to_home
       call init_player_pos
-      jr .not_begin_move
+      ; TODO: begin roll animation
     .not_on_deadend:
 
     call try_move

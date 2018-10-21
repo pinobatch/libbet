@@ -148,7 +148,27 @@ literal_v_base:
   endr
   jp popslide_next_packet
 
-section "popslide",ROM0
+section "popslide_public",ROM0
+;;
+; Clears the entire Popslide buffer to ensure no uninitialized reads
+popslide_init::
+  ld hl,popslide_buf
+  ld a,l
+  ld [popslide_used],a
+  ld c,low(popslide_used - popslide_buf)
+  xor a
+  jp memset_tiny
+
+popslide_terminate_blit::
+  ld hl,popslide_used
+  ld a,[hl]  ; A = old fill level
+.do_a:
+  ld [hl],low(popslide_buf)  ; Initialize fill level for next transaction
+  ld l,a
+  xor a
+  ld [hl+],a  ; Terminate at old fill level
+  ld [hl],a
+  ; Fall through
 popslide_blit::
   ld [popslide_sp_save],sp
   ld sp,popslide_buf
