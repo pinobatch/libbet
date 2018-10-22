@@ -1,13 +1,8 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-section "floorupdate_hram",HRAM
-hDrawCellDstLo: ds 1
-hDrawCellDstHi:: ds 1
-hDrawCellTL: ds 1
-hDrawCellTR: ds 1
-hDrawCellBL: ds 1
-hDrawCellBR: ds 1
+section "floorupdate_wram",WRAM0
+floor_top_row:: ds 1
 
 section "load_floor_chr",ROM0
 
@@ -220,6 +215,26 @@ floorborder_pb16: incbin "obj/gb/floorborder-h.chrgb.pb16"
 section "floor_tilemap",ROM0
 
 ;;
+; Calculate the top row of the floor.  This is centered in the
+; Game Boy screen, except at height 8 where it's 1 higher than
+; expected because the back wall isn't drawn.
+; Thus for floor heights 2, 3, 4, 5, 6, 7, 8, this is
+; 7, 6, 5, 4, 3, 2, 0.
+
+calc_floor_top_row::
+  ; Calculate which tile row: A = y * 2 + 8 - height
+  ld a,[floor_height]
+  ; don't make room for back wall if already 8 cells tall
+  cp 8
+  jr nz,.notfullht
+    inc a
+  .notfullht:
+  cpl
+  add 9+1  ; A = 9 - height
+  ld [floor_top_row],a
+  ret
+
+;;
 ; Sets HL to the tilemap address of the cursor
 goto_tile_at_cursor:
   ld a,[cursor_y]
@@ -230,18 +245,10 @@ goto_tile_at_cursor:
 
 ;;
 ; Sets HL to the tilemap address of cell (E, D)
-; _SCRN0 + 32 * (y * 2 + 8 - height) + (x * 2 + 10 - width)
+; _SCRN0 + 32 * (y * 2 + top row) + (x * 2 + 10 - width)
 ; BCDE unchanged
 goto_tile_e_d::
-  ; Calculate which tile row: A = y * 2 + 8 - height
-  ld a,[floor_height]
-  ; don't make room for back wall if already 8 cells tall
-  cp 8
-  jr nz,.notfullht
-    inc a
-  .notfullht:
-  cpl
-  add 9+1  ; A = 9 - height
+  ld a,[floor_top_row]
   add d
   add d
 

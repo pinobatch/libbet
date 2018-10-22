@@ -62,11 +62,14 @@ another_floor:
     ld a,h
     ld [floor_height],a
     call make_good_floor
+    call calc_floor_top_row
     jr .have_floor_layout
   .load_attract_floor:
     ld bc,$0404
     ld hl,attract_map
     call make_prefab_floor
+    ld a,2
+    ld [floor_top_row],a
   .have_floor_layout:
 
   xor a

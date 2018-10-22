@@ -85,10 +85,8 @@ set_roll_start_pos:
   ld a,[cursor_y]
   swap a
   ld d,a
-  ld a,[floor_height]
-  cp 8
-  cpl  ; 2: FD+C; 4: FB+C; 6: F9+C; 7: F8+C; 8: F7+NC
-  adc 9  ; 2: 7; 4: 5; 6: 3; 7: 2; 8: 0
+
+  ld a,[floor_top_row]
   add a
   add a
   add a
