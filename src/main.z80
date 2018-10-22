@@ -3,6 +3,7 @@ include "src/global.inc"
 
 section "mainvars", WRAM0
 cur_level: ds 1
+attract_mode: ds 1
 
 section "main", ROM0
 
@@ -18,6 +19,7 @@ main::
   xor a
   ldh [rIF],a  ; Acknowledge any pending IRQs
   ld [nmis],a
+  ld [attract_mode],a
   ei
 
   call do_instructions
@@ -37,25 +39,36 @@ main::
 
 another_floor:
   if RANDOMIZE_SEED
-  call rand
-  ld a,[nmis]
-  xor b
-  ld b,a
-  call srand
+    call rand
+    ld a,[nmis]
+    xor b
+    ld b,a
+    call srand
   endc
 
-  ; Generate the floor
-  ld a,[cur_level]
-  ld de,level_floor_sizes
-  call de_index_a
-  if FORCE_FLOOR_SIZE
-  ld hl,FORCE_FLOOR_SIZE
-  endc
-  ld a,l
-  ld [floor_width],a
-  ld a,h
-  ld [floor_height],a
-  call make_good_floor
+  ld a,[attract_mode]
+  or a
+  jr nz,.load_attract_floor
+
+    ; Generate the floor
+    ld a,[cur_level]
+    ld de,level_floor_sizes
+    call de_index_a
+    if FORCE_FLOOR_SIZE
+      ld hl,FORCE_FLOOR_SIZE
+    endc
+    ld a,l
+    ld [floor_width],a
+    ld a,h
+    ld [floor_height],a
+    call make_good_floor
+    jr .have_floor_layout
+  .load_attract_floor:
+    ld bc,$0404
+    ld hl,attract_map
+    call make_prefab_floor
+  .have_floor_layout:
+
   xor a
   ld [cur_score],a
   call place_exit

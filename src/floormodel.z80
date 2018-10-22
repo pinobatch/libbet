@@ -36,6 +36,7 @@ calc_floor_area::
   ld a,[hl+]
   ld b,a
   ld c,[hl]
+calc_btimesc:
   xor a
   .calcarealoop:
     add c
@@ -68,7 +69,7 @@ make_shuffled_floor::
 
   ; Now shuffle the pattern using an approximation of Fisher-Yates
   ; that doesn't require division
-  ld b,0
+;;  ld b,0  
   ; B: current index; C: area
   .shuffleloop:
     ; Choose an element to swap with B: (B + randrange(16)) % C
@@ -110,6 +111,9 @@ make_shuffled_floor::
     cp c
     jr c,.shuffleloop
 
+; Entry point used by make_prefab_floor
+; At this point, HL points at the last element of the floor
+rowify_floor:
   ld a,[floor_width]
   cp MAX_WIDTH
   jr z,.already_rowified
@@ -652,3 +656,21 @@ check_exitable_cell::
   ret nz
   scf
   ret
+
+;;
+; Loads a predefined floor of width B and height C
+; from address HL.
+make_prefab_floor::
+  ld a,b
+  ld [floor_width],a
+  ld a,c
+  ld [floor_height],a
+  call calc_btimesc
+;  ld b,0
+  ld c,a
+  ld de,floor_map
+  call memcpy
+  dec hl
+  call rowify_floor
+  call find_reachable
+  jp count_max_score
