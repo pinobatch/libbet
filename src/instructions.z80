@@ -459,7 +459,7 @@ attract_script:
   db "onto the next brighter",LF
   db "shade or from white to",LF
   db "black. This leaves a track."
-; b1 a1 a2 b2 b3 d3 d2 c2 c3 a3
+; b1 a1+ a2+ b2+ b3+ d3+ d2 c2+ c3+ a3+
   db AM_L, AM_L, AM_U, AM_R, AM_U, AM_RR, AM_D, AM_L, AM_U, AM_LL
 ; so far: 8/20 (40%)
 
@@ -468,7 +468,7 @@ attract_script:
   db "Tiles with no exits",LF
   db "contain a trap door that",LF
   db "leads to the entrance."
-; a4 b4 d4 (warp to c1) a1 a2 c2 c4 d4 (warp to c1)
+; a4+ b4+ d4+ [c1] a1+ a2[+] c2 c4+ d4 [c1]
   db AM_U, AM_R, AM_RR
   db AM_LL, AM_U, AM_RR, AM_UU, AM_R
 ; result: 13/20 (65%)
@@ -478,12 +478,12 @@ attract_script:
   db "Leave 90 percent of",LF
   db "possible tracks and roll",LF
   db "to the exit at top to win."
-; b1 b3 a3 a4 c4 c3 c1 a1 a2 c2
-  db AM_L, AM_UU, AM_L, AM_U, AM_RR, AM_D, AM_DD, AM_LL, AM_U, AM_RR
-; b2 b1 a1 a2 b2 b3 a3 a4 b4 b2
-  db AM_L, AM_D, AM_L, AM_U, AM_R, AM_U, AM_L, AM_U, AM_R, AM_DD
+; a1 a2 c2 c4 c3+ c1+
+  db AM_LL, AM_U, AM_RR, AM_UU, AM_D, AM_DD
+; b1 b3 a3 a4 a2+ c2 b2+ b1+
+  db AM_L, AM_UU, AM_L, AM_U, AM_DD, AM_RR, AM_L, AM_D
 ; b3 a3 a4 c4 exit
-  db AM_U, AM_L, AM_U, AM_RR, AM_U
+  db AM_UU, AM_L, AM_U, AM_RR, AM_U
 
 ; this gets us to 18/20 (90%)
   db $00
