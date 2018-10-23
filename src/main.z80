@@ -120,6 +120,13 @@ forever:
   ldh [rBGP],a
 
   call read_pad
+  ld a,[attract_mode]
+  or a
+  jr z,.not_attract_startcheck
+    ld a,[new_keys]
+    bit PADB_START,A
+    jp nz,main
+  .not_attract_startcheck:
 
   call check_exit_pct
   jr nc,.exit_not_opened
@@ -133,19 +140,35 @@ forever:
     ; cursor Y = 255 means Libbet is on the exit door
     ld a,[cursor_y]
     inc a
-    jr z,.next_floor
+    jr nz,.not_next_floor
+      ; Exit door in attract mode means return to menu
+      ld a,[attract_mode]
+      or a
+      jr z,.next_floor
+      jp main
+    .not_next_floor:
 
     ; Sitting on a dead end after last move?
     call floor_read_at_cursor
-    bit 2,a
+    bit FLOORB_DEADEND,a
     jr z,.not_on_deadend
-      set 3,a
+      set FLOORB_ENTERED,a
       call prepare_hDrawCell
       call cursor_to_home
       call init_player_pos
       ; TODO: begin roll animation
     .not_on_deadend:
 
+    ld a,[attract_mode]
+    or a
+    jr z,.not_attract_keyread
+      call attract_update
+      bit PADB_START,a
+      jr z, .have_keys
+      jp main
+    .not_attract_keyread:
+      ld a,[cur_keys]
+    .have_keys:
     call try_move
   .not_begin_move:
 
@@ -166,7 +189,6 @@ forever:
   jp another_floor
 
 try_move:
-  ld a,[cur_keys]
   ld b,a
   and PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
   ret z
@@ -180,7 +202,7 @@ try_move:
   ld a,c
   ld [cursor_facing],a  ; Face the pressed direction
 
-  ld a,[cur_keys]
+  ld a,b
   bit PADB_A,a  ; key A
   jr z,.notjump
     set 2,c  ; mark

@@ -2,6 +2,7 @@ include "src/hardware.inc"
 include "src/global.inc"
 
 LF equ $0A
+FF equ $0C
 
 section "instructions", ROM0
 
@@ -164,8 +165,9 @@ STATUS_BLANK equ $DB
 
 section "attractstate", WRAM0
 attract_src_ptr: ds 2
-attract_vwf_tile_id: ds 2
+attract_vwf_tile_id: ds 1
 attract_vwf_x: ds 1  ; X = $FF and tile id < $C0 means a clear is in progress
+
 
 section "attractcode", ROM0
 
@@ -200,15 +202,15 @@ attract_init_vram::
     cp $C0
     jr c,.clrcanvasloop
 
-  ; This confirms that the VWF canvas is working
-  call vwfClearBuf
-  ld b,0
-  ld hl,htp_msg
-  call vwfPuts
-  ld a,$80
-  ld [attract_vwf_tile_id],a
-  call attract_push_vwf_tiles
-
+  ld hl,attract_src_ptr
+  ld a,low(attract_script)
+  ld [hl+],a
+  ld a,high(attract_script)
+  ld [hl+],a
+  ld a,$81
+  ld [hl+],a  ; starting tile id
+  xor a  ; starting pixel within tile
+  ld [hl],a
   ret
 
 ;;
@@ -293,6 +295,70 @@ attract_push_vwf_tiles:
   ld [popslide_used],a
   ret
 
+;;
+; Process one byte of the attract mode script.
+; @return A: move to try
+attract_update::
+  ld a,[attract_vwf_x]
+  inc a
+  jr nz,.not_in_clear
+    xor a
+    ret
+  .not_in_clear:
+
+  ld hl,attract_src_ptr
+  ld a,[hl+]
+  ld h,[hl]
+  ld l,a
+  ld a,[hl+]
+
+  ; What opcode is C?
+  or a
+  jr nz,.not_end
+    ld a,PADF_START
+    ret
+  .not_end:
+
+  ; If not at the end, write back pointer
+  ld c,a
+  ld a,l
+  ld [attract_src_ptr],a
+  ld a,h
+  ld [attract_src_ptr+1],a
+
+  ld a,c
+  cp $09
+  jr nc,.not_direction
+    dec c
+    ld a,c
+    and MOVEF_DIRECTION
+    ld b,a
+    ld a,$10
+    jr z,.nokeyshift
+    .keyshiftloop:
+      rlca
+      dec b
+      jr nz,.keyshiftloop
+    .nokeyshift:
+    bit MOVEB_JUMP,c
+    ret z
+    inc a
+    ret
+  .not_direction:
+
+;;  ld b,b
+  cp $10
+  jr c,.not_letter
+    ; TODO: Process letter
+    xor a
+    ret
+
+  .not_letter:
+  ; TODO: Process LF
+  ; TODO: Process FF (clear screen)
+  xor a
+  ret
+
 section "attractdata", ROM0
 
 attract_map::
@@ -302,8 +368,7 @@ attract_map::
  db 3, 2, 2, 1  ; 1
  ;  a  b  c  d
 
-htp_msg: db "HOW TO PLAY",0
-
+; Attract mode script ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 AM_R equ $01
 AM_L equ $02
@@ -314,23 +379,63 @@ AM_LL equ $06
 AM_UU equ $07
 AM_DD equ $08
 
-attract_moves:
+;;
+; Bytecode format
+; $00: End
+; $01-$08: Move x-1
+; $0A: New line
+; $0C: Clear page
+; $10+: Draw one VWF glyph
+attract_script:
 ; Start at c1
 ; roll/jump on same color:
+  db "The floor tiles have four",LF
+  db "shades. Libbet can roll",LF
+  db "or jump between tiles of",LF
+  db "the same shade."
 ; b1 b3 a3 b3 b1 c1
   db AM_L, AM_UU, AM_L, AM_R, AM_DD, AM_R
+
+; repeat same moves while explaining controls
+  db FF
+  db "To roll, press a direction",LF
+  db "on the Control Pad.",LF
+  db "To jump, hold the A Button",LF
+  db "and press a direction."
+  db AM_L, AM_UU, AM_L, AM_R, AM_DD, AM_R
+
+; so far: 0/20 (0%)
 ; roll/jump on different colors:
+  db FF
+  db "She can also roll or jump",LF
+  db "onto the next brighter",LF
+  db "shade or from white to",LF
+  db "black. This leaves a track."
 ; b1 a1 a2 b2 b3 d3 d2 c2 c3 a3
-  db AM_L, AM_L, AM_U, AM_R, AM_U, AM_RR, AM_D, AM_L, AM_U, AM_DD
+  db AM_L, AM_L, AM_U, AM_R, AM_U, AM_RR, AM_D, AM_L, AM_U, AM_LL
+; so far: 8/20 (40%)
+
 ; dead ends:
+  db FF
+  db "Tiles with no exits",LF
+  db "contain a trap door that",LF
+  db "leads to the entrance."
 ; a4 b4 d4 (warp to c1) a1 a2 c2 c4 d4 (warp to c1)
   db AM_U, AM_R, AM_RR
   db AM_LL, AM_U, AM_RR, AM_UU, AM_R
+; result: 13/20 (65%)
+
 ; finish the job:
+  db FF
+  db "Leave 90 percent of",LF
+  db "possible tracks and roll",LF
+  db "to the exit at top to win."
 ; b1 b3 a3 a4 c4 c3 c1 a1 a2 c2
   db AM_L, AM_UU, AM_L, AM_U, AM_RR, AM_D, AM_DD, AM_LL, AM_U, AM_RR
 ; b2 b1 a1 a2 b2 b3 a3 a4 b4 b2
   db AM_L, AM_D, AM_L, AM_U, AM_R, AM_U, AM_L, AM_U, AM_R, AM_DD
 ; b3 a3 a4 c4 exit
   db AM_U, AM_L, AM_U, AM_RR, AM_U
+
+; this gets us to 18/20 (90%)
   db $00
