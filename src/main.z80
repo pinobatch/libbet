@@ -19,6 +19,7 @@ main::
   xor a
   ldh [rIF],a  ; Acknowledge any pending IRQs
   ld [nmis],a
+;;  ld a,1
   ld [attract_mode],a
   ei
 
@@ -68,7 +69,7 @@ another_floor:
     ld bc,$0404
     ld hl,attract_map
     call make_prefab_floor
-    ld a,2
+    ld a,3
     ld [floor_top_row],a
   .have_floor_layout:
 
@@ -89,6 +90,13 @@ another_floor:
   call draw_floor_border
   call prepare_exit_door  ; leave exit door in popslide buffer
   call draw_statusbar_tilemap  ; leave score in popslide buffer
+
+  ld a,[attract_mode]
+  or a
+  jr z,.not_attract_vram
+    call attract_init_vram
+  .not_attract_vram:
+
   call fade_in
 
   ld a,%00011111

@@ -157,6 +157,144 @@ page3txt:
  db LF
  db "Press Start Button",0
 
+
+; Refactor into attract mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+STATUS_BLANK equ $DB
+
+section "attractstate", WRAM0
+attract_src_ptr: ds 2
+attract_vwf_tile_id: ds 2
+attract_vwf_x: ds 1  ; X = $FF and tile id < $C0 means a clear is in progress
+
+section "attractcode", ROM0
+
+attract_init_vram::
+  ; Extend status bar
+  ld hl,_SCRN0 + 32*12
+  ld a,STATUS_BLANK
+  ld c,32*4
+  call memset_tiny
+
+  ; Set up VWF canvas on extended status bar
+  ld a,$80
+  ld hl,_SCRN0 + 32*12 + 2
+  ld bc,$0410
+  ld de,16
+  .msiloop:
+    push bc
+    call memset_inc
+    pop bc
+    add hl,de
+    dec b
+    jr nz,.msiloop
+
+  ; Clear
+  ld a,$80
+  .clrcanvasloop:
+    ld [attract_vwf_tile_id],a
+    call attract_clear_half_line
+    call popslide_terminate_blit
+    ld a,[attract_vwf_tile_id]
+    add $08
+    cp $C0
+    jr c,.clrcanvasloop
+
+  ; This confirms that the VWF canvas is working
+  call vwfClearBuf
+  ld b,0
+  ld hl,htp_msg
+  call vwfPuts
+  ld a,$80
+  ld [attract_vwf_tile_id],a
+  call attract_push_vwf_tiles
+
+  ret
+
+;;
+; Appends two Popslide packets to fill a line with color 1.
+attract_clear_half_line:
+  ld hl,popslide_used
+  ld l,[hl]
+  ld a,l
+  add 2 * (4 + 64)
+  ld [popslide_used],a
+
+  ; Find the starting pointer
+  ld a,[attract_vwf_tile_id]
+  swap a
+  and $83
+  ld e,a
+  or high(CHRRAM1)
+  ld d,a
+  ld a,e
+  and $80
+  ld e,a
+  call .write_4_tiles
+  ld a,e
+  or $40
+
+;;
+; Private entry: Writes one packet of four color $01 tiles with
+; destination DA to the Popslide packet at HL
+.write_4_tiles:
+  ld [hl+],a
+  ld a,d
+  ld [hl+],a
+  ld a,$3F
+  ld [hl+],a
+  inc hl
+  ld c,32
+  xor a
+  .clrloop:
+    cpl
+    ld [hl+],a
+    cpl
+    ld [hl+],a
+    dec c
+    jr nz,.clrloop
+  ret
+
+;;
+; Writes the current and next VWF tile to the Popslide buffer
+attract_push_vwf_tiles:
+  ld hl,popslide_used
+  ld l,[hl]
+  ld a,[attract_vwf_tile_id]
+  swap a
+  ld c,a
+  ld b,$0F
+  cp $F0  ; If on the last tile of a line, write only one tile
+  jr nc,.only_one_tile
+    ld b,$1F
+  .only_one_tile:
+  and $F0
+  ld [hl+],a  ; header: address low
+  xor c
+  or high(CHRRAM1)
+  ld [hl+],a  ; header: address high
+  ld a,b
+  ld [hl+],a  ; header: length - 1
+  inc l       ; skip unused header byte
+
+  inc b  ; convert to length / 2
+  srl b
+  ld de,lineImgBuf
+  .loop:
+    ld a,$FF
+    ld [hl+],a
+    ld a,[de]
+    inc e
+    ld [hl+],a
+    dec b
+    jr nz,.loop
+
+  ld a,l
+  ld [popslide_used],a
+  ret
+
+section "attractdata", ROM0
+
 attract_map::
  db 3, 0, 0, 1  ; 4
  db 2, 2, 1, 3  ; 3
@@ -164,14 +302,35 @@ attract_map::
  db 3, 2, 2, 1  ; 1
  ;  a  b  c  d
 
+htp_msg: db "HOW TO PLAY",0
+
+
+AM_R equ $01
+AM_L equ $02
+AM_U equ $03
+AM_D equ $04
+AM_RR equ $05
+AM_LL equ $06
+AM_UU equ $07
+AM_DD equ $08
+
 attract_moves:
 ; Start at c1
 ; roll/jump on same color:
 ; b1 b3 a3 b3 b1 c1
+  db AM_L, AM_UU, AM_L, AM_R, AM_DD, AM_R
 ; roll/jump on different colors:
 ; b1 a1 a2 b2 b3 d3 d2 c2 c3 a3
+  db AM_L, AM_L, AM_U, AM_R, AM_U, AM_RR, AM_D, AM_L, AM_U, AM_DD
 ; dead ends:
 ; a4 b4 d4 (warp to c1) a1 a2 c2 c4 d4 (warp to c1)
+  db AM_U, AM_R, AM_RR
+  db AM_LL, AM_U, AM_RR, AM_UU, AM_R
 ; finish the job:
-; b1 b3 a3 a4 c4 c3 c1 a1 a2 c2 b2 b1 a1 a2 b2 b3 a3 a4 b4 b2 b3 a3 a4 c4 exit
-
+; b1 b3 a3 a4 c4 c3 c1 a1 a2 c2
+  db AM_L, AM_UU, AM_L, AM_U, AM_RR, AM_D, AM_DD, AM_LL, AM_U, AM_RR
+; b2 b1 a1 a2 b2 b3 a3 a4 b4 b2
+  db AM_L, AM_D, AM_L, AM_U, AM_R, AM_U, AM_L, AM_U, AM_R, AM_DD
+; b3 a3 a4 c4 exit
+  db AM_U, AM_L, AM_U, AM_RR, AM_U
+  db $00
