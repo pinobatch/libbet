@@ -104,7 +104,8 @@ do_instructions::
     jp .page
   .notRedraw:
 
-  bit PADB_START,b
+  ld a,PADF_START|PADF_SELECT
+  and b
   ret nz
   bit PADB_A,b
   jr z,.loop
@@ -117,13 +118,13 @@ do_instructions::
 section "instructionstxt", ROM0
 
 pages:
- dw page1txt, page2txt, page3txt
+ dw page1txt  ;, page2txt, page3txt
 pages_end:
 
 page1txt:
  db "Libbet and the",LF
  db "Magic Floor",LF
- db "v0.01 (2018-10-16)",LF
+ db "v0.02wip (2018-10-22)",LF
  db LF
  db $82," 2002, 2012 Martin Korth",LF
  db $82," 2018 Damian Yerrick",LF
@@ -134,29 +135,9 @@ page1txt:
  db "passage to an empty",LF
  db "hall whose floor had a",LF
  db "peculiar pattern. She",LF
- db "rolled in to investigate.",0
-page2txt:
- db "The floor tiles have four",LF
- db "shades. Libbet can roll",LF
- db "or jump between tiles of",LF
- db "the same shade.",LF
- db "She can also roll or jump",LF
- db "onto the next brighter",LF
- db "shade or from white to",LF
- db "black. This leaves a track.",LF
- db "Tiles with no exits",LF
- db "contain a trap door that",LF
- db "leads to the entrance.",LF
- db "Leave 90 percent of",LF
- db "possible tracks and roll",LF
- db "to the exit at top to win.",0
-page3txt:
- db "Controls",LF
+ db "rolled in to investigate.",LF
  db LF
- db $86,$87,$85,$84,": Roll",LF
- db "A + ",$86,$87,$85,$84,": Jump",LF
- db LF
- db "Press Start Button",0
+ db "Start: play; Select: demo",0
 
 
 ; Refactor into attract mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -302,6 +283,16 @@ attract_update::
   ld a,[attract_vwf_x]
   inc a
   jr nz,.not_in_clear
+    call attract_clear_half_line
+    ld a,[attract_vwf_tile_id]
+    add 8
+    cp $C0
+    jr c,.clear_have_tile_id
+      ld a,8
+      ld [attract_vwf_x],a
+      ld a,$80
+    .clear_have_tile_id:
+    ld [attract_vwf_tile_id],a
     xor a
     ret
   .not_in_clear:
@@ -312,7 +303,7 @@ attract_update::
   ld l,a
   ld a,[hl+]
 
-  ; What opcode is C?
+  ; If at the end of the script, return a Start press
   or a
   jr nz,.not_end
     ld a,PADF_START
@@ -346,18 +337,75 @@ attract_update::
     ret
   .not_direction:
 
-;;  ld b,b
   cp $10
   jr c,.not_letter
-    ; TODO: Process letter
+    ld a,[attract_vwf_x]
+    ld b,a
+    ld a,c
+    push bc  ; Stack: X and glyph ID
+    call vwfPutTile
+    call attract_push_vwf_tiles
+
+    ; Move pen forward by the glyph's width
+    pop bc
+    ld de,vwfChrWidths-" "
+    ld a,c
+    add e
+    ld e,a
+    jr nc,.gwnowrap
+      inc d
+    .gwnowrap:
+    ld a,[de]
+    add b
+
+    ; See if the pen has entered a new tile
+    ld bc,8
+    cp c
+    jr c,.letter_not_new_tile
+      sub c
+      ; Shift tile buffer left by 8
+      push af
+      ld hl,attract_vwf_tile_id
+      inc [hl]
+      ld hl,lineImgBuf+8
+      ld de,lineImgBuf
+      call memcpy
+      ld c,8
+      ld h,b
+      call memset
+      pop af
+    .letter_not_new_tile:
+    ld [attract_vwf_x],a
+  .not_formfeed:
     xor a
     ret
-
   .not_letter:
-  ; TODO: Process LF
-  ; TODO: Process FF (clear screen)
-  xor a
-  ret
+
+  cp LF
+  jr nz,.not_linefeed
+    ; Move to the next row down
+    ld a,[attract_vwf_tile_id]
+    and $F0
+    add $11
+    ld [attract_vwf_tile_id],a
+    xor a
+    .set_vwf_x_clear_linebuf:
+    ld [attract_vwf_x],a
+
+    ; And clear the relevant part of the line buffer
+    xor a
+    ld c,16
+    ld hl,lineImgBuf
+    jp memset_tiny
+  .not_linefeed:
+
+  cp FF
+  jr nz,.not_formfeed
+    ; Go to screen clearin' mode
+    ld a,$80
+    ld [attract_vwf_tile_id],a
+    ld a,$FF
+    jr .set_vwf_x_clear_linebuf
 
 section "attractdata", ROM0
 

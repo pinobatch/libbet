@@ -1,12 +1,4 @@
-Attract mode tasks
-
-- Make mock screenshots
-- Calculate field top Y once instead of each tile draw
-- Move Libbet automatically in attract mode
-- Display larger status bar for text instead of score
-- Finish the script
-
-0.02 tasks
+0.02: as much as I can pack in before 2018-10-30
 
 - Title screen (ask gbdev discord/nesdev forum for ideas)
 - Sound effect engine

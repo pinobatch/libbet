@@ -19,11 +19,12 @@ main::
   xor a
   ldh [rIF],a  ; Acknowledge any pending IRQs
   ld [nmis],a
-;;  ld a,1
-  ld [attract_mode],a
   ei
 
   call do_instructions
+  ld a,[new_keys]
+  and PADF_SELECT
+  ld [attract_mode],a
 
   call lcd_off
   call load_floor_chr
