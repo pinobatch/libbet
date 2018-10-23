@@ -11,6 +11,7 @@ roll_dz: ds 1
 roll_z: ds 1
 roll_frame: ds 1
 roll_frame_cd: ds 1
+roll_prio: ds 1
 cursor_facing:: ds 1
 
 section "rolling", ROM0
@@ -23,7 +24,9 @@ FRLF_MOVE     equ %00010000
 FRLF_JUMP     equ %00100000
 FRLF_READY    equ %01000000
 FRLF_KEEPROLL equ %10000000
+FRHB_BALLRETURN equ 6
 FRHB_LAST     equ 7
+FRHF_BALLRETURN equ %01000000
 FRHF_LAST     equ %10000000
 
 Libbet_framelist:
@@ -34,9 +37,10 @@ Libbet_framelist:
   ; |+-------- A move beginning with a tuck can begin here
   ; +--------- A continued roll can begin here
   ; 7654 3210  Byte 1
-  ; ||++-++++- Duration
-  ; |+-------- Unknown
-  ; +--------- Return to 0 after this frame expires
+  ; |||+-++++- Duration
+  ; ||+------- Unknown
+  ; |+-------- Launch at home
+  ; +--------- Return to frame 0 after this frame expires
 
   ; 0: Still
   db 0|FRLF_READY, 30|FRHF_LAST
@@ -69,6 +73,10 @@ frame_jump_begin:
   ; 19: Untuck after jump
   db 2|FRLF_READY|FRLF_KEEPROLL, 30
   db 1|FRLF_READY|FRLF_KEEPROLL, 4|FRHF_LAST
+frame_fall_begin:
+  ; 21: Fall in pit
+  db 2, FRHF_BALLRETURN
+
 
 Libbet_facing_to_frame:
   dw $0E00, $0E20, $1C00, $0000
@@ -112,6 +120,7 @@ set_roll_start_pos:
   ld [roll_dy],a
   ld [roll_dz],a
   ld [roll_z],a
+  ld [roll_prio],a
   ret
 
 ;;
@@ -146,11 +155,9 @@ player_start_roll::
   ; Decide which frame sequence to use, based on whether the
   ; requested move is a jump and whether the current frame is
   ; cancelable into poking head up
-if 1
   ld a,[roll_frame]
   ld de,Libbet_framelist
   call de_index_a
-endc
   ld a,(frame_jump_begin - Libbet_framelist)/2
   bit MOVEB_JUMP,c
   jr nz,.have_frame
@@ -167,8 +174,29 @@ endc
   ld [roll_frame_cd],a
   ret
 
+player_start_fall::
+  call set_roll_start_pos
+
+  ; Set initial Z
+  ld a,8*32/3
+  ld [roll_z],a
+  ld a,[roll_y]
+  add 8
+  ld [roll_y],a
+
+  ; Set behind bit
+  ld a,OAMF_PRI
+  ld [roll_prio],a
+
+  ld a,(frame_fall_begin - Libbet_framelist)/2
+  ld [roll_frame],a
+  ld a,11*2
+  ld [roll_frame_cd],a
+  ret
+
 move_player_anim::
   ld a,[roll_frame]
+  cp (frame_fall_begin - Libbet_framelist)/2
   ld de,Libbet_framelist
   call de_index_a
   ; B: remaining duration
@@ -181,7 +209,7 @@ move_player_anim::
   bit 0,b
   jr z,.no_move
   bit FRLB_MOVE,l
-  jr z,.no_move
+  jr z,.no_move_xy
     ld a,[roll_dx]
     ld c,a
     ld a,[roll_x]
@@ -193,16 +221,27 @@ move_player_anim::
     add c
     ld [roll_y],a
 
-    ; Gravity
+  .no_move_xy:
+    ; Apply gravity even if not moving in Z
     ld a,[roll_dz]
     dec a
     ld [roll_dz],a
     ld c,a
     ld a,[roll_z]
     add c
-    ; If bit 7 is set, has landed
-    bit 7,a
-    jr z,.no_land
+    ld e,a
+    sub c
+
+    ; A: Z before addition
+    ; C: Z speed
+    ; E: Z after addition
+    ; If A positive, C negative, and E negative, player has landed
+    cpl
+    and c
+    and e
+    rla  ; If carry set, player has landed
+    ld a,e
+    jr nc,.no_land
       xor a
       ld [roll_dz],a
     .no_land:
@@ -212,12 +251,31 @@ move_player_anim::
   ld a,b
   dec a
   jr nz,.not_new_frame
+    ; Ball return: Go to a Z position above home
+    bit FRHB_BALLRETURN,h
+    jr z,.no_ballreturn
+      call set_roll_start_pos
+      xor a
+      ld [roll_dz],a
+      dec a
+      ld [roll_dy],a
+      ld a,15*32/3
+      ld [roll_z],a
+      ld a,[roll_y]
+      add 16
+      ld [roll_y],a
+      ld a,2
+      ld [cursor_facing],a
+      ld a,(frame_roll_continue - Libbet_framelist)/2
+      jr .inc_have_frame
+    .no_ballreturn:
+
     ; If the last frame, reset to frame A (which is 0)
     bit FRHB_LAST,h
-    jr nz,.is_last_frame
+    jr nz,.inc_have_frame
       ld a,[roll_frame]
       inc a
-    .is_last_frame:
+    .inc_have_frame:
     ld [roll_frame],a
 
     ; Jump if requested
@@ -240,6 +298,7 @@ draw_player::
   ld a,[roll_x]
   ldh [hmsprXLo],a
   ld a,[roll_z]
+  ; Calculate roughly Z + Z/2 / 16, or 3*Z / 32, or roughly Z / 11
   ld b,a
   or a
   rra
@@ -251,11 +310,12 @@ draw_player::
   sub b
   ldh [hmsprYLo],a
 
-  ; Decide based on facing and frame list which cell to show
+  ; Decide based on facing and frame list which cel to show
   ld a,[cursor_facing]
   ld de,Libbet_facing_to_frame
   call de_index_a
-  ld a,l
+  ld a,[roll_prio]
+  or l
   ldh [hmsprAttr],a
   ld b,h
   ld a,[roll_frame]
@@ -273,10 +333,15 @@ draw_player::
   ldh [hmsprBaseTile],a
   call draw_metasprite
 
-  ; If high enough, draw a shadow for depth
-  ld a,[roll_z]
-  cp 8
+  ; If high enough, and not just launched from ball return,
+  ; draw a shadow for depth
+  ld a,[roll_prio]  ; Priority bit means falling in hole so no shadow
+  rla
   jr c,.no_shadow
+  ld a,[roll_z]
+  sub 8
+  cp 80
+  jr nc,.no_shadow
     ld a,42
     ldh [hmsprFrame],a
     ld a,[roll_x]

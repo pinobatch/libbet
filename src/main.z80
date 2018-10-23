@@ -155,9 +155,9 @@ forever:
     jr z,.not_on_deadend
       set FLOORB_ENTERED,a
       call prepare_hDrawCell
+      call player_start_fall
       call cursor_to_home
-      call init_player_pos
-      ; TODO: begin roll animation
+      jr .not_begin_move
     .not_on_deadend:
 
     ld a,[attract_mode]
