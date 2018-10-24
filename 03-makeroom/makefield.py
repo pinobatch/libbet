@@ -160,7 +160,7 @@ Return the count of round trip reachable cells.
 
 # Field statistics ##################################################
 
-def calc_max_score(field):
+def calc_max_score(field, writeback=False):
     score = 0
     for y in range(len(field)):
         for x in range(len(field[0])):
@@ -177,6 +177,8 @@ def calc_max_score(field):
                 # Only unique directions from a tile score.
                 # Both a roll and a hop in the same direction don't.
                 dirs |= 0x10 << (dircode // 2)
+            if writeback:
+                field[y][x] = c | dirs
             while dirs:
                 score += 1
                 dirs &= dirs - 1
@@ -291,5 +293,21 @@ def all_tests():
             lines.append("all: %d%%" % (num_all_ok * 100 / NUM_TRIALS,))
             print("\n  ".join(lines))
 
+# Cheating ##########################################################
+
+testfield = """
+233202
+223221
+330102
+033223
+"""
+def solve(field):
+    field = [bytearray(int(c) for c in row) for row in field.split()]
+    print(field)
+    find_reachable(field)
+    calc_max_score(field, writeback=True)
+    print("\n".join(row.hex() for row in field))
+
 if __name__=='__main__':
-    all_tests()
+##    all_tests()
+    solve(testfield)
