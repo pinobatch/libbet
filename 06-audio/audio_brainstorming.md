@@ -5,8 +5,8 @@ A few NES games use its limited hardware envelope support, such as
 Tengen's _Klax_.  But most games use software volume control instead.
 Thus a sound effect can be described with 2 bytes per frame.
 Pently, an NES audio driver by Damian Yerrick, has used the
-following format for sound effects since 2009 and instrument
-attacks since 2011.
+following format for sound effects and drums since 2009 and
+instrument attacks since 2014.
 
     FEDC BA98 7654 3210
     |||| |||| ||   ++++- Volume
@@ -54,7 +54,7 @@ Deep parameter for pulse or noise controls the envelope.
     ++++------ Starting volume (0: mute; 1-15: linear)
 
 Though frames in the segment header are 59.73 Hz, frames to the
-envelope unit are 64.0 Hz, not 59.7 Hz.  But ideally, listeners
+envelope unit are 64.00 Hz, not 59.73 Hz.  But ideally, listeners
 should not notice the difference.
 
 For sound effects, pitch is an offset in semitones above the lowest
@@ -84,7 +84,7 @@ sample rate of `2^(19 - s) / r` Hz.
 
     7654 3210  Noise pitch parameter
     |||| |+++- Period divider r (1, 2, 4, 6, 8, 10, 12, 14)
-    |||| +---- 0: 32767 steps; 1: 127 steps
+    |||| +---- 0: LFSR 32767 steps; 1: 127 steps
     ++++------ Period prescaler s
 
 Conflicts

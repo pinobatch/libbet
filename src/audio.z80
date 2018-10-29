@@ -1,0 +1,305 @@
+include "src/hardware.inc"
+
+LOG_SIZEOF_CHANNEL equ 3
+NUM_CHANNELS equ 4
+
+; This violates the Don't Repeat Yourself principle but works around
+; strange syntax errors that rgbasm issues for both REPT and EQU
+LOG_SIZEOF_CHANNEL_MINUS_1 equ 2
+
+
+ENVB_DPAR equ 5
+ENVB_PITCH equ 4
+ENVF_QPAR equ $C0
+ENVF_DPAR equ $20
+ENVF_PITCH equ $10
+ENVF_DURATION equ $0F
+
+section "audio_wram", WRAM0, ALIGN[LOG_SIZEOF_CHANNEL]
+audio_channels: ds NUM_CHANNELS << LOG_SIZEOF_CHANNEL
+Channel_envseg_cd = 0
+Channel_envptr = 1
+Channel_envpitch = 3
+
+section "wavebank", ROM0, ALIGN[4]
+wavebank:
+  db $FF,$EE,$DD,$CC,$BB,$AA,$99,$88,$77,$66,$55,$44,$33,$22,$11,$00
+
+sfx_table:
+  db 3, 0
+  dw fx_roll
+  db 0, 0
+  dw fx_jump
+  db 3, 0
+  dw fx_land
+  db 0, 0
+  dw fx_fall
+  db 1, 0
+  dw fx_score
+  db 2, 0
+  dw fx_complete
+
+fx_roll:
+  db $F0
+fx_jump:
+  db ENVF_DPAR|ENVF_PITCH|$80, $59, 45
+  db ENVF_PITCH|$80, 47
+  db ENVF_PITCH|$80, 49
+  db ENVF_DPAR|ENVF_PITCH|$80, $81, 51
+  db ENVF_PITCH|$80, $81, 53
+  db ENVF_PITCH|$80, $81, 55
+  db ENVF_PITCH|$80, $81, 56
+  db ENVF_PITCH|$80, $81, 57
+  db $F0
+fx_land:
+  db ENVF_DPAR|ENVF_PITCH|0, $C1, $34
+  db ENVF_PITCH|1, $5C
+  db $F0
+fx_fall:
+  db $F0
+fx_score:
+  db $F0
+fx_complete:
+  db $F0
+
+section "audioengine", ROM0
+
+; Starting sequences ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+audio_init:
+  ld a,$80
+  ldh [rNR52],a  ; bring audio out of reset
+  ld a,$FF
+  ldh [rNR51],a  ; set panning
+  ld a,$77
+  ldh [rNR50],a
+  xor a
+  ld hl,audio_channels
+  ld c,NUM_CHANNELS << LOG_SIZEOF_CHANNEL
+  jp memset_tiny
+
+audio_play_fx::
+  ld h,high(sfx_table >> 2)
+  add low(sfx_table >> 2)
+  jr nc,.nohlwrap
+    inc h
+  .nohlwrap:
+  ld l,a
+  add hl,hl
+  add hl,hl
+  ld a,[hl+]  ; channel ID
+  inc l
+  ld c,[hl]   ; ptr lo
+  inc l
+  ld b,[hl]   ; ptr hi
+
+  ; Get pointer to channel
+  ld l,a
+  ld h,0
+  rept LOG_SIZEOF_CHANNEL
+    add hl,hl
+  endr
+  ld de,audio_channels+Channel_envseg_cd
+  add hl,de
+
+  xor a  ; begin effect immediately
+  ld [hl+],a
+  ld a,c
+  ld [hl+],a
+  ld a,b
+  ld [hl+],a
+  ret
+
+; Sequence reading ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+audio_update::
+  ld a,0
+  call audio_update_ch_a
+  ld a,1
+  call audio_update_ch_a
+  ld a,2
+  call audio_update_ch_a
+  ld a,3
+
+audio_update_ch_a:
+  ; Get pointer to current position in effect
+  ld l,a
+  ld h,0
+  rept LOG_SIZEOF_CHANNEL
+    add hl,hl
+  endr
+  ld de,audio_channels+Channel_envseg_cd
+  add hl,de
+
+  ; Each segment has a duration in frames.  If this segment's
+  ; duration has not expired, do nothing.
+  ld a,[hl]
+  or a
+  jr z,.read_next_segment
+    dec [hl]
+    ret
+  .read_next_segment:
+
+  inc l
+  ld e,[hl]
+  inc l
+  ld a,[hl-]
+  ld d,a
+  or e
+  ret z  ; address $0000: no playback
+
+  ; HL points at low byte of effect position
+  ; DE = effect pointer
+  ld a,[de]
+  cp $F0
+  jr c,.not_special
+    ; Currently all specials mean stop playback
+    xor a
+    ld [hl+],a
+    ld [hl+],a
+    ld d,a
+    ld bc,ENVF_DPAR << 8
+    jr .call_updater
+  .not_special:
+  inc de
+
+  ; Save this envelope segment's duration
+  ld b,a
+  and ENVF_DURATION
+  dec l
+  ld [hl+],a
+
+  ; Is there a deep parameter?
+  bit ENVB_DPAR,b
+  jr z,.nodeep
+    ld a,[de]
+    inc de
+    ld c,a
+  .nodeep:
+
+  bit ENVB_PITCH,b
+  jr z,.nopitch
+    ld a,[de]
+    inc de
+    inc l
+    inc l
+    ld [hl-],a
+    dec l
+  .nopitch:
+
+  ; Write back envelope position
+  ld [hl],e
+  inc l
+  ld [hl],d
+  inc l
+  ld d,[hl]
+  ; Regmap:
+  ; qparam and flags in b, dparam is valid in c if BIT 5, B
+  ; pitch in d, which changed if BIT 4, B
+
+.call_updater:
+  ; Call the appropriate updater
+  ld a,low($FF << LOG_SIZEOF_CHANNEL) - low(audio_channels)
+  add l  ; A = channel number << LOG_SIZEOF_CHANNEL
+  and low($FF << LOG_SIZEOF_CHANNEL)
+
+  rept LOG_SIZEOF_CHANNEL_MINUS_1
+    rra
+  endr
+  ld hl,channel_writing_jumptable
+  add l
+  jr nc,.nohlwrap
+    inc h
+  .nohlwrap:
+  ld l,a
+  jp hl
+
+; Channel hardware updaters ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+update_noise:
+  ; Noise has no quick parameter.  Change pitch and timbre first
+  ld a,d
+  ldh [rNR43],a
+  ; If no deep parameter, return quickly
+  bit ENVB_DPAR,b
+  ret z
+
+  ; New deep parameter
+  ld a,c
+  ldh [rNR43],a
+  ld a,$80
+  ldh [rNR44],a
+  ret
+
+update_pulse1:
+  ld hl,rNR11
+  jr update_pulse_hl
+update_pulse2:
+  ld hl,rNR21
+update_pulse_hl:
+  ld [hl],b  ; Quick parameter is duty
+  inc l
+  bit ENVB_DPAR,b
+  jr z,.no_new_volume
+    ld [hl],c  ; Deep parameter is volume envelope
+  .no_new_volume:
+  inc l
+set_pitch_hl_to_d:
+  ; Write pitch
+  ld a,d
+  add a
+  ld de,pitch_table
+  add e
+  ld e,a
+  jr nc,.nodewrap
+    inc d
+  .nodewrap:
+  ld a,[de]
+  inc de
+  ld [hl+],a
+  ld a,[de]
+  bit ENVB_DPAR,b
+  jr z,.no_restart_note
+    set 7,a
+  .no_restart_note:
+  ld [hl+],a
+  ret
+
+channel_writing_jumptable:
+  jr update_pulse1
+  jr update_pulse2
+  jr update_wave
+  jr update_noise
+
+update_wave:
+  ; First update volume (quick parameter)
+  ld a,b
+  add $40
+  rra
+  ldh [rNR32],a
+
+  ; Update wave 9
+  bit ENVB_DPAR,b
+  jr z,.no_new_wave
+
+  ; Get address of wave C
+  ld h,high(wavebank >> 4)
+  ld a,low(wavebank >> 4)
+  add c
+  ld l,a
+  add hl,hl
+  add hl,hl
+  add hl,hl
+  add hl,hl
+
+  ; Copy wave
+  WAVEPTR set _AUD3WAVERAM
+  rept 16
+    ld a,[hl+]
+    ldh [WAVEPTR],a
+    WAVEPTR set WAVEPTR+1
+  endr
+
+.no_new_wave:
+  ld hl,rNR33
+  jr set_pitch_hl_to_d

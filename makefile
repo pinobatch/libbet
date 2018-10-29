@@ -17,7 +17,7 @@ version:=0.01
 # (use a backslash to continue on the next line)
 objlist := header init \
   main floorvram floormodel statusbar instructions rolling \
-  fade \
+  fade audio pitchtable \
   ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 popslide
 pngfile := tilesets/Sukey.png
 
@@ -124,3 +124,6 @@ obj/gb/Libbet.chrgb: tools/extractcels.py tilesets/Libbet.ec tilesets/Libbet.png
 
 obj/gb/Libbet.z80: obj/gb/Libbet.chrgb
 	touch $@
+
+obj/gb/pitchtable.z80: tools/pitchtable.py
+	$(PY) $< > $@
