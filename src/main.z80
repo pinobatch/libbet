@@ -22,8 +22,8 @@ main::
   ei
 
   call audio_init
-  ld a,2
-  call audio_play_fx
+;  ld a,7
+;  call audio_play_fx
 
   call do_instructions
   ld a,[new_keys]
@@ -136,6 +136,8 @@ forever:
 
   call check_exit_pct
   jr nc,.exit_not_opened
+    ld a,6
+    call audio_play_fx
     call prepare_exit_door
     call fade_in
   .exit_not_opened:
@@ -162,7 +164,7 @@ forever:
       call prepare_hDrawCell
       call player_start_fall
       ld a,3
-;      call audio_play_fx
+      call audio_play_fx
       call cursor_to_home
       jr .not_begin_move
     .not_on_deadend:
@@ -281,7 +283,11 @@ try_move:
       ld [hl],b
       ld a,[max_score]
       cp b
-      call z,fade_in
+      jr nz,.not_100_percented
+        ld a,6
+        call audio_play_fx
+        call fade_in
+      .not_100_percented:
       call prepare_hDrawCell
       call prepare_pctage
     .already_have_track_bit:

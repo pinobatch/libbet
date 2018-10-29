@@ -49,12 +49,12 @@ fx_roll:
   db ENVF_PITCH|2, $55
   db ENVF_DPAR|ENVF_PITCH|1, $52, $5E
   db ENVF_PITCH|1, $57
-  db $F0
+  db $FF
 fx_rolltojump:
   db ENVF_DPAR|ENVF_PITCH|1, $4A, $5E
   db ENVF_DPAR|ENVF_PITCH|2, $50, $54
   db ENVF_PITCH|2, $25
-  db $F0
+  db $FF
 fx_jump:
   db ENVF_DPAR|ENVF_PITCH|$80, $59, 45
   db ENVF_PITCH|$80, 47
@@ -64,7 +64,7 @@ fx_jump:
   db ENVF_PITCH|$80, 55
   db ENVF_PITCH|$80, 56
   db ENVF_PITCH|$80, 57
-  db $F0
+  db $FF
 fx_land:
   db ENVF_DPAR|ENVF_PITCH|0, $C1, $24
   db ENVF_PITCH|1, $46
@@ -72,17 +72,45 @@ fx_land:
   db ENVF_DPAR|ENVF_PITCH|3, $63, $5D
   db ENVF_PITCH|1, $56
   db ENVF_PITCH|1, $57
-  db $F0
+  db $FF
 fx_fall:
-  db $F0
+  db ENVF_DPAR|ENVF_PITCH|$81, $4A, 57
+  db ENVF_PITCH|$81, 56
+  db ENVF_PITCH|$81, 55
+  db ENVF_PITCH|$81, 54
+  db ENVF_DPAR|ENVF_PITCH|$81, $80, 53
+  db ENVF_PITCH|$81, 52
+  db ENVF_PITCH|$81, 51
+  db ENVF_PITCH|$81, 50
+  db ENVF_DPAR|ENVF_PITCH|$81, $72, 49
+  db ENVF_PITCH|$81, 48
+  db ENVF_PITCH|$81, 47
+  db ENVF_PITCH|$81, 46
+  db $FF
 fx_point:
   db ENVF_DPAR|ENVF_PITCH|$84, $C1, 48
   db ENVF_DPAR|ENVF_PITCH|$88, $C1, 55
-  db $F0
+  db $FF
 fx_complete:
-  db $F0
+  db ENVF_DPAR|ENVF_PITCH|$43, $C1, 36
+  db ENVF_DPAR|ENVF_PITCH|$43, $C1, 38
+  db ENVF_DPAR|ENVF_PITCH|$43, $C1, 40
+  db ENVF_DPAR|ENVF_PITCH|$43, $C1, 36
+  db ENVF_DPAR|ENVF_PITCH|$43, $D1, 40
+  db ENVF_DPAR|ENVF_PITCH|$43, $E1, 43
+  db ENVF_DPAR|ENVF_PITCH|$43, $F1, 48
+  db ENVF_PITCH|$41, 43
+  db ENVF_PITCH|$43, 48
+  db ENVF_PITCH|$41, 43
+  db ENVF_PITCH|$41, 48
+  db ENVF_PITCH|$41, 43
+  db ENVF_PITCH|$41, 48
+  db $FF
 fx_launch:
-  db $F0
+  db ENVF_DPAR|ENVF_PITCH|$80, $F1, 58
+  db ENVF_PITCH|$40, 28
+  db ENVF_PITCH|$8D, 26
+  db $FF
 
 section "audioengine", ROM0
 
@@ -98,6 +126,18 @@ audio_init::
   ldh [rNR50],a
   ld a,$08
   ldh [rNR10],a  ; disable sweep
+
+  ; Silence all channels
+  xor a
+  ldh [rNR12],a
+  ldh [rNR22],a
+  ldh [rNR32],a
+  ldh [rNR42],a
+  ld a,$80
+  ldh [rNR14],a
+  ldh [rNR24],a
+  ldh [rNR34],a
+  ldh [rNR44],a
 
   ; Clear sound effect state
   xor a

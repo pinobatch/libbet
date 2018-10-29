@@ -270,6 +270,12 @@ move_player_anim::
     ; Ball return: Go to a Z position above home
     bit FRHB_BALLRETURN,h
     jr z,.no_ballreturn
+      push bc
+      push hl
+      ld a,7
+      call audio_play_fx
+      pop hl
+      pop bc
       call set_roll_start_pos
       xor a
       ld [roll_dz],a
