@@ -1,12 +1,8 @@
 include "src/hardware.inc"
 
 LOG_SIZEOF_CHANNEL equ 3
+LOG_SIZEOF_SFX equ 2
 NUM_CHANNELS equ 4
-
-; This violates the Don't Repeat Yourself principle but works around
-; strange syntax errors that rgbasm issues for both REPT and EQU
-LOG_SIZEOF_CHANNEL_MINUS_1 equ 2
-
 
 ENVB_DPAR equ 5
 ENVB_PITCH equ 4
@@ -34,50 +30,84 @@ sfx_table:
   dw fx_land
   db 0, 0
   dw fx_fall
+  db 3, 0
+  dw fx_rolltojump
   db 1, 0
-  dw fx_score
-  db 2, 0
+  dw fx_point
+  db 1, 0
   dw fx_complete
+  db 0, 0
+  dw fx_launch
 
 fx_roll:
+  db ENVF_DPAR|ENVF_PITCH|1, $4A, $5E
+  db ENVF_DPAR|ENVF_PITCH|7, $50, $54
+  db ENVF_PITCH|5, $4F
+  db ENVF_PITCH|7, $54
+  db ENVF_PITCH|5, $4F
+  db ENVF_PITCH|7, $54
+  db ENVF_PITCH|2, $55
+  db ENVF_DPAR|ENVF_PITCH|1, $52, $5E
+  db ENVF_PITCH|1, $57
+  db $F0
+fx_rolltojump:
+  db ENVF_DPAR|ENVF_PITCH|1, $4A, $5E
+  db ENVF_DPAR|ENVF_PITCH|2, $50, $54
+  db ENVF_PITCH|2, $25
   db $F0
 fx_jump:
   db ENVF_DPAR|ENVF_PITCH|$80, $59, 45
   db ENVF_PITCH|$80, 47
   db ENVF_PITCH|$80, 49
   db ENVF_DPAR|ENVF_PITCH|$80, $81, 51
-  db ENVF_PITCH|$80, $81, 53
-  db ENVF_PITCH|$80, $81, 55
-  db ENVF_PITCH|$80, $81, 56
-  db ENVF_PITCH|$80, $81, 57
+  db ENVF_PITCH|$80, 53
+  db ENVF_PITCH|$80, 55
+  db ENVF_PITCH|$80, 56
+  db ENVF_PITCH|$80, 57
   db $F0
 fx_land:
-  db ENVF_DPAR|ENVF_PITCH|0, $C1, $34
-  db ENVF_PITCH|1, $5C
+  db ENVF_DPAR|ENVF_PITCH|0, $C1, $24
+  db ENVF_PITCH|1, $46
+  db ENVF_DPAR|ENVF_PITCH|11, $67, $54
+  db ENVF_DPAR|ENVF_PITCH|3, $63, $5D
+  db ENVF_PITCH|1, $56
+  db ENVF_PITCH|1, $57
   db $F0
 fx_fall:
   db $F0
-fx_score:
+fx_point:
+  db ENVF_DPAR|ENVF_PITCH|$84, $C1, 48
+  db ENVF_DPAR|ENVF_PITCH|$88, $C1, 55
   db $F0
 fx_complete:
+  db $F0
+fx_launch:
   db $F0
 
 section "audioengine", ROM0
 
 ; Starting sequences ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-audio_init:
+audio_init::
+  ; Init PSG
   ld a,$80
   ldh [rNR52],a  ; bring audio out of reset
   ld a,$FF
   ldh [rNR51],a  ; set panning
   ld a,$77
   ldh [rNR50],a
+  ld a,$08
+  ldh [rNR10],a  ; disable sweep
+
+  ; Clear sound effect state
   xor a
   ld hl,audio_channels
   ld c,NUM_CHANNELS << LOG_SIZEOF_CHANNEL
   jp memset_tiny
 
+;;
+; Plays sound effect A.
+; Trashes ABCHL
 audio_play_fx::
   ld h,high(sfx_table >> 2)
   add low(sfx_table >> 2)
@@ -94,20 +124,20 @@ audio_play_fx::
   ld b,[hl]   ; ptr hi
 
   ; Get pointer to channel
-  ld l,a
-  ld h,0
   rept LOG_SIZEOF_CHANNEL
-    add hl,hl
+    add a
   endr
-  ld de,audio_channels+Channel_envseg_cd
-  add hl,de
+  add low(audio_channels+Channel_envseg_cd)
+  ld l,a
+  ld a,0
+  adc high(audio_channels)
+  ld h,a
 
   xor a  ; begin effect immediately
   ld [hl+],a
   ld a,c
   ld [hl+],a
-  ld a,b
-  ld [hl+],a
+  ld [hl],b
   ret
 
 ; Sequence reading ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -198,14 +228,16 @@ audio_update_ch_a:
   ; pitch in d, which changed if BIT 4, B
 
 .call_updater:
-  ; Call the appropriate updater
-  ld a,low($FF << LOG_SIZEOF_CHANNEL) - low(audio_channels)
-  add l  ; A = channel number << LOG_SIZEOF_CHANNEL
-  and low($FF << LOG_SIZEOF_CHANNEL)
-
-  rept LOG_SIZEOF_CHANNEL_MINUS_1
+  ; Seek to the appropriate audio channel's updater
+  ld a,l
+  sub low(audio_channels)
+  ; rgbasm's nightmare of a parser can't subtract.
+  ; Parallels to lack of "sub hl,*"?
+  rept LOG_SIZEOF_CHANNEL + (-1)
     rra
   endr
+  and $06
+
   ld hl,channel_writing_jumptable
   add l
   jr nc,.nohlwrap
@@ -226,7 +258,7 @@ update_noise:
 
   ; New deep parameter
   ld a,c
-  ldh [rNR43],a
+  ldh [rNR42],a
   ld a,$80
   ldh [rNR44],a
   ret

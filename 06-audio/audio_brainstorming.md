@@ -78,13 +78,14 @@ Noise does not use quick parameter, and its deep parameter is the
 same as that of pulse.
 
 Noise is a linear feedback shift register whose clock rate is
-controlled by two dividers on a 524.3 Hz clock: one a power of two
-and one usually set between 4 and 7.  Thus the noise output has a
+controlled by two dividers on a 524.3 kHz clock: one a power of two
+and one usually set between 8 and 14.  Thus the noise output has a
 sample rate of `2^(19 - s) / r` Hz.
 
     7654 3210  Noise pitch parameter
     |||| |+++- Period divider r (1, 2, 4, 6, 8, 10, 12, 14)
-    |||| +---- 0: LFSR 32767 steps; 1: 127 steps
+    |||| +---- Periodic flag (0: 32767 steps, more noise-like;
+    ||||       1: 127 steps; more tone-like)
     ++++------ Period prescaler s
 
 Conflicts

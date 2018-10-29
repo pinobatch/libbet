@@ -21,6 +21,10 @@ main::
   ld [nmis],a
   ei
 
+  call audio_init
+  ld a,2
+  call audio_play_fx
+
   call do_instructions
   ld a,[new_keys]
   and PADF_SELECT
@@ -119,6 +123,7 @@ forever:
   call popslide_terminate_blit
   ld a,[fade_bgp]
   ldh [rBGP],a
+  call audio_update
 
   call read_pad
   ld a,[attract_mode]
@@ -156,6 +161,8 @@ forever:
       set FLOORB_ENTERED,a
       call prepare_hDrawCell
       call player_start_fall
+      ld a,3
+;      call audio_play_fx
       call cursor_to_home
       jr .not_begin_move
     .not_on_deadend:
@@ -266,6 +273,8 @@ try_move:
     jr z,.already_have_track_bit
       or [hl]
       ld [hl],a
+      ld a,5
+      call audio_play_fx  ; score point sound
       ld hl,cur_score
       ld b,[hl]
       inc b

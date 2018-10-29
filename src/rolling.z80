@@ -140,6 +140,12 @@ player_can_start_roll::
 ; @param cursor_y starting Y position
 ; @return DE clobbered; HL = frame properties; A = frame length
 player_start_roll::
+  push bc
+  ld a,4
+  and c  ; 0: roll; 4: roll to jump
+  call audio_play_fx
+  pop bc
+
   call set_roll_start_pos
 
   ; Set velocity
@@ -242,6 +248,16 @@ move_player_anim::
     rla  ; If carry set, player has landed
     ld a,e
     jr nc,.no_land
+      ld a,e
+      cp $FC
+      jr nc,.no_land_sound
+        push bc
+        push hl
+        ld a,2
+        call audio_play_fx
+        pop hl
+        pop bc
+      .no_land_sound:
       xor a
       ld [roll_dz],a
     .no_land:
@@ -283,6 +299,12 @@ move_player_anim::
     call de_index_a
     bit FRLB_JUMP,l
     jr z,.no_jump
+      push bc
+      push hl
+      ld a,1
+      call audio_play_fx
+      pop hl
+      pop bc
       ld a,11
       ld [roll_dz],a
     .no_jump:
