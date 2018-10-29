@@ -22,8 +22,8 @@ main::
   ei
 
   call audio_init
-;  ld a,7
-;  call audio_play_fx
+  ld a,0
+  call audio_play_fx
 
   call do_instructions
   ld a,[new_keys]

@@ -1,4 +1,5 @@
 include "src/hardware.inc"
+include "src/global.inc"
 
 LOG_SIZEOF_CHANNEL equ 3
 LOG_SIZEOF_SFX equ 2
@@ -42,9 +43,13 @@ sfx_table:
 fx_roll:
   db ENVF_DPAR|ENVF_PITCH|1, $4A, $5E
   db ENVF_DPAR|ENVF_PITCH|7, $50, $54
-  db ENVF_PITCH|5, $4F
+  if TEST_PNOISE_BUG
+    db ENVF_PITCH|5, $4F
+  else
+    db ENVF_PITCH|5, $47
+  endc
   db ENVF_PITCH|7, $54
-  db ENVF_PITCH|5, $4F
+  db ENVF_PITCH|5, $47
   db ENVF_PITCH|7, $54
   db ENVF_PITCH|2, $55
   db ENVF_DPAR|ENVF_PITCH|1, $52, $5E

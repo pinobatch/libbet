@@ -45,7 +45,7 @@ For the pulse channels, the quick parameter is duty (1/8, 1/4, 1/2),
 written to FF11, FF16 D7-6.  Quick parameter value 3 (3/4 duty) is
 not used because it sounds the same as value 1 (1/4 duty).
 
-Deep parameter for pulse or noise controls the envelope.
+Deep parameter for pulse or noise controls the volume envelope.
 
     7654 3210  Pulse/noise deep parameter: Envelope
     |||| ||||
@@ -87,6 +87,10 @@ sample rate of `2^(19 - s) / r` Hz.
     |||| +---- Periodic flag (0: 32767 steps, more noise-like;
     ||||       1: 127 steps; more tone-like)
     ++++------ Period prescaler s
+
+Be careful when switching to and from periodic noise.  There are
+cases when this causes the LFSR to get stuck, and emulators don't
+always emulate this.
 
 Conflicts
 ---------
