@@ -11,7 +11,7 @@
 
 # Used in the title of the zipfile and .gb executable
 title:=libbet
-version:=0.01
+version:=0.02
 
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
@@ -52,7 +52,7 @@ zip: $(title)-$(version).zip
 # The zipfile depends on every file in zip.in, but as a shortcut,
 # mention only files on which the ROM doesn't itself depend.
 $(title)-$(version).zip: zip.in $(title).gb \
-  README.md obj/gb/index.txt
+  README.md CHANGES.txt obj/gb/index.txt
 	$(PY) tools/zipup.py $< $(title)-$(version) -o $@
 	-advzip -z3 $@
 

@@ -1,0 +1,14 @@
+0.02 (2018-10-30)
+* Combine identical strips, saving a few bytes
+* Fix head bob when rolling left
+* Draw track and score updates using Popslide, a VRAM transfer buffer
+* Draw exit arrows at top left and right of 8-cell-tall floors
+* Fade from white at 90% and 100% completion
+* Fade to white on exit
+* Tutorial demo (press Select)
+* Separate Libbet's elbows in push-off cel
+* Sound effects
+* Animate falling in a hole and being ejected
+
+0.01 (2018-10-16)
+* initial release
