@@ -62,6 +62,6 @@ FORCE_FLOOR_SIZE equ 0
 
 ; There's a bug in BGB's implementation of 127-step noise.
 ; GB stops a noise early under certain conditions; BGB does not.
-TEST_PNOISE_BUG equ 0
+TEST_PNOISE_BUG equ 1
 
   ENDC

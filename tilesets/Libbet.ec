@@ -158,3 +158,6 @@ hotspot 98 143
 
 frame Libbet_shadow 130 143  8  1
 strip 0
+
+frame Libbet_holecover 142 136  8  8
+strip 0

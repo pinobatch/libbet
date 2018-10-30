@@ -323,6 +323,28 @@ move_player_anim::
   ret
 
 draw_player::
+  ld a,$00
+  ldh [hmsprSheetID],a
+  ldh [hmsprBaseTile],a
+
+  ld a,[roll_prio]  ; Priority bit means falling in hole so no shadow
+  rla
+  jr nc,.no_need_holecover
+    rra
+    ldh [hmsprAttr],a
+    ld a,[roll_x]
+    ldh [hmsprXLo],a
+    ld a,[roll_y]
+    ldh [hmsprYLo],a
+    xor a
+    ldh [hmsprXHi],a
+    ldh [hmsprYHi],a
+    ld a,FRAME_Libbet_holecover
+    ldh [hmsprFrame],a
+    call draw_metasprite
+  .no_need_holecover:
+
+
   ld a,[roll_x]
   ldh [hmsprXLo],a
   ld a,[roll_z]
@@ -356,9 +378,6 @@ draw_player::
   xor a
   ldh [hmsprXHi],a
   ldh [hmsprYHi],a
-  ld a,$00
-  ldh [hmsprSheetID],a
-  ldh [hmsprBaseTile],a
   call draw_metasprite
 
   ; If high enough, and not just launched from ball return,
