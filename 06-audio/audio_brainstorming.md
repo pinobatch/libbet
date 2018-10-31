@@ -99,3 +99,13 @@ be used in the same segment, as segment header codes $F0-$FF are
 reserved.  This is why quick parameters are assigned such that either
 3 is not used or not used with a deep parameter.  Pulse duty 3 is
 redundant, and muted triangle needs no wave change.
+
+Showing it off
+--------------
+A GIF is inadequate when asking for feedback on sound effects.
+Fortunately, bgb can save audio to an uncompressed wave file
+and video in whatever VFW codec is installed.
+
+    ffmpeg -i bgb-1540876262.avi -i bgb-1540876262.wav \
+      -s 320x288 -sws_flags neighbor -pix_fmt yuv420p \
+      libbet.mp4
