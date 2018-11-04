@@ -40,6 +40,9 @@ sfx_table:
   db 0, 0
   dw fx_launch
 
+  db 2, 0
+  dw fx_wavetest
+
 fx_roll:
   db ENVF_DPAR|ENVF_PITCH|1, $1A, $5E
   db ENVF_DPAR|ENVF_PITCH|7, $20, $54
@@ -116,6 +119,11 @@ fx_launch:
   db ENVF_PITCH|$40, 28
   db ENVF_PITCH|$8D, 26
   db $FF
+
+fx_wavetest:
+  db ENVF_DPAR|ENVF_PITCH|$0F, $00, 24
+  db $FF
+
 
 section "audioengine", ROM0
 
@@ -231,9 +239,9 @@ audio_update_ch_a:
     ; Currently all specials mean stop playback
     xor a
     ld [hl+],a
-    ld [hl+],a
+    ld [hl+],a  ; Clear pointer to sound sequence
     ld d,a
-    ld bc,ENVF_DPAR << 8
+    ld bc,($C0 | ENVF_DPAR) << 8
     jr .call_updater
   .not_special:
   inc de
@@ -342,6 +350,10 @@ set_pitch_hl_to_d:
   ld [hl+],a
   ret
 
+;;
+; @param B quick parameter and flags
+; @param C deep parameter if valid
+; @param D current pitch
 channel_writing_jumptable:
   jr update_pulse1
   jr update_pulse2
@@ -370,12 +382,16 @@ update_wave:
   add hl,hl
 
   ; Copy wave
+  xor a
+  ldh [rNR30],a  ; give CPU access to waveram
   WAVEPTR set _AUD3WAVERAM
   rept 16
     ld a,[hl+]
     ldh [WAVEPTR],a
     WAVEPTR set WAVEPTR+1
   endr
+  ld a,$80
+  ldh [rNR30],a  ; give APU access to waveram
 
 .no_new_wave:
   ld hl,rNR33
