@@ -22,6 +22,10 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
+USE_NAM equ 0
+USE_GBC equ 0
+GBMONO_GREEN equ 0
+
 section "irqvars",HRAM
 ; Used for bankswitching BG CHR RAM
 vblank_lcdc_value:: ds 1
@@ -145,6 +149,41 @@ stat_handler::
   pop af
   reti
 
+if USE_NAM
+
+load_full_nam::
+  ld bc,256*20+18
+;;
+; Copies a B column by C row tilemap from HL to screen at DE.
+load_nam::
+  push bc
+  push de
+  .byteloop:
+    ld a,[hl+]
+    ld [de],a
+    inc de
+    dec b
+    jr nz,.byteloop
+
+  ; Move to next screen row
+  pop de
+  ld a,32
+  add e
+  ld e,a
+  jr nc,.no_inc_d
+    inc d
+  .no_inc_d:
+
+  ; Restore width; do more rows remain?
+  pop bc
+  dec c
+  jr nz,load_nam
+  ret
+
+endc
+
+if USE_GBC
+
 ;;
 ; Emulates mono palette feature on Game Boy Color.
 ; Call this only during blanking.
@@ -239,37 +278,7 @@ clear_gbc_attr::
 .not_gbc:
   ret
 
-load_full_nam::
-  ld bc,256*20+18
-;;
-; Copies a B column by C row tilemap from HL to screen at DE.
-load_nam::
-  push bc
-  push de
-  .byteloop:
-    ld a,[hl+]
-    ld [de],a
-    inc de
-    dec b
-    jr nz,.byteloop
-
-  ; Move to next screen row
-  pop de
-  ld a,32
-  add e
-  ld e,a
-  jr nc,.no_inc_d
-    inc d
-  .no_inc_d:
-
-  ; Restore width; do more rows remain?
-  pop bc
-  dec c
-  jr nz,load_nam
-  ret
-
 section "GBMONOPALETTE", ROM0, ALIGN[3]
-GBMONO_GREEN equ 0
 gbmonopalette::
   if GBMONO_GREEN
   drgb $E8F840
@@ -282,3 +291,5 @@ gbmonopalette::
   drgb $585858
   drgb $000000
   endc
+
+endc

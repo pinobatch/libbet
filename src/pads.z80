@@ -22,6 +22,7 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
+USE_DAS = 0
 DAS_DELAY = 15
 DAS_SPEED = 3
 
@@ -89,6 +90,9 @@ read_pad::
   or $F0   ; A7-4 = 1; A3-0 = unpressed keys
   ret
 
+; Don't include autorepeat code if not needed
+if USE_DAS
+
 ;;
 ; Adds held keys to new_keys, DAS_DELAY frames after press and
 ; every DAS_SPEED frames thereafter
@@ -125,3 +129,5 @@ autorepeat::
 .have_das_timer:
   ld [das_timer],a
   ret
+
+endc
