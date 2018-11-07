@@ -43,43 +43,48 @@ Libbet_framelist:
   ; +--------- Return to frame 0 after this frame expires
 
   ; 0: Still
-  db 0|FRLF_READY, 30|FRHF_LAST
+  db FRAME_Libbet_standS|FRLF_READY, 30|FRHF_LAST
 frame_roll_begin:
   ; 1: Tuck toward rolling
-  db 1, 4
+  db FRAME_Libbet_curlS, 4
 frame_roll_continue:
   ; 2-9: Roll toward X
-  db 2|FRLF_MOVE, 2
-  db 3|FRLF_MOVE, 2
-  db 4|FRLF_MOVE, 2
-  db 5|FRLF_MOVE, 2
-  db 6|FRLF_MOVE, 2
-  db 7|FRLF_MOVE, 2
-  db 8|FRLF_MOVE, 2
-  db 9|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS1|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS2|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS3|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS4|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS5|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS6|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS7|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS8|FRLF_MOVE, 2
   ; 10: Untuck after roll
-  db 2|FRLF_READY|FRLF_KEEPROLL, 30
-  db 1|FRLF_READY|FRLF_KEEPROLL, 4|FRHF_LAST
+  db FRAME_Libbet_rollS1|FRLF_READY|FRLF_KEEPROLL, 30
+  db FRAME_Libbet_curlS|FRLF_READY|FRLF_KEEPROLL, 4|FRHF_LAST
 frame_jump_begin:
   ; 12: Jump
-  db 1, 2
-  db 1|FRLF_MOVE, 2
-  db 10|FRLF_MOVE|FRLF_JUMP, 3
-  db 11|FRLF_MOVE, 8
-  db 12|FRLF_MOVE, 8
-  db 13|FRLF_MOVE, 7
-  db 8|FRLF_MOVE, 2
-  db 9|FRLF_MOVE, 2
+  db FRAME_Libbet_curlS, 2
+  db FRAME_Libbet_curlS|FRLF_MOVE, 2
+  db FRAME_Libbet_jumpS1|FRLF_MOVE|FRLF_JUMP, 3
+  db FRAME_Libbet_jumpS2|FRLF_MOVE, 7
+  db FRAME_Libbet_jumpS3|FRLF_MOVE, 6
+  db FRAME_Libbet_jumpS4|FRLF_MOVE, 6
+frame_landsquash:
+  db FRAME_Libbet_jumpS5|FRLF_MOVE, 4
+  db FRAME_Libbet_rollS8|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS1|FRLF_MOVE, 2
   ; 19: Untuck after jump
-  db 2|FRLF_READY|FRLF_KEEPROLL, 30
-  db 1|FRLF_READY|FRLF_KEEPROLL, 4|FRHF_LAST
+  db FRAME_Libbet_rollS1|FRLF_READY|FRLF_KEEPROLL, 30
+  db FRAME_Libbet_curlS|FRLF_READY|FRLF_KEEPROLL, 4|FRHF_LAST
 frame_fall_begin:
   ; 21: Fall in pit
-  db 2, FRHF_BALLRETURN
+  db FRAME_Libbet_rollS1, FRHF_BALLRETURN
 
 
 Libbet_facing_to_frame:
-  dw $0E00, $0E20, $1C00, $0000
+  dw FRAME_Libbet_standE << 8
+  dw FRAME_Libbet_standE << 8 | $20
+  dw FRAME_Libbet_standN << 8
+  dw FRAME_Libbet_standS << 8
 
 init_player_pos::
   xor a
@@ -389,7 +394,7 @@ draw_player::
   sub 8
   cp 80
   jr nc,.no_shadow
-    ld a,42
+    ld a,FRAME_Libbet_shadow
     ldh [hmsprFrame],a
     ld a,[roll_x]
     ldh [hmsprXLo],a
