@@ -296,17 +296,21 @@ def all_tests():
 # Cheating ##########################################################
 
 testfield = """
-233202
-223221
-330102
-033223
+3001
+2213
+0103
+3221
 """
+arrowsymbols = "□→←↔↑↱↰↥↓↳↲↧↕↦↤+"
+
 def solve(field):
     field = [bytearray(int(c) for c in row) for row in field.split()]
-    print(field)
     find_reachable(field)
-    calc_max_score(field, writeback=True)
-    print("\n".join(row.hex() for row in field))
+    s = calc_max_score(field, writeback=True)
+    print("\n".join("".join(
+        "◍" if c & 0x04 else arrowsymbols[c>>4]
+        for c in row) for row in field))
+    print("/%s" % s)
 
 if __name__=='__main__':
 ##    all_tests()
