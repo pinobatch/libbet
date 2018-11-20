@@ -46,10 +46,11 @@ bcd8bit::
   and $3F
   ret
 
+section "pctdigit",ROM0
 ;;
 ; Calculates one digit of converting a fraction to a percentage.
 ; @param B numerator, less than C
-; @param C denominator
+; @param C denominator, greater than 0
 ; @return A = floor(10 * B / C); B = 10 * B % C;
 ; CHL unchanged; D clobbered; E = 0
 pctdigit::
@@ -66,6 +67,8 @@ pctdigit::
   cp c
   jr c,.nosub3
   .yessub3:
+    ; Usually A>=C so subtracting C won't borrow.  But if we got here
+    ; via the jump after the adc, A>256 so even though 256+A>=C, A<C.
     sub c
     or a
   .nosub3:

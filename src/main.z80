@@ -308,9 +308,6 @@ try_move:
   ld [cursor_x],a
   ret
 
-Libbet_pb16:
-  incbin "obj/gb/Libbet.chrgb.pb16"
-
 level_floor_sizes:
   db 2, 8
   db 4, 4
@@ -318,3 +315,8 @@ level_floor_sizes:
   db 6, 6
   db 8, 6
 level_floor_sizes_end:
+
+section "Libbet_chr", ROM0
+Libbet_pb16:
+  incbin "obj/gb/Libbet.chrgb.pb16"
+

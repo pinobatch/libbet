@@ -21,6 +21,8 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
+USE_HBLANK_COPY EQU 0
+
   rsset hLocals
 Lshifterid rb 1
 Lshiftermask rb 1
@@ -265,6 +267,8 @@ vwfPutBuf03_lenC::
   jr nz,.loop
   ret
 
+  if USE_HBLANK_COPY
+
 ;;
 ; Copies the VWF line buffer to WRAM during hblank.
 ;
@@ -349,3 +353,5 @@ vwfPutBufHBlank::
   dec c
   jr nz,.tileloop
   ret
+
+  endc

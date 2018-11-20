@@ -206,7 +206,7 @@ add1arrow:
   pop hl
   ret
 
-section "floortiledata", ROM0
+section "floor_chr", ROM0
 floortiles_pb16: incbin "obj/gb/floorpieces-h.chrgb.pb16"
 floorborder_pb16: incbin "obj/gb/floorborder-h.chrgb.pb16"
 

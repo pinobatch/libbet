@@ -141,7 +141,7 @@ page1txt:
  db "Start: play; Select: demo",0
 
 
-; Refactor into attract mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Attract mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 STATUS_BLANK equ $DB
 

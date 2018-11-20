@@ -5,7 +5,7 @@ fade_level: ds 1
 fade_dir: ds 1
 fade_bgp:: ds 1
 
-section "fade",ROM0
+section "fadecmds",ROM0
 fade_in::
   ld hl,fade_level
   xor a
@@ -20,6 +20,7 @@ fade_out::
   ld [hl],-8
   ret
 
+section "fade", ROM0
 fade_update::
   ld hl,fade_level
   ld a,[hl+]
@@ -50,7 +51,7 @@ fade_update::
   dec hl
   ld [hl],d
 
-  ; TODO: Convert fade level in D to a BGP word
+  ; Convert fade level in D to a BGP word
   ; Bit 1-0: Bit 7-6 of D
   ; Bit 3-2: Bit 7-6 of 3/4 of D
   ; Bit 4: Bit 7 of D
