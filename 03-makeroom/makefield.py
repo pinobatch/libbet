@@ -244,9 +244,11 @@ def one_test():
 def key_vigintiles(seq):
     """Return 5th, 25th, 50th, 75th, and 95th percentiles"""
     seq = sorted(seq)
-    return [seq[len(seq) * d // 20] for d in [1, 5, 10, 15, 19]]
+    f = [seq[len(seq) * d // 20] for d in [1, 5, 10, 15, 19]]
+    f.append(seq[-1])
+    return f
 
-vigintiles_names = ["5% <=", "25% <=", "50% <=", "75% <=", "95% <="]
+vigintiles_names = ["5% <=", "25% <=", "50% <=", "75% <=", "95% <=", "max"]
 
 def all_tests():
     allstatnames = set()
@@ -313,5 +315,5 @@ def solve(field):
     print("/%s" % s)
 
 if __name__=='__main__':
-##    all_tests()
-    solve(testfield)
+    all_tests()
+##    solve(testfield)
