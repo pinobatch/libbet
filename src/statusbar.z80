@@ -58,11 +58,17 @@ draw_statusbar_tilemap::
   ld hl,SMALL_SCORE_POS+2
   ld a,STATUS_SLASH
   ld [hl+],a
+
+  ; Write maximum score in decimal
   ld a,[max_score]
-  call bcd8bit
+  call bcd8bit_baa
+  ld c,a
+  swap a
+  and $0F
   or SMALL_DIGIT_BASE
   ld [hl+],a
   ld a,c
+  and $0F
   or SMALL_DIGIT_BASE
   ld [hl+],a
   ; fall through
@@ -82,14 +88,17 @@ prepare_pctage::
 
   ; Convert current score to decimal
   ld a,[cur_score]
-  call bcd8bit  ; tens in A, ones in C
-  or a
+  call bcd8bit_baa  ; tens and ones in A
+  ld c,a
+  swap a
+  and $0F
   jr nz,.score_more_than_ten
     ld a,STATUS_BLANK-SMALL_DIGIT_BASE
   .score_more_than_ten:
   add SMALL_DIGIT_BASE
   ld [hl+],a
   ld a,c
+  and $0F
   add SMALL_DIGIT_BASE
   ld [hl+],a
 
