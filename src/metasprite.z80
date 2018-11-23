@@ -69,18 +69,18 @@ draw_metasprite::
   call de_index_a
 
   ; Load destination address
-  ld a,[oam_used]
+  ld de,oam_used
+  ld a,[de]
   ld e,a
-  ld d,high(SOAM)
   .rowloop:
     ; Invariants here:
     ; DE is multiple of 4 and within shadow OAM
     ; HL at start of sprite strip
     ; C equals [hmsprAttr], not modified by a strip
-    ; Load Y strip offset
 
+    ; Load Y strip offset
     ld a,[hl+]
-    or a
+    or a  ; Y=0 (that is, -128) terminates cel
     ret z
     bit OAMB_YFLIP,c
     jr z,.noystripflipcorrect

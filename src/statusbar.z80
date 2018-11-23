@@ -20,46 +20,50 @@ section "load_statusbar", ROM0
 ;;
 ; Expands 1bpp tiles to shadowed 2bpp
 load_statusbar_chr::
-  ld de,$8000 + SMALL_DIGIT_BASE * 16
-  ld hl,bigdigits_chr
+  ld de,bigdigits_chr
+  ld hl,$8000 + SMALL_DIGIT_BASE * 16
   ld bc,(34<<8)|$FF  ; B: tilecount; C: notlastbyte
   .byteloop:
     ; Plane 0 is thisbyte | ~lastbyte
-    ld a,[hl]
+    ld a,[de]
     or c
-    ld [de],a
-    inc de
+    ld [hl+],a
     ; Plane 1 is thisbyte
-    ld a,[hl+]
-    ld [de],a
+    ld a,[de]
     inc de
+    ld [hl+],a
     rra
     cpl
     ld c,a
     ; 16 byte units
-    ld a,e
+    ld a,l
     and $0F
     jr nz,.byteloop
     dec b
     jr nz,.byteloop
   ret
 
+;;
+; Draws the unchanging parts of the status bar and prepares the
+; current score in Popslide buffer.
 draw_statusbar_tilemap::
+  ; Clear status bar to solid blank tiles
   ld hl,_SCRN0+32*16
   ld a,STATUS_BLANK
-  ld c,52
+  ld c,32+20
   call memset_tiny
+  ; HL is at end of status bar
 
+  ; Draw percent sign
   ld a,STATUS_PERCENT
   ld [PCTAGE_POS+3],a
   inc a
   ld [PCTAGE_POS+35],a
 
-  ld hl,SMALL_SCORE_POS+2
+  ; Draw a slash, then maximum score in decimal
+  ld l,low(SMALL_SCORE_POS+2)
   ld a,STATUS_SLASH
   ld [hl+],a
-
-  ; Write maximum score in decimal
   ld a,[max_score]
   call bcd8bit_baa
   ld c,a
@@ -73,6 +77,9 @@ draw_statusbar_tilemap::
   ld [hl+],a
   ; fall through
 
+;;
+; Draws the current score as percentage and number of tracks
+; to Popslide buffer.
 prepare_pctage::
   ld hl,popslide_used
   ld l,[hl]

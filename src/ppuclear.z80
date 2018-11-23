@@ -35,9 +35,9 @@ stat_lcdc_value:: ds 1
 ; in which sprites moved.  Also called "shadow OAM".
 section "ram_ppuclear",WRAM0[$CE00]
 SOAM:: ds 160
+; How much of the display list is used; must be in same page as SOAM
+oam_used:: ds 1
 nmis:: ds 1
-oam_used:: ds 1  ; How much of the display list is used
-
 
 SECTION "rom_ppuclear", ROM0
 
@@ -111,8 +111,8 @@ wait_not_vblank::
 ; completely above the screen top (16).
 lcd_clear_oam::
   ; Destination address in shadow OAM
-  ld h,high(SOAM)
-  ld a,[oam_used]
+  ld hl,oam_used
+  ld a,[hl]
   and $FC
   ld l,a
 
