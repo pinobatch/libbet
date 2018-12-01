@@ -1,3 +1,13 @@
+0.03 (future)
+* Rolling and landing sound better fit the material
+* Reduce clicking when sound channel turns off
+* Show squash cel when landing (first of 12 principles of animation)
+* Make hands clearer in push-off cel
+* Dead code removal and other size optimizations
+* Rules research: Confirm that 100+ score for 8x6 is highly unlikely
+* Comparative testing: Add patch to make GBA version work on
+  GBA Movie Player
+
 0.02 (2018-10-30)
 * Combine identical strips, saving a few bytes
 * Fix head bob when rolling left
