@@ -311,13 +311,14 @@ update_noise:
   ret z
 
   ; New deep parameter
+  ld a,c
+  ldh [rNR42],a
   ; See note below about turning off the DAC
   ld a,8
   cp c
-  jr nc,.no_vol8fix
-    ld a,c
+  jr c,.no_vol8fix
+    ldh [rNR42],a
   .no_vol8fix:
-  ldh [rNR42],a
   ld a,$80
   ldh [rNR44],a
   ret
@@ -334,14 +335,18 @@ update_pulse_hl:
   jr z,.no_new_volume
     ; Deep parameter is volume envelope
     ; APU turns off the DAC if the starting volume (bit 7-4) is 0
-    ; and increase mode (bit 3) is off, and turning off the DAC
-    ; makes a clicking sound
+    ; and increase mode (bit 3) is off, which corresponds to NRx2
+    ; values $00-$07.  Turning off the DAC makes a clicking sound as
+    ; the level gradually returns to 7.5 as the current leaks out.
+    ; But LIJI32 in gbdev Discord pointed out that if the DAC is off
+    ; for only a few microseconds, it doesn't have time to leak out
+    ; appreciably.
     ld a,8
     cp c
-    jr c,.no_vol8fix
-      ld c,a
-    .no_vol8fix:
     ld [hl],c
+    jr c,.no_vol8fix
+      ld [hl],a
+    .no_vol8fix:
   .no_new_volume:
   inc l
 set_pitch_hl_to_d:
