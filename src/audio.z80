@@ -79,7 +79,7 @@ fx_land:
   db ENVF_PITCH|$80, 9
   db ENVF_PITCH|$80, 7
   db ENVF_PITCH|$80, 5
-  db ENVF_PITCH|$82, 3
+  db ENVF_PITCH|$81, 3
   db ENVF_PITCH|$82, 2
   db $FF
 fx_fall:
@@ -311,7 +311,12 @@ update_noise:
   ret z
 
   ; New deep parameter
-  ld a,c
+  ; See note below about turning off the DAC
+  ld a,8
+  cp c
+  jr nc,.no_vol8fix
+    ld a,c
+  .no_vol8fix:
   ldh [rNR42],a
   ld a,$80
   ldh [rNR44],a
@@ -327,7 +332,16 @@ update_pulse_hl:
   inc l
   bit ENVB_DPAR,b
   jr z,.no_new_volume
-    ld [hl],c  ; Deep parameter is volume envelope
+    ; Deep parameter is volume envelope
+    ; APU turns off the DAC if the starting volume (bit 7-4) is 0
+    ; and increase mode (bit 3) is off, and turning off the DAC
+    ; makes a clicking sound
+    ld a,8
+    cp c
+    jr c,.no_vol8fix
+      ld c,a
+    .no_vol8fix:
+    ld [hl],c
   .no_new_volume:
   inc l
 set_pitch_hl_to_d:
