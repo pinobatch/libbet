@@ -78,6 +78,18 @@ frame_landsquash:
 frame_fall_begin:
   ; 21: Fall in pit
   db FRAME_Libbet_rollS1, FRHF_BALLRETURN
+  db FRAME_Libbet_rollS1|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS2|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS3|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS4|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS5|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS6|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS7|FRLF_MOVE, 2
+  db FRAME_Libbet_rollS8|FRLF_MOVE, 2
+  ; Land and squash
+  db FRAME_Libbet_jumpS5, 4
+  db FRAME_Libbet_rollS1|FRLF_READY|FRLF_KEEPROLL, 30
+  db FRAME_Libbet_curlS|FRLF_READY|FRLF_KEEPROLL, 4|FRHF_LAST
 
 
 Libbet_facing_to_frame:
@@ -280,23 +292,22 @@ move_player_anim::
       push bc
       push hl
       ld a,7
-      call audio_play_fx
+      call audio_play_fx  ; launch sound
       pop hl
       pop bc
-      call set_roll_start_pos
+      call set_roll_start_pos  ; go home
       xor a
-      ld [roll_dz],a
+      ld [roll_dz],a  ; up/down velocity to 0
       dec a
-      ld [roll_dy],a
+      ld [roll_dy],a  ; move north
+      ld a,2
+      ld [cursor_facing],a  ; face north
+      ; move up and south by 1 space
       ld a,15*32/3
       ld [roll_z],a
       ld a,[roll_y]
       add 16
       ld [roll_y],a
-      ld a,2
-      ld [cursor_facing],a
-      ld a,(frame_roll_continue - Libbet_framelist)/2
-      jr .inc_have_frame
     .no_ballreturn:
 
     ; If the last frame, reset to frame A (which is 0)
