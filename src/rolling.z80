@@ -260,6 +260,8 @@ move_player_anim::
         push hl
         ld a,2
         call audio_play_fx
+        ld a,8
+        call audio_play_fx
         pop hl
         pop bc
       .no_land_sound:

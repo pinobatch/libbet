@@ -27,7 +27,7 @@ sfx_table:
   dw fx_roll
   db 0, 0
   dw fx_jump
-  db 3, 0
+  db 0, 0
   dw fx_land
   db 0, 0
   dw fx_fall
@@ -40,26 +40,26 @@ sfx_table:
   db 0, 0
   dw fx_launch
 
+  db 3, 0
+  dw fx_land2
+
   db 2, 0
   dw fx_wavetest
 
 fx_roll:
-  db ENVF_DPAR|ENVF_PITCH|1, $1A, $5E
-  db ENVF_DPAR|ENVF_PITCH|7, $20, $54
-  if TEST_PNOISE_BUG
-    db ENVF_PITCH|5, $4F
-  else
-    db ENVF_PITCH|5, $47
-  endc
-  db ENVF_PITCH|7, $54
-  db ENVF_PITCH|5, $47
-  db ENVF_PITCH|7, $54
-  db ENVF_PITCH|2, $55
-  db ENVF_DPAR|ENVF_PITCH|1, $22, $5E
-  db ENVF_PITCH|1, $57
+  db ENVF_DPAR|ENVF_PITCH|1, $10, $6E
+  db ENVF_PITCH|7, $64
+  db ENVF_PITCH|5, $57
+  db ENVF_PITCH|7, $64
+  db ENVF_PITCH|5, $57
+fx_land2:
+  db ENVF_DPAR|ENVF_PITCH|5, $10, $6C
+  db ENVF_PITCH|2, $65
+  db ENVF_PITCH|1, $66
+  db ENVF_PITCH|1, $67
   db $FF
 fx_rolltojump:
-  db ENVF_DPAR|ENVF_PITCH|1, $1A, $5E
+  db ENVF_DPAR|ENVF_PITCH|1, $10, $5E
   db ENVF_PITCH|2, $54
   db ENVF_DPAR|ENVF_PITCH|2, $50, $25
   db $FF
@@ -74,12 +74,13 @@ fx_jump:
   db ENVF_PITCH|$80, 57
   db $FF
 fx_land:
-  db ENVF_DPAR|ENVF_PITCH|0, $C1, $24
-  db ENVF_PITCH|1, $46
-  db ENVF_DPAR|ENVF_PITCH|11, $63, $54
-  db ENVF_DPAR|ENVF_PITCH|3, $25, $5D
-  db ENVF_PITCH|1, $56
-  db ENVF_PITCH|1, $57
+  db ENVF_DPAR|ENVF_PITCH|$80, $81, 16
+  db ENVF_PITCH|$80, 12
+  db ENVF_PITCH|$80, 9
+  db ENVF_PITCH|$80, 7
+  db ENVF_PITCH|$80, 5
+  db ENVF_PITCH|$82, 3
+  db ENVF_PITCH|$82, 2
   db $FF
 fx_fall:
   db ENVF_DPAR|ENVF_PITCH|$81, $4A, 57
