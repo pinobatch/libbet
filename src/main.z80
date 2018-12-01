@@ -7,11 +7,6 @@ attract_mode: ds 1
 
 section "main", ROM0
 
-timer_handler::
-serial_handler::
-joypad_handler::
-  reti
-
 main::
   ; Set up vblank handler
   ld a,IEF_VBLANK

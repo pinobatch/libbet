@@ -29,7 +29,6 @@ GBMONO_GREEN equ 0
 section "irqvars",HRAM
 ; Used for bankswitching BG CHR RAM
 vblank_lcdc_value:: ds 1
-stat_lcdc_value:: ds 1
 
 ; The display list at $CE00-$CE9F gets DMA'd to OAM after every frame
 ; in which sprites moved.  Also called "shadow OAM".
@@ -39,7 +38,32 @@ SOAM:: ds 160
 oam_used:: ds 1
 nmis:: ds 1
 
+; A subroutine 7 bytes or smaller should go in its own section
+; in order to fit between unused RST/IRQ handlers
+SECTION "wnvblank", ROM0
+;;
+; Busy-wait for being out of vblank.  Use this for game loop timing
+; if interrupts aren't in use yet.
+wait_not_vblank::
+  ldh a, [rLY]
+  cp 144
+  jr nc, wait_not_vblank
+  ret
+
+; Move some of the vblank handler into the 8-byte area
+SECTION "rst40", ROM0[$0040]
+  push af
+  ld a,[nmis]
+  inc a
+  jp vblank_handler_part2
+
 SECTION "rom_ppuclear", ROM0
+vblank_handler_part2::
+  ld [nmis],a
+  ld a,[vblank_lcdc_value]
+  ldh [rLCDC],a
+  pop af
+  reti
 
 ;;
 ; Waits for blanking and turns off rendering.
@@ -97,15 +121,6 @@ busy_wait_vblank::
   ret
 
 ;;
-; Busy-wait for being out of vblank.  Use this for game loop timing
-; if interrupts aren't in use yet.
-wait_not_vblank::
-  ldh a, [rLY]
-  cp 144
-  jr nc, wait_not_vblank
-  ret
-
-;;
 ; Moves sprites in the display list from SOAM+[oam_used] through
 ; SOAM+$9C offscreen by setting their Y coordinate to 0, which is
 ; completely above the screen top (16).
@@ -131,23 +146,6 @@ lcd_clear_oam::
   inc c
   jr nz, .rowloop
   ret
-
-vblank_handler::
-  push af
-  ld a,[nmis]
-  inc a
-  ld [nmis],a
-  ld a,[vblank_lcdc_value]
-  ldh [rLCDC],a
-  pop af
-  reti
-
-stat_handler::
-  push af
-  ld a,[stat_lcdc_value]
-  ldh [rLCDC],a
-  pop af
-  reti
 
 if USE_NAM
 

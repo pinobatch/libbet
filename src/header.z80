@@ -45,16 +45,14 @@ SECTION "rst38", ROM0[$0038]
   ret
 endc
 
-SECTION "rst40", ROM0[$0040]
-  jp vblank_handler
 SECTION "rst48", ROM0[$0048]
-  jp stat_handler
+  reti  ; stat handler not used
 SECTION "rst50", ROM0[$0050]
-  jp timer_handler
+  reti  ; timer handler not used
 SECTION "rst58", ROM0[$0058]
-  jp serial_handler
+  reti  ; serial handler not used
 SECTION "rst60", ROM0[$0060]
-  jp joypad_handler
+  reti  ; joypad handler not used (no telling LYs here)
 
 SECTION "header", ROM0[$0100]
   nop
