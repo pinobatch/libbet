@@ -64,31 +64,25 @@ pctdigit::
   rr e
   srl a
   rr e
-  adc b
-  jr c,.yessub3
-  cp c
-  jr c,.nosub3
-  .yessub3:
-    ; Usually A>=C so subtracting C won't borrow.  But if we got here
-    ; via the jump after the adc, A>256 so even though 256+A>=C, A<C.
-    sub c
-    or a
-  .nosub3:
-  rl d
+  add b
+  jr .have_first_carry
 
   ; bits 2-0: mul A.E by 2
-  .bit210loop:
+  .bitloop:
     rl e
     adc a
-    jr c,.yessub210
+  .have_first_carry:
+    jr c,.yessub
     cp c
-    jr c,.nosub210
-    .yessub210:
+    jr c,.nosub
+    .yessub:
+      ; Usually A>=C so subtracting C won't borrow.  But if we
+      ; arrived via yessub, A>256 so even though 256+A>=C, A<C.
       sub c
       or a
-    .nosub210:
+    .nosub:
     rl d
-    jr nc,.bit210loop
+    jr nc,.bitloop
 
   ld b,a
   ; Binary to decimal subtracts if trial subtraction has no borrow.
