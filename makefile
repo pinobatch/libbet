@@ -11,7 +11,7 @@
 
 # Used in the title of the zipfile and .gb executable
 title:=libbet
-version:=0.02
+version:=0.03
 
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
@@ -19,7 +19,6 @@ objlist := header init \
   main floorvram floormodel statusbar instructions rolling \
   fade audio pitchtable \
   ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 popslide
-pngfile := tilesets/Sukey.png
 
 ifdef COMSPEC
   ifndef GBEMU

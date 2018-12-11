@@ -1,4 +1,4 @@
-0.03 (future)
+0.03 (2018-12-11)
 * Rolling and landing sound better fit the material
 * Reduce clicking when sound channel turns off
 * Show squash cel when landing (first of 12 principles of animation)
