@@ -17,6 +17,8 @@
 ; Untested: +32 literal odd
 ; Untested: +32 run
 
+VERTICAL_MAX = 20
+
 section "popslide_buf",WRAM0,align[8]
 popslide_headroom: ds 8
 popslide_buf:: ds 192
@@ -32,7 +34,7 @@ run_h_base:
 
 section "popslide_run_v",ROM0,align[7]
 run_v_base:
-  rept 64
+  rept VERTICAL_MAX + (-1)
     ld [hl],a
     add hl,de
   endr
@@ -118,7 +120,7 @@ popslide_next_packet:
   add a
   sub c  ; A = 7 * number of copies
   cpl  ; 255 - 7 * (number of copies)
-  sub 255-(low(literal_h_base) + 32 * 7)
+  sub 255-(low(literal_v_base) + (VERTICAL_MAX / 2) * 7)
   ld c,a
   ld b,high(literal_v_base)
   push bc
@@ -126,7 +128,7 @@ popslide_next_packet:
 
 .is_run_v:
   ; $C0-$FF: C-191 bytes of value B written vertically
-  ld a,low(run_v_base)
+  ld a,low(run_v_base) + 2 * VERTICAL_MAX - 130
   sub c
   sub c
   ld c,a
@@ -137,7 +139,7 @@ popslide_next_packet:
 
 section "popslide_literal_v",ROM0,align[8]
 literal_v_base:
-  rept 32
+  rept VERTICAL_MAX / 2
     pop bc
     ld a,c
     ld [hl],a
