@@ -1,4 +1,7 @@
-popslide_test:
+include "src/hardware.inc"
+section "popslide_test", ROM0
+
+popslide_test::
   ; Popslide testing!
   ld hl,popslide_test_data
   ld de,popslide_buf

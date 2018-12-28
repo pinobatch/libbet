@@ -84,6 +84,8 @@ another_floor:
   ld bc,32*16
   ld h,$6F  ; background tile
   call memset
+  ; uncomment the following if using popslide_test_data
+  ; call popslide_test
   call draw_whole_floor
   call cursor_to_home
   call init_player_pos
