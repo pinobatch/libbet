@@ -214,6 +214,8 @@ floorborder_pb16: incbin "obj/gb/floorborder-h.chrgb.pb16"
 
 section "floor_tilemap",ROM0
 
+CELL_W = 2
+
 ;;
 ; Calculate the top row of the floor.  This is centered in the
 ; Game Boy screen, except at height 8 where it's 1 higher than
@@ -283,10 +285,10 @@ prepare_hDrawCell::
   ld e,a
   ld a,d
   ld [hl+],a
-  jr nc,.nodewrap
+  jr nc,.noincde
     inc d
-  .nodewrap:
-  ld a,1
+  .noincde:
+  ld a,CELL_W - 1  ; 2 horizontal
   ld [hl+],a
   inc hl
   push de  ; Stack: bottom half address
@@ -355,7 +357,7 @@ prepare_hDrawCell::
   ld [hl+],a
   ld a,d
   ld [hl+],a
-  ld a,1
+  ld a,CELL_W - 1
   ld [hl+],a
   inc hl
   ld a,c
@@ -496,7 +498,7 @@ prepare_exit_door::
   jr nc,.noewrap
     inc d
   .noewrap:
-  ld a,1
+  ld a,CELL_W - 1
   ld [hl+],a
   inc hl
 
@@ -520,7 +522,7 @@ prepare_exit_door::
   ld [hl+],a
   ld a,d
   ld [hl+],a
-  ld a,1
+  ld a,CELL_W - 1
   ld [hl+],a
   inc hl
   ld a,b
@@ -548,7 +550,7 @@ prepare_exit_arrows:
   ld [hl+],a
   ld a,d
   ld [hl+],a
-  xor a
+  xor a  ; $00: 1 byte
   ld [hl+],a
   ld a,$6E  ; arrow tile
   ld [hl+],a

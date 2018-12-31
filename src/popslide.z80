@@ -10,13 +10,7 @@
 ; +1 run: write first byte length+1 times, adding 1 to dst
 ; +32 run: write first byte length+1 times, adding 32 to dst
 
-; Untested: +1 literal even
-; Untested: +1 literal odd
-; Untested: +1 run
-; Untested: +32 literal even
-; Untested: +32 literal odd
-; Untested: +32 run
-
+HORIZONTAL_MAX = 64
 VERTICAL_MAX = 20
 
 section "popslide_buf",WRAM0,align[8]
@@ -78,12 +72,12 @@ popslide_next_packet:
   srl c
   jr z,popslide_next_packet
 
-  ld a,c  ; A = C = number of copies
+  ld a,c  ; A = C = number of byte pairs
   add a
   add a
   add c  ; A = 5 * number of copies
   cpl  ; 255 - 5 * (number of copies)
-  sub 255-(low(literal_h_base) + 32 * 5)
+  sub 255-(low(literal_h_base) + (HORIZONTAL_MAX / 2) * 5)
   ld c,a
   ld b,high(literal_h_base)
   push bc
@@ -91,7 +85,7 @@ popslide_next_packet:
   
 .is_run_h:
   ; $40-$7F: C-63 bytes of value B written horizontally
-  ld a,low(run_h_base) + 127
+  ld a,low(run_h_base) + 191 - HORIZONTAL_MAX
   sub c
   ld c,a
   ld a,b

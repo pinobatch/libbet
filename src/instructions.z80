@@ -197,7 +197,7 @@ attract_init_vram::
   ret
 
 ;;
-; Appends two Popslide packets to fill a line with color 1.
+; Appends two 64-byte literal Popslide packets to fill a line with color 1.
 attract_clear_half_line:
   ld hl,popslide_used
   ld l,[hl]
