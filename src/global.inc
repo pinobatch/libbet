@@ -64,4 +64,11 @@ FORCE_FLOOR_SIZE equ 0
 ; GB stops a noise early under certain conditions; BGB does not.
 TEST_PNOISE_BUG equ 0
 
+; Do we build code for autorepeat?
+USE_DAS equ 0
+
+; Do we save what Game Boy type is running, or do we just use it
+; to skip the logo fade?
+SAVE_GB_TYPE equ 0
+
   ENDC

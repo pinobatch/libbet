@@ -45,6 +45,10 @@ SECTION "rst38", ROM0[$0038]
   ret
 endc
 
+; These interrupts are never enabled in rIE.  The RETI instructions
+; keep the linker from packing something big into this area, so don't
+; add them.
+if 0
 SECTION "rst48", ROM0[$0048]
   reti  ; stat handler not used
 SECTION "rst50", ROM0[$0050]
@@ -53,6 +57,7 @@ SECTION "rst58", ROM0[$0058]
   reti  ; serial handler not used
 SECTION "rst60", ROM0[$0060]
   reti  ; joypad handler not used (no telling LYs here)
+endc
 
 SECTION "header", ROM0[$0100]
   nop

@@ -34,20 +34,23 @@ bgbcompat equ 1
 ; and ROM away from the CPU.  But unlike those two, the CPU continues
 ; to run.  So store a tiny subroutine in HRAM (tightly coupled
 ; memory) to keep the CPU busy until OAM DMA is done.
-section "hram_init", HRAM[$FFF4]
-run_dma:: ds 11
+section "hram_init", HRAM
+run_dma:: ds 10
 
 ; For the purpose of hLocals, see a fairly long rant in global.inc
 section "hram_locals", HRAM[hLocals]
   ds locals_size
 
 STACK_SIZE EQU 64
-section "stack", WRAM0[$D000-STACK_SIZE]
+section "stack", WRAM0, ALIGN[2]
 stack_top: ds STACK_SIZE
 
 section "bootregs", WRAM0
+
+if SAVE_GB_TYPE
 initial_a:: ds 1
 initial_b:: ds 1
+endc
 
 section "rom_init", ROM0
 reset_handler::
@@ -61,10 +64,12 @@ reset_handler::
   ; A=FF: Game Boy Pocket or SGB2
   ; A=11, B.0=0: GBC
   ; A=11, B.0=1: GBA
-  ld [initial_a], a
   ld c,a
-  ld a,b
-  ld [initial_b], a
+  if SAVE_GB_TYPE
+    ld [initial_a], a
+    ld a,b
+    ld [initial_b], a
+  endc
 
   ; Release the key matrix right now
   ld a,P1F_NONE
@@ -74,11 +79,12 @@ reset_handler::
   ; at power-on doesn't produce inconsistent results
   xor a
   ld [cur_keys],a
-  ld [das_keys],a
-  ld [das_timer],a
+  if USE_DAS
+    ld [das_keys],a
+    ld [das_timer],a
+  endc
 
   ; Fade out the IPL logo.  Skip it on GBC because IPL already faded.
-  ld b,1
   ld a,c
   cp a,$11
   call nz,fadelogo

@@ -32,7 +32,7 @@ vblank_lcdc_value:: ds 1
 
 ; The display list at $CE00-$CE9F gets DMA'd to OAM after every frame
 ; in which sprites moved.  Also called "shadow OAM".
-section "ram_ppuclear",WRAM0[$CE00]
+section "ram_ppuclear",WRAM0,ALIGN[8]
 SOAM:: ds 160
 ; How much of the display list is used; must be in same page as SOAM
 oam_used:: ds 1

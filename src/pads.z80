@@ -22,16 +22,17 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-USE_DAS = 0
 DAS_DELAY = 15
 DAS_SPEED = 3
 
 SECTION "ram_pads", WRAM0
 cur_keys:: ds 1
 new_keys:: ds 1
+
+if USE_DAS
 das_keys:: ds 1
 das_timer:: ds 1
-is_sgb:: ds 1
+endc
 
 SECTION "rom_pads", ROM0
 

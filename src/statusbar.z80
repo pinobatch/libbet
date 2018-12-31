@@ -1,11 +1,6 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-section "statusbarbuf",HRAM
-
-hPctOnes: ds 1
-hPctTens:: ds 1
-
 SMALL_DIGIT_BASE equ $D0
 STATUS_SLASH equ $DA
 STATUS_BLANK equ $DB
