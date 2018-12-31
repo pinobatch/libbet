@@ -3,6 +3,7 @@ include "src/global.inc"
 
 LF equ $0A
 FF equ $0C
+COPR equ $7F
 
 section "instructions", ROM0
 
@@ -127,8 +128,8 @@ page1txt:
  db "Magic Floor",LF
  db "v0.03 (2018-12-11)",LF
  db LF
- db $82," 2002, 2012 Martin Korth",LF
- db $82," 2018 Damian Yerrick",LF
+ db COPR," 2002, 2012 Martin Korth",LF
+ db COPR," 2018 Damian Yerrick",LF
  db LF
  db "One day, Libbet was",LF
  db "rearranging her basement",LF
@@ -138,7 +139,7 @@ page1txt:
  db "peculiar pattern. She",LF
  db "rolled in to investigate.",LF
  db LF
- db "Start: play; Select: demo",0
+ db "Select: demo | Start: play",0
 
 
 ; Attract mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
