@@ -84,9 +84,7 @@ reset_handler::
   call nz,fadelogo
 
   ; Rendering can be turned off only during blanking.
-  call busy_wait_vblank
-  xor a
-  ldh [rLCDC], a  ; turn off rendering
+  call lcd_off  ; A = 0
   ldh [rSCY], a   ; clear scroll
   ldh [rSCX], a   ; clear scroll
   ldh [rNR52], a  ; disable (and reset) audio

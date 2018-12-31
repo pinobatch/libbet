@@ -66,7 +66,7 @@ vblank_handler_part2::
   reti
 
 ;;
-; Waits for blanking and turns off rendering.
+; Busy-waits for blanking and turns off rendering.
 ;
 ; Unlike NES and Super NES, which continuously generate a video
 ; signal to keep the TV's hsync and vsync circuits occupied, the
@@ -79,12 +79,13 @@ vblank_handler_part2::
 ; Turning rendering on, by contrast, can be done at any time and
 ; is done by writing the nametable base addresses and sprite size
 ; to rLCDC with bit 7 set to true.
+; @return A = 0
 lcd_off::
   call busy_wait_vblank
 
   ; Use a RMW instruction to turn off only bit 7
-  ld hl, rLCDC
-  res 7, [hl]
+  xor a
+  ldh [rLCDC],a
   ret
 
 ;;
@@ -102,7 +103,8 @@ wait_vblank_irq::
 
 ;;
 ; Waits for forced blank (rLCDC bit 7 clear) or vertical blank
-; (rLY >= 144).  Use before VRAM upload or before clearing rLCDC bit 7.
+; (rLY >= 144).  Caution: this is a "room heater", best used before
+; clearing rLCDC bit 7.
 busy_wait_vblank::
   ; If rLCDC bit 7 already clear, we're already in forced blanking
   ldh a,[rLCDC]
