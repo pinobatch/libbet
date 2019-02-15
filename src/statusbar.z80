@@ -2,10 +2,11 @@ include "src/hardware.inc"
 include "src/global.inc"
 
 SMALL_DIGIT_BASE equ $D0
-STATUS_SLASH equ $DA
-STATUS_BLANK equ $DB
-BIG_DIGIT_BASE equ $DC
-STATUS_PERCENT equ $F0
+STATUS_SLASH equ $F6
+STATUS_BLANK equ $F7
+BIG_DIGIT_BASE equ $E0
+STATUS_PERCENT equ $F4
+STATUSBAR_CHR_COUNT = 40
 
 SMALL_SCORE_POS equ _SCRN0+32*17+14
 PCTAGE_POS equ _SCRN0+32*16+9
@@ -17,7 +18,7 @@ section "load_statusbar", ROM0
 load_statusbar_chr::
   ld de,bigdigits_chr
   ld hl,$8000 + SMALL_DIGIT_BASE * 16
-  ld bc,(34<<8)|$FF  ; B: tilecount; C: notlastbyte
+  ld bc,(STATUSBAR_CHR_COUNT<<8)|$FF  ; B: tilecount; C: notlastbyte
   .byteloop:
     ; Plane 0 is thisbyte | ~lastbyte
     ld a,[de]
