@@ -10,6 +10,10 @@ STATUSBAR_CHR_COUNT = 40
 
 SMALL_SCORE_POS equ _SCRN0+32*17+14
 PCTAGE_POS equ _SCRN0+32*16+9
+DEBUGHEX_POS equ _SCRN0+32*17+0
+
+section "debughex", WRAM0
+debughex:: ds 2
 
 section "load_statusbar", ROM0
 
@@ -43,6 +47,14 @@ load_statusbar_chr::
 ; Draws the unchanging parts of the status bar and prepares the
 ; current score in Popslide buffer.
 draw_statusbar_tilemap::
+
+  if USE_DEBUGHEX
+    ld hl,debughex
+    ld a,$C0
+    ld [hl+],a
+    ld [hl],$DE
+  endc
+
   ; Clear status bar to solid blank tiles
   ld hl,_SCRN0+32*16
   ld a,STATUS_BLANK
@@ -172,6 +184,41 @@ prepare_pctage::
 
   ld a,l
   ld [popslide_used],a
+  ret
+
+draw_debughex::
+  if USE_DEBUGHEX
+  ; Write the header
+  ld hl,popslide_used
+  ld l,[hl]
+  ld a,low(DEBUGHEX_POS)
+  ld [hl+],a
+  ld a,high(DEBUGHEX_POS)
+  ld [hl+],a
+  ld a,3
+  ld [hl+],a
+  inc l
+
+  ; Write 4 digits
+  ld a,[debughex+0]
+  call .wr1hex
+  ld a,[debughex+1]
+  call .wr1hex
+
+  ld a,l
+  ld [popslide_used],a
+  ret
+
+.wr1hex:
+  ld b,a
+  swap a
+  call .wr1dig
+  ld a,b
+.wr1dig:
+  and $0F
+  or SMALL_DIGIT_BASE
+  ld [hl+],a
+  endc
   ret
 
 section "bigdigits_chr", ROM0, align[3]

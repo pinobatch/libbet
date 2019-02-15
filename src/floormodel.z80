@@ -632,6 +632,33 @@ check_exit_pct::
   ret
 
 ;;
+; Calculate Manhattan distance from exit:
+; abs(exit_x - cursor_x) + cursor_y
+; @return A = distance; B = Y distance
+get_exit_distance::
+  ; Calculate |exit_x - cursor_x| but only if exit is not whole top row
+  ld a,[floor_width]
+  cp 3
+  jr nc,.has_exit_door
+    xor a
+    jr .has_x_dist
+  .has_exit_door:
+    ld a,[exit_x]
+    ld b,a
+    ld a,[cursor_x]
+    sub b
+    jr nc,.has_x_dist
+    cpl
+    inc a
+  .has_x_dist:
+
+  ; Add cursor_y
+  ld b,a
+  ld a,[cursor_y]
+  add b
+  ret
+
+;;
 ; Checks whether a roll up from the current space reaches the exit.
 ; @return CF true iff exit ready
 check_exitable_cell::

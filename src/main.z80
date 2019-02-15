@@ -108,13 +108,16 @@ another_floor:
   ldh [rLCDC],a
 
 forever:
+  call get_exit_distance
+  ld [debughex+0],a
+
   call move_player_anim
   xor a
   ld [oam_used],a
   call draw_player
   call lcd_clear_oam
   call fade_update
-
+  call draw_debughex
   call wait_vblank_irq
   call run_dma
   call popslide_terminate_blit

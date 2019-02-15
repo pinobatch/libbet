@@ -126,7 +126,7 @@ pages_end:
 page1txt:
  db "Libbet and the",LF
  db "Magic Floor",LF
- db "v0.03 (2018-12-11)",LF
+ db "v0.04wip (2019-02-15)",LF
  db LF
  db COPR," 2002, 2012 Martin Korth",LF
  db COPR," 2018 Damian Yerrick",LF
@@ -144,7 +144,7 @@ page1txt:
 
 ; Attract mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-STATUS_BLANK equ $DB
+STATUS_BLANK equ $F7
 
 section "attractstate", WRAM0
 attract_src_ptr: ds 2

@@ -11,12 +11,13 @@
 
 # Used in the title of the zipfile and .gb executable
 title:=libbet
-version:=0.03
+version:=wip
 
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
 objlist := header init \
   main floorvram floormodel statusbar instructions rolling \
+  debrief achievements \
   fade audio pitchtable \
   ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 popslide
 

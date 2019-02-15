@@ -71,4 +71,8 @@ USE_DAS equ 0
 ; to skip the logo fade?
 SAVE_GB_TYPE equ 0
 
+; Do we display a variable in-game?
+USE_DEBUGHEX equ 1
+
+
   ENDC
