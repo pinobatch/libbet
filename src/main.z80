@@ -126,6 +126,12 @@ forever:
   call audio_update
 
   call read_pad
+
+  ; A+B+Select+Start: Reset
+  ld a,[cur_keys]
+  cp PADF_A|PADF_B|PADF_SELECT|PADF_START
+  jp z,main
+
   ld a,[attract_mode]
   or a
   jr z,.not_attract_startcheck
