@@ -7,3 +7,5 @@ __pycache__
 /*.sym
 /zip.in
 /libbet-*.zip
+/*.sn1
+/*.sav

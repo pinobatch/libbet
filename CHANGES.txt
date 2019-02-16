@@ -1,3 +1,15 @@
+0.04 (future)
+* A+B+Select+Start during gameplay to reset
+* Display floor scores and achievements after completing all 5 floors
+* Add achievements Completionist (100% on all floors),  Sink it
+  (reach 100% on a dead end), and Dash for the door (reach 100% and
+  do not retreat or pause on way to exit)
+* Popslide: Option to reduce maximum length of +32 runs and literals
+  to save ROM size
+* Other size optimizations
+* "Debughex" option to display a variable at runtime even on hardware
+* Docs: Add guide to encoding video with bgb
+
 0.03 (2018-12-11)
 * Rolling and landing sound better fit the material
 * Reduce clicking when sound channel turns off
