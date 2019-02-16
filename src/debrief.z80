@@ -43,7 +43,7 @@ debrief::
 
   ld b,0
   ; HL: Output pointer in VWF plane
-  ; B: Level number
+  ; B: Floor number
   .floorloop:
     push hl
     push bc
@@ -67,7 +67,7 @@ debrief::
     push bc
     push de
     ld a,b
-    ld de,level_scores
+    ld de,floor_scores
     call de_index_a
     pop de
     ; L: actual score; H: maximum score

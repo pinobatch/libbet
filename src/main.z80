@@ -23,19 +23,19 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-section "levelsizes", ROM0
-level_floor_sizes:
+section "floorsizes", ROM0
+floor_sizes:
   db 2, 8
   db 4, 4
   db 6, 4
   db 6, 6
   db 8, 6
-level_floor_sizes_end:
+floor_sizes_end:
 
 section "mainvars", WRAM0
-cur_level: ds 1
+cur_floor: ds 1
 attract_mode: ds 1
-level_scores:: ds (level_floor_sizes_end - level_floor_sizes)
+floor_scores:: ds (floor_sizes_end - floor_sizes)
 
 section "main", ROM0
 
@@ -68,7 +68,7 @@ main::
   call srand
   call run_dma  ; shut up BGB
   xor a
-  ld [cur_level],a
+  ld [cur_floor],a
   ldh [rSCX],a
   ldh [rSCY],a
 
@@ -86,8 +86,8 @@ another_floor:
   jr nz,.load_attract_floor
 
     ; Generate the floor
-    ld a,[cur_level]
-    ld de,level_floor_sizes
+    ld a,[cur_floor]
+    ld de,floor_sizes
     call de_index_a
     if FORCE_FLOOR_SIZE
       ld hl,FORCE_FLOOR_SIZE
@@ -231,26 +231,24 @@ forever:
   jp forever
 
 .next_floor:
-  ; Save level score
-  ld a,[cur_level]
+  ; Save score for this floor
+  ld a,[cur_floor]
   add a
-  add LOW(level_scores)
+  add LOW(floor_scores)
   ld l,a
-  adc HIGH(level_scores)
+  adc HIGH(floor_scores)
   sub l
   ld h,a
   ld a,[cur_score]
   ld [hl+],a
-  ld [debughex+0],a
   ld a,[max_score]
-  ld [hl+],a
-  ld [debughex+1],a
+  ld [hl],a
 
-  ; If not at the end of the game, go to next level
-  ld a,[cur_level]
+  ; If not at the end of the game, go to next floor
+  ld a,[cur_floor]
   inc a
-  ld [cur_level],a
-  cp (level_floor_sizes_end - level_floor_sizes) / 2
+  ld [cur_floor],a
+  cp (floor_sizes_end - floor_sizes) / 2
   jp c,another_floor
   call debrief
   jp main
@@ -288,7 +286,7 @@ try_move:
     call check_exitable_cell
     ret nc
 
-    ; Mark the level as exited
+    ; Mark the floor as exited
     ld c,2
     call player_start_roll
     ld a,$FF
