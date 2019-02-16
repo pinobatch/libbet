@@ -29,32 +29,50 @@ COPR equ $7F
 
 section "instructions", ROM0
 
-first_vwf_tileid = 256 - 8 * 14
+; Sets up a 128-pixel-wide VWF window on rows 1 to B and B+2 to 17
+; @param B number of rows before first blank row
+vwf_page_init::
+  ld a,16  ; calculate num
+  sub b
+  ld c,a
+  push bc
 
-do_instructions::
   call lcd_off
-  xor a
-  ld [cursor_x],a
-  ld de,_SCRN0
-  ld h,$80
-  ld bc,32*18
-  call memset
-  ld hl,$8800
-  ld c,16
-  xor a
-  call memset_tiny
 
-  ld de,18
-  ld b,16
-  ld a,first_vwf_tileid
-  ld hl,_SCRN0+32*1+3
+  ; Clear CHR banks 1 and 2
+  ld de,$8800
+  ld h,e
+  ld bc,256*16
+  call memset
+  ; and the tilemap immediately following
+  ld h,$6F
+  ld bc,32*19
+  call memset
+
+  ; Fill top rows
+  pop bc
+  push bc
+  ld hl,_SCRN0 + 32*1 + (10 - vwf_page_width/2)
+  ld de,32 - vwf_page_width
+  ld a,vwf_page_first_tileid
+  call .filltilemaploop
+  ld bc,32  ; skip a row
+  add hl,bc
+  pop bc
+  ld b,c
   .filltilemaploop:
-    ld c,14
+    ld c,vwf_page_width
     call memset_inc
     add hl,de
     dec b
     jr nz,.filltilemaploop
+  ret
 
+do_instructions::
+  ld b,3
+  call vwf_page_init
+  xor a
+  ld [cursor_x],a
 .page:
 
   ; Draw the text
@@ -62,7 +80,8 @@ do_instructions::
   ld a,[cursor_x]
   ld de,pages
   call de_index_a
-  ld de,CHRRAM0 + first_vwf_tileid * 16
+  ld de,CHRRAM0 + vwf_page_first_tileid * 16
+  ; HL: text pointer; DE: VRAM pointer
   .lineloop:
     push hl
     call vwfClearBuf
@@ -74,7 +93,7 @@ do_instructions::
     push hl
     ld h,d
     ld l,e
-    ld bc,14
+    ld bc,vwf_page_width
     call vwfPutBuf03_lenC
     ld d,h
     ld e,l
@@ -84,11 +103,13 @@ do_instructions::
     jr nz,.lineloop
 
   call vwfClearBuf
+  jr .clrresttest
   .clrrestloop:
     ld h,0
-    ld bc,14*16
+    ld bc,vwf_page_width*16
     call memset
-    ld hl,$10000-(CHRRAM0 + (224 + first_vwf_tileid) * 16)
+  .clrresttest:
+    ld hl,$10000-(CHRRAM0 + ((16 * vwf_page_width) + vwf_page_first_tileid) * 16)
     add hl,de
     jr nc,.clrrestloop
 
@@ -97,6 +118,10 @@ do_instructions::
   ld a,LCDCF_ON|LCDCF_BGON|LCDCF_BG8800|LCDCF_BG9800
   ld [vblank_lcdc_value],a
   ldh [rLCDC],a
+  xor a
+  ldh [rSCX],a
+  ld a,4
+  ldh [rSCY],a
 
 .loop:
   call wait_vblank_irq
@@ -146,13 +171,14 @@ pages:
 pages_end:
 
 page1txt:
- db "Libbet and the",LF
- db "Magic Floor",LF
- db "v0.04wip (2019-02-15)",LF
  db LF
+ db "Libbet and the Magic Floor",LF
+ db "v0.04wip (2019-02-16)",LF
+ ; Row skipped because B=3
  db COPR," 2002, 2012 Martin Korth",LF
- db COPR," 2018 Damian Yerrick",LF
+ db COPR," 2018, 2019 Damian Yerrick",LF
  db LF
+ ; Can't cut 1 line here because "rearranging" and "passage" are so long
  db "One day, Libbet was",LF
  db "rearranging her basement",LF
  db "when she discovered a",LF

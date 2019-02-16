@@ -74,5 +74,9 @@ SAVE_GB_TYPE equ 0
 ; Do we display a variable in-game?
 USE_DEBUGHEX equ 1
 
+; Both instructions and debrief use vwf_page_init, which defines a
+; plane subject to this shape
+vwf_page_width = 16
+vwf_page_first_tileid = 256 - 8 * vwf_page_width
 
   ENDC
