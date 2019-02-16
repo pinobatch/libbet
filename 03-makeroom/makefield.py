@@ -57,7 +57,7 @@ constructors = [
     ('even', make_shuffled_field),
 ]
 fieldsizes = [
-    (2, 6),
+    (2, 8),
     (4, 4),
     (6, 4),
     (6, 6),
@@ -110,6 +110,7 @@ def is_move_open(field, x, y, dircode, reverse=False):
     return xtarget, ytarget
 
 NOT_RTR = 0x04
+IS_DEADEND = 0x08
 def find_reachable(field):
     """Modify a field in place to mark cells as not round trip reachable.
 
@@ -154,8 +155,11 @@ Return the count of round trip reachable cells.
     for row in field:
         for x in range(len(row)):
             c = row[x] & 0x03
-            if (row[x] & (ENTERED | RENTERED)) != ENTERED | RENTERED:
+            deadend_type = row[x] & (ENTERED | RENTERED)
+            if deadend_type != ENTERED | RENTERED:
                 c |= NOT_RTR
+            if deadend_type == RENTERED:
+                c |= IS_DEADEND
             row[x] = c
 
 # Field statistics ##################################################
@@ -195,10 +199,16 @@ def get_field_stats(field):
         0 if c & NOT_RTR else 1
         for c in field[-1]
     )
+    deadend_area = sum(
+        1 if c & IS_DEADEND else 0
+        for row in field
+        for c in row
+    )
     return {
         'area': len(field) * len(field[0]),
         'rtr_area': rtr_area,
         'rtr_back_row': rtr_back_row,
+        'deadend_area': deadend_area,
         'max_score': calc_max_score(field),
     }
 
@@ -252,14 +262,16 @@ vigintiles_names = ["5% <=", "25% <=", "50% <=", "75% <=", "95% <=", "max"]
 
 def all_tests():
     allstatnames = set()
-    NUM_TRIALS = 2000
+    NUM_TRIALS = 3000
     print("Generating %d rooms per combination of size and randomizer"
           % NUM_TRIALS)
+    no_deadend_odds = {n: 1.0 for n, f in constructors}
     for w, h in fieldsizes:
         for buildname, buildfunc in constructors:
             allstats = defaultdict(list)
             constraintvalues = defaultdict(int)
-            num_all_ok = 0
+            num_all_ok = num_all_ok_deadend = 0
+            at_least_one_deadend = 1.0
             for i in range(NUM_TRIALS):
                 field = buildfunc(w, h)
                 find_reachable(field)
@@ -276,11 +288,17 @@ def all_tests():
                         constraintvalues[constraintname] += 1
                 if all_ok:
                     num_all_ok += 1
+                    if stats['deadend_area'] > 0:
+                        num_all_ok_deadend += 1
+
+            no_deadend_odds[buildname] *= 1 - (num_all_ok_deadend / num_all_ok)
+            vigs = sorted((n, key_vigintiles(v)) for n, v in allstats.items())
+
+            # Compose report for this stat
             lines = [
                 "%dx%d %s" % (w, h, buildname),
                 "area: %d" % (w * h,)
             ]
-            vigs = sorted((n, key_vigintiles(v)) for n, v in allstats.items())
             lines.extend(
                 "%s: %s" % (name, ", ".join(
                     "%s %s" % (n, v) for n, v in zip(vigintiles_names, values)
@@ -288,11 +306,15 @@ def all_tests():
                 for name, values in vigs
             )
             lines.extend(
-                "%s: %d%%"
+                "%s: %.1f%%"
                 % (n, constraintvalues[n] * 100 / NUM_TRIALS)
                 for n, _ in constraints
             )
-            lines.append("all: %d%%" % (num_all_ok * 100 / NUM_TRIALS,))
+            lines.append("all: %.1f%%" % (num_all_ok * 100 / NUM_TRIALS,))
+            lines.append("dead end among ok: %.1f%%"
+                         % (num_all_ok_deadend * 100 / num_all_ok,))
+            lines.append("at least 1 dead end so far: %.1f%%"
+                         % ((1 - no_deadend_odds[buildname]) * 100,))
             print("\n  ".join(lines))
 
 # Cheating ##########################################################
@@ -310,7 +332,7 @@ def solve(field):
     find_reachable(field)
     s = calc_max_score(field, writeback=True)
     print("\n".join("".join(
-        "◍" if c & 0x04 else arrowsymbols[c>>4]
+        "○" if c & 0x08 else "◍" if c & 0x04 else arrowsymbols[c>>4]
         for c in row) for row in field))
     print("/%s" % s)
 
