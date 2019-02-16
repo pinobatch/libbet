@@ -677,6 +677,11 @@ get_exit_distance::
   ; Add cursor_y
   ld b,a
   ld a,[cursor_y]
+  bit 7,a  ; If in exit, distance is 0
+  jr z,.not_in_exit
+    xor a
+    ret
+  .not_in_exit:
   add b
   ret
 

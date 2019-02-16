@@ -132,7 +132,6 @@ debrief::
     ; C: remaining achievements
     ; DE: pointer to current achievement earned
     ; HL: pointer into VWF canvas
-    ld b,b
     .ach_loop:
       ld a,[de]
       cp b  ; If the achievement wasn't earned here, don't print it
@@ -229,7 +228,3 @@ floor3_name: db "Abcde6x4",0
 floor4_name: db "Fghij6x6",0
 floor5_name: db "Klmno8x6",0
 press_start_msg: db "Press Start",0
-
-achievement_names:
-  dw ach_100pct_name
-ach_100pct_name: db "Completionist",0

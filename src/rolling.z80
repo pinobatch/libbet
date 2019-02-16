@@ -311,12 +311,26 @@ move_player_anim::
     ; Ball return: Go to a Z position above home
     bit FRHB_BALLRETURN,h
     jr z,.no_ballreturn
+
+      ; If player is earning Sink it, skip launch animation
+      ld a,[move_flags]
+      bit MVFB_MOVED_SINCE_100,a
+      jr nz,.regular_launch
+        ld a,$FF
+        ld [cursor_y],a
+        ld a,[exit_x]
+        ld [cursor_x],a
+        jp init_player_pos
+      .regular_launch:
+
+      ; Play launch sound
       push bc
       push hl
       ld a,7
-      call audio_play_fx  ; launch sound
+      call audio_play_fx
       pop hl
       pop bc
+
       call set_roll_start_pos  ; go home
       xor a
       ld [roll_dz],a  ; up/down velocity to 0

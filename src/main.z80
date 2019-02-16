@@ -36,6 +36,7 @@ section "mainvars", WRAM0
 cur_floor:: ds 1
 attract_mode:: ds 1
 floor_scores:: ds (floor_sizes_end - floor_sizes)
+move_flags:: ds 1
 
 section "main", ROM0
 
@@ -82,8 +83,17 @@ another_floor:
     call srand
   endc
 
+  xor a
+  ldh [rBGP],a
+  ldh [rOBP0],a
+  ldh [rOBP1],a
+
   ld a,[attract_mode]
-  or a
+  if USE_ATTRACT_FLOOR
+    inc a
+  else
+    or a
+  endc
   jr nz,.load_attract_floor
 
     ; Generate the floor
@@ -110,6 +120,7 @@ another_floor:
 
   xor a
   ld [cur_score],a
+  ld [move_flags],a
   call place_exit
 
   ; Clear the map
@@ -145,6 +156,7 @@ another_floor:
 
 forever:
 ;  call get_exit_distance
+;  ld a,[move_flags]
 ;  ld [debughex+0],a
 
   call move_player_anim
@@ -178,6 +190,7 @@ forever:
 
   call check_exit_pct
   jr nc,.exit_not_opened
+    ; 90%: Exit just opened
     ld a,6
     call audio_play_fx
     call prepare_exit_door
@@ -207,6 +220,16 @@ forever:
       call player_start_fall
       ld a,3
       call audio_play_fx
+
+      ; Not moved since 100%?
+      ld a,[move_flags]
+      bit MVFB_MOVED_SINCE_100,a
+      jr nz,.not_sink_it
+        call fade_out
+        ld a,-1
+        ld [cursor_y],a
+        jr .not_begin_move
+      .not_sink_it:
       call cursor_to_home
       jr .not_begin_move
     .not_on_deadend:
@@ -260,7 +283,19 @@ forever:
 try_move:
   ld b,a
   and PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
-  ret z
+  jr nz,.button_is_pressed
+  .hesitated:
+    ; Don't count hesitation if already in the exit
+    ld a,[cursor_y]
+    add a
+    ret c
+    ; If the player hesitates (doesn't make a valid move) in a given
+    ; frame, mark it as such
+    ld hl,move_flags
+    set MVFB_PAUSED_SINCE_START,[hl]
+    set MVFB_PAUSED_SINCE_100,[hl]
+    ret
+  .button_is_pressed:
 
   ld c,$FF
   swap a
@@ -286,15 +321,20 @@ try_move:
     ; while the exit is open
     ld a,2  ; roll up
     xor c
-    ret nz
+    jr nz,.hesitated
     call check_exitable_cell
-    ret nc
+    jr nc,.hesitated
 
     ; Mark the floor as exited
-    ld c,2
+    ld c,PADB_UP - 4
     call player_start_roll
     ld a,$FF
     ld [cursor_y],a
+
+    ; The exit move flag distinguishes a roll to the exit
+    ; from a 100% on a dead end
+    ld hl,move_flags
+    set MVFB_MOVED_SINCE_100,[hl]
     jp fade_out
   .have_valid_move:
 
@@ -302,6 +342,13 @@ try_move:
   push hl
   push de
   call player_start_roll
+  ld hl,move_flags
+  bit 7,[hl]
+  jr nz,.is_not_first_move
+    res MVFB_PAUSED_SINCE_START,[hl]
+    set MVFB_MOVED_ONCE,[hl]
+  .is_not_first_move:
+  set MVFB_MOVED_SINCE_100,[hl]
   pop de
   pop hl
   pop af
@@ -343,10 +390,16 @@ try_move:
       ld a,[max_score]
       cp b
       jr nz,.not_100_percented
+        ; 100%: Prepare for Sink it and Dash for the door
         ld a,6
         call audio_play_fx
         call fade_in
+        ld hl,move_flags
+        res MVFB_PAUSED_SINCE_100,[hl]
+        res MVFB_MOVED_SINCE_100,[hl]
+        res MVFB_RETREATED_SINCE_100,[hl]
       .not_100_percented:
+
       call prepare_hDrawCell
       call prepare_pctage
     .already_have_track_bit:

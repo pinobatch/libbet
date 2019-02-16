@@ -22,20 +22,21 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-ACH_100PCT = 0
-
 section "achievements_ram", WRAM0
 
-; Floor on which each was earned, or $FF for none
 achievements_found_since_power: ds NUM_ACHIEVEMENTS
+last_exit_distance: ds 1
+achievements_init_clear_end:
+
+; Floor on which each was earned, or $FF for none
 achievements_found_this_game:: ds NUM_ACHIEVEMENTS
 
 section "achievements", ROM0
 achievements_init::
   ; In case we decide to show achievements only once per power cycle
   xor a
-  ld c,NUM_ACHIEVEMENTS
-  ld hl,achievements_found_this_game
+  ld c,achievements_init_clear_end - achievements_found_since_power
+  ld hl,achievements_found_since_power
   jp memset_tiny
 
 achievements_new_game::
@@ -57,12 +58,42 @@ achievements_frame::
   or a
   ret nz
 
+  call get_exit_distance
+  ld b,a
+  ld a,[last_exit_distance]
+  cp b
+  jr nc,.distance_did_not_increase
+    ld hl,move_flags
+    set MVFB_RETREATED_SINCE_100,[hl]
+  .distance_did_not_increase:
+  ld a,b
+  ld [last_exit_distance],a
   ret
 
 achievements_end_floor::
   ld a,[attract_mode]
   or a
   ret nz
+
+  ; "Sink it": Reach 100% by moving to a dead end
+  ld hl,move_flags
+  bit MVFB_MOVED_SINCE_100,[hl]
+  jr nz,.not_sink_it
+    ld a,ACH_100PCT_DEADEND
+    call achievements_earn
+    jr .not_dash_for_the_door
+  .not_sink_it:
+
+  ; "Dash for the door": Clear without having hesitated or increased
+  ; Manhattan distance from door since reaching 100%
+  bit MVFB_PAUSED_SINCE_100,[hl]
+  jr nz,.not_dash_for_the_door
+  bit MVFB_RETREATED_SINCE_100,[hl]
+  jr nz,.not_dash_for_the_door
+  ld a,ACH_DASH_FOR_DOOR
+  call achievements_earn
+
+.not_dash_for_the_door:
 
   ; "Completionist": Finish final floor with all floor scores
   ; equal to maximum
@@ -86,6 +117,7 @@ achievements_end_floor::
   ret
 
 ; Earn achievement A
+; @return AHL clobbered
 achievements_earn:
   add LOW(achievements_found_this_game)
   ld l,a
@@ -104,3 +136,13 @@ achievements_earn:
   ; TODO: Save in achievements since power
   ; TODO: Queue achievement for display
   ret
+
+section "achievement_names", ROM0
+achievement_names::
+  dw ach_100pct_name, ach_100pct_deadend_name, ach_dash_for_door_name
+  dw ach_restless_name, ach_no_scope_name
+ach_100pct_name: db "Completionist",0
+ach_100pct_deadend_name: db "Sink it",0
+ach_dash_for_door_name: db "Dash for the door",0
+ach_restless_name: db "Restless",0
+ach_no_scope_name: db "No scope",0
