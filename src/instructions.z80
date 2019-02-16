@@ -32,6 +32,13 @@ section "instructions", ROM0
 ; Sets up a 128-pixel-wide VWF window on rows 1 to B and B+2 to 17
 ; @param B number of rows before first blank row
 vwf_page_init::
+  ld a,%00001100
+  ldh [rBGP],a
+  xor a
+  ldh [rSCX],a
+  ld a,4
+  ldh [rSCY],a
+
   ld a,16  ; calculate num
   sub b
   ld c,a
@@ -113,15 +120,9 @@ do_instructions::
     add hl,de
     jr nc,.clrrestloop
 
-  ld a,%00001100
-  ldh [rBGP],a
   ld a,LCDCF_ON|LCDCF_BGON|LCDCF_BG8800|LCDCF_BG9800
   ld [vblank_lcdc_value],a
   ldh [rLCDC],a
-  xor a
-  ldh [rSCX],a
-  ld a,4
-  ldh [rSCY],a
 
 .loop:
   call wait_vblank_irq

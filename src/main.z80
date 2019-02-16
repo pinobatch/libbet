@@ -69,6 +69,8 @@ main::
   call run_dma  ; shut up BGB
   xor a
   ld [cur_level],a
+  ldh [rSCX],a
+  ldh [rSCY],a
 
 another_floor:
   if RANDOMIZE_SEED
@@ -237,7 +239,6 @@ forever:
   adc HIGH(level_scores)
   sub l
   ld h,a
-  ld b,b
   ld a,[cur_score]
   ld [hl+],a
   ld [debughex+0],a
@@ -248,10 +249,11 @@ forever:
   ; If not at the end of the game, go to next level
   ld a,[cur_level]
   inc a
-  cp (level_floor_sizes_end - level_floor_sizes) / 2
-  jp nc,main
   ld [cur_level],a
-  jp another_floor
+  cp (level_floor_sizes_end - level_floor_sizes) / 2
+  jp c,another_floor
+  call debrief
+  jp main
 
 try_move:
   ld b,a

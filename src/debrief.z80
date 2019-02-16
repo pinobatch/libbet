@@ -20,3 +20,34 @@
 ;    misrepresented as being the original software.
 ; 3. This notice may not be removed or altered from any source distribution.
 ;
+include "src/hardware.inc"
+include "src/global.inc"
+
+section "debrief", ROM0
+debrief::
+  ld b,1
+  call vwf_page_init
+  call audio_update
+
+  call vwfClearBuf
+  ld hl,results_msg
+  ld b,0
+  call vwfPuts
+  ld hl,CHRRAM0 + vwf_page_first_tileid * 16
+  ld bc,vwf_page_width
+  call vwfPutBuf03_lenC
+
+  ld a,LCDCF_ON|LCDCF_BGON|LCDCF_BG8800|LCDCF_BG9800
+  ld [vblank_lcdc_value],a
+  ldh [rLCDC],a
+
+.waitloop:
+  call wait_vblank_irq
+  call audio_update
+  call read_pad
+  ld a,[new_keys]
+  and PADF_A|PADF_START
+  jr z,.waitloop
+  ret
+
+results_msg: db "Results",0
