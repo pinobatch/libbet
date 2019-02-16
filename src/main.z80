@@ -1,9 +1,26 @@
+; GB port of Magic Floor
+;
+; Copyright 2002, 2012 Martin Korth
+; Copyright 2018, 2019 Damian Yerrick
+;
+; License: zlib
+;
 include "src/hardware.inc"
 include "src/global.inc"
+
+section "levelsizes", ROM0
+level_floor_sizes:
+  db 2, 8
+  db 4, 4
+  db 6, 4
+  db 6, 6
+  db 8, 6
+level_floor_sizes_end:
 
 section "mainvars", WRAM0
 cur_level: ds 1
 attract_mode: ds 1
+level_scores:: ds (level_floor_sizes_end - level_floor_sizes)
 
 section "main", ROM0
 
@@ -108,8 +125,8 @@ another_floor:
   ldh [rLCDC],a
 
 forever:
-  call get_exit_distance
-  ld [debughex+0],a
+;  call get_exit_distance
+;  ld [debughex+0],a
 
   call move_player_anim
   xor a
@@ -197,6 +214,23 @@ forever:
   jp forever
 
 .next_floor:
+  ; Save level score
+  ld a,[cur_level]
+  add a
+  add LOW(level_scores)
+  ld l,a
+  adc HIGH(level_scores)
+  sub l
+  ld h,a
+  ld b,b
+  ld a,[cur_score]
+  ld [hl+],a
+  ld [debughex+0],a
+  ld a,[max_score]
+  ld [hl+],a
+  ld [debughex+1],a
+
+  ; If not at the end of the game, go to next level
   ld a,[cur_level]
   inc a
   cp (level_floor_sizes_end - level_floor_sizes) / 2
@@ -314,15 +348,6 @@ try_move:
   ld [cursor_x],a
   ret
 
-level_floor_sizes:
-  db 2, 8
-  db 4, 4
-  db 6, 4
-  db 6, 6
-  db 8, 6
-level_floor_sizes_end:
-
 section "Libbet_chr", ROM0
 Libbet_pb16:
   incbin "obj/gb/Libbet.chrgb.pb16"
-

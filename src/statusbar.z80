@@ -20,6 +20,13 @@ section "load_statusbar", ROM0
 ;;
 ; Expands 1bpp tiles to shadowed 2bpp
 load_statusbar_chr::
+  if USE_DEBUGHEX
+    ld hl,debughex
+    ld a,$C0
+    ld [hl+],a
+    ld [hl],$DE
+  endc
+
   ld de,bigdigits_chr
   ld hl,$8000 + SMALL_DIGIT_BASE * 16
   ld bc,(STATUSBAR_CHR_COUNT<<8)|$FF  ; B: tilecount; C: notlastbyte
@@ -47,13 +54,6 @@ load_statusbar_chr::
 ; Draws the unchanging parts of the status bar and prepares the
 ; current score in Popslide buffer.
 draw_statusbar_tilemap::
-
-  if USE_DEBUGHEX
-    ld hl,debughex
-    ld a,$C0
-    ld [hl+],a
-    ld [hl],$DE
-  endc
 
   ; Clear status bar to solid blank tiles
   ld hl,_SCRN0+32*16
