@@ -230,7 +230,7 @@ vwfStrWidth::
 
 ;;
 ; Clears the line image.
-; Clobbers HL; C=0
+; @return C = 0; HL = lineImgBuf + lineImgBufLen
 vwfClearBuf::
   ld hl,lineImgBuf
   ld c,lineImgBufLen/4

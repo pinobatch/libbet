@@ -125,11 +125,46 @@ debrief::
     call vwfPutBuf03_lenC
     pop bc
 
+    ld c,NUM_ACHIEVEMENTS
+    ld de,achievements_found_this_game
+    ; At this point: stack is empty
+    ; B: floor number
+    ; C: remaining achievements
+    ; DE: pointer to current achievement earned
+    ; HL: pointer into VWF canvas
+    ld b,b
+    .ach_loop:
+      ld a,[de]
+      cp b  ; If the achievement wasn't earned here, don't print it
+      jr nz,.ach_continue
+        push de
+        push bc
+        push hl
+        call vwfClearBuf
+
+        ; Print up name of achievement that DE points to
+        ld a,e
+        sub LOW(achievements_found_this_game)  ; A = achievement ID
+        ld de,achievement_names
+        call de_index_a
+        ld b,8
+        call vwfPuts
+
+        pop hl
+        ld bc,vwf_page_width
+        call vwfPutBuf03_lenC
+        pop bc
+        pop de
+      .ach_continue:
+      inc de
+      dec c
+      jr nz,.ach_loop
+
     ; Move to next floor
     inc b
     ld a,b
-    cp (floor_names_end-floor_names)/2
-    jr c,.floorloop
+    cp NUM_FLOORS
+    jp c,.floorloop
 
   push hl
   call vwfClearBuf
@@ -188,10 +223,13 @@ stpcpy::
 results_msg: db "Results",0
 floor_names:
   dw floor1_name, floor2_name, floor3_name, floor4_name, floor5_name
-floor_names_end:
 floor1_name: db "Corridor",0
 floor2_name: db "Anteroom",0
 floor3_name: db "Abcde6x4",0
 floor4_name: db "Fghij6x6",0
 floor5_name: db "Klmno8x6",0
 press_start_msg: db "Press Start",0
+
+achievement_names:
+  dw ach_100pct_name
+ach_100pct_name: db "Completionist",0

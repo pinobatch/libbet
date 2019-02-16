@@ -79,4 +79,8 @@ USE_DEBUGHEX equ 1
 vwf_page_width = 16
 vwf_page_first_tileid = 256 - 8 * vwf_page_width
 
+; achievements needs NUM_FLOORS to calculate Completionist
+NUM_FLOORS = 2
+NUM_ACHIEVEMENTS = 1
+
   ENDC

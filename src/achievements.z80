@@ -19,3 +19,88 @@
 ;    misrepresented as being the original software.
 ; 3. This notice may not be removed or altered from any source distribution.
 ;
+include "src/hardware.inc"
+include "src/global.inc"
+
+ACH_100PCT = 0
+
+section "achievements_ram", WRAM0
+
+; Floor on which each was earned, or $FF for none
+achievements_found_since_power: ds NUM_ACHIEVEMENTS
+achievements_found_this_game:: ds NUM_ACHIEVEMENTS
+
+section "achievements", ROM0
+achievements_init::
+  ; In case we decide to show achievements only once per power cycle
+  xor a
+  ld c,NUM_ACHIEVEMENTS
+  ld hl,achievements_found_this_game
+  jp memset_tiny
+
+achievements_new_game::
+  ld a,$FF
+  ld c,NUM_ACHIEVEMENTS
+  ld hl,achievements_found_this_game
+  jp memset_tiny
+
+achievements_new_floor::
+  ld a,[attract_mode]
+  or a
+  ret nz
+
+  ; TODO: prep Restless
+  ret
+
+achievements_frame::
+  ld a,[attract_mode]
+  or a
+  ret nz
+
+  ret
+
+achievements_end_floor::
+  ld a,[attract_mode]
+  or a
+  ret nz
+
+  ; "Completionist": Finish final floor with all floor scores
+  ; equal to maximum
+  ld a,[cur_floor]
+  cp NUM_FLOORS - 1
+  jr nz,.not_completionist
+  inc a
+  ld b,a
+  ld hl,floor_scores
+  .testloop:
+    ld a,[hl+]  ; score
+    cp [hl]     ; max score
+    jr c,.not_completionist
+    inc hl
+    dec b
+    jr nz,.testloop
+  ld a,ACH_100PCT
+  call achievements_earn
+.not_completionist:
+
+  ret
+
+; Earn achievement A
+achievements_earn:
+  add LOW(achievements_found_this_game)
+  ld l,a
+  adc HIGH(achievements_found_this_game)
+  sub l
+  ld h,a
+
+  ; Save the first floor on which each achievement was earned.
+  ; This means if this achievement was already earned this game,
+  ; don't award it again
+  bit 7,[hl]
+  ret z
+  ld a,[cur_floor]
+  ld [hl],a
+
+  ; TODO: Save in achievements since power
+  ; TODO: Queue achievement for display
+  ret

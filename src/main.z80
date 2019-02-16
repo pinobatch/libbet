@@ -33,8 +33,8 @@ floor_sizes:
 floor_sizes_end:
 
 section "mainvars", WRAM0
-cur_floor: ds 1
-attract_mode: ds 1
+cur_floor:: ds 1
+attract_mode:: ds 1
 floor_scores:: ds (floor_sizes_end - floor_sizes)
 
 section "main", ROM0
@@ -71,6 +71,7 @@ main::
   ld [cur_floor],a
   ldh [rSCX],a
   ldh [rSCY],a
+  call achievements_new_game
 
 another_floor:
   if RANDOMIZE_SEED
@@ -126,6 +127,7 @@ another_floor:
   call draw_floor_border
   call prepare_exit_door  ; leave exit door in popslide buffer
   call draw_statusbar_tilemap  ; leave score in popslide buffer
+  call achievements_new_floor
 
   ld a,[attract_mode]
   or a
@@ -228,6 +230,7 @@ forever:
   jp nz,another_floor
   endc
 
+  call achievements_frame
   jp forever
 
 .next_floor:
@@ -243,12 +246,13 @@ forever:
   ld [hl+],a
   ld a,[max_score]
   ld [hl],a
+  call achievements_end_floor
 
   ; If not at the end of the game, go to next floor
   ld a,[cur_floor]
   inc a
   ld [cur_floor],a
-  cp (floor_sizes_end - floor_sizes) / 2
+  cp NUM_FLOORS
   jp c,another_floor
   call debrief
   jp main
