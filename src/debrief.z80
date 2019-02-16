@@ -23,6 +23,10 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
+section "linebuffer", WRAM0
+txtbuffer:
+  ds 32
+
 section "debrief", ROM0
 debrief::
   ld b,1
@@ -34,6 +38,110 @@ debrief::
   ld b,0
   call vwfPuts
   ld hl,CHRRAM0 + vwf_page_first_tileid * 16
+  ld bc,vwf_page_width
+  call vwfPutBuf03_lenC
+
+  ld b,0
+  ; HL: Output pointer in VWF plane
+  ; B: Level number
+  .floorloop:
+    push hl
+    push bc
+    call vwfClearBuf
+    ld de,floor_names
+    ld a,b
+    call de_index_a  ; HL: name of floor
+    ld de,txtbuffer
+    call stpcpy
+
+    ; Separator
+    ld a,":"
+    ld [de],a
+    inc de
+    ld a," "
+    ld [de],a
+    inc de
+
+    ; Fetch score and maximum score
+    pop bc
+    push bc
+    push de
+    ld a,b
+    ld de,level_scores
+    call de_index_a
+    pop de
+    ; L: actual score; H: maximum score
+    ld a,l
+    call wr2bcd_de
+    ld a,"/"
+    ld [de],a
+    inc de
+    ld a,h
+    call wr2bcd_de
+
+    ; Separator
+    ld a," "
+    ld [de],a
+    inc de
+    ld a,"("
+    ld [de],a
+    inc de
+
+    ; 100%?
+    ld a,l
+    cp h
+    jr c,.not100
+      ld a,"1"
+      ld [de],a
+      inc de
+      xor a
+    .not100:
+    ; Write percentage
+    ld b,a
+    ld c,h
+    ld h,d
+    ld l,e
+    call pctdigit
+    or "0"
+    ld [hl+],a
+    call pctdigit
+    or "0"
+    ld [hl+],a
+    ld a,"%"
+    ld [hl+],a
+    ld a,")"
+    ld [hl+],a
+
+    ; Terminate and write string
+    xor a
+    ld [hl],a
+    ld hl,txtbuffer
+    ld b,0
+    call vwfPuts
+    pop bc
+    pop hl
+    push bc
+    ld bc,vwf_page_width
+    call vwfPutBuf03_lenC
+    pop bc
+
+    ; Move to next floor
+    inc b
+    ld a,b
+    cp (floor_names_end-floor_names)/2
+    jr c,.floorloop
+
+  push hl
+  call vwfClearBuf
+  pop hl
+  ld bc,vwf_page_width
+  call vwfPutBuf03_lenC
+  push hl
+  call vwfClearBuf
+  ld hl,press_start_msg
+  ld b,0
+  call vwfPuts
+  pop hl
   ld bc,vwf_page_width
   call vwfPutBuf03_lenC
 
@@ -50,4 +158,40 @@ debrief::
   jr z,.waitloop
   ret
 
+wr2bcd_de:
+  call bcd8bit_baa
+  ld c,a
+  swap a
+  call wr1_de
+  ld a,c
+wr1_de:
+  and $0F
+  or "0"
+  ld [de],a
+  inc de
+  ret
+
+;;
+; Copies from HL to DE, stopping at a $00 byte
+; @param HL source
+; @param DE destination
+; @return A = 0; D = pointer to final NUL
+stpcpy_continue:
+  inc de
+stpcpy::
+  ld a,[hl+]
+  ld [de],a
+  or a
+  jr nz,stpcpy_continue
+  ret
+
 results_msg: db "Results",0
+floor_names:
+  dw floor1_name, floor2_name, floor3_name, floor4_name, floor5_name
+floor_names_end:
+floor1_name: db "Corridor",0
+floor2_name: db "Anteroom",0
+floor3_name: db "Abcde6x4",0
+floor4_name: db "Fghij6x6",0
+floor5_name: db "Klmno8x6",0
+press_start_msg: db "Press Start",0
