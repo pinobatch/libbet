@@ -328,9 +328,16 @@ try_move:
     ; while the exit is open
     ld a,2  ; roll up
     xor c
-    jr nz,.hesitated
+    jr nz,.invalid_move
     call check_exitable_cell
-    jr nc,.hesitated
+    jr c,.roll_to_exit
+    .invalid_move:
+      ; Making an invalid move is counted as "peeking" for the
+      ; No peeking achievement
+      ld hl,move_flags
+      set MVFB_PEEKED_SINCE_START,[hl]
+      jr .hesitated
+    .roll_to_exit:
 
     ; Mark the floor as exited
     ld c,PADB_UP - 4
