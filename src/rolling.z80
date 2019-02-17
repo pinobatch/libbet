@@ -54,8 +54,8 @@ FRHF_LAST     equ %10000000
 Libbet_framelist:
   ; 7654 3210  Byte 0
   ; |||| ++++- Cel ID
-  ; |||+------ Move on this frame
-  ; ||+------- Set roll_dz at start of this frame
+  ; |||+------ Add dx, dy, dz to x, y, z during this frame
+  ; ||+------- Set roll_dz to takeoff velocity at start of this frame
   ; |+-------- A move beginning with a tuck can begin here
   ; +--------- A continued roll can begin here
   ; 7654 3210  Byte 1
@@ -174,7 +174,7 @@ player_can_start_roll::
   ret
 
 ;;
-; @param C roll direction
+; @param C roll direction (0-7: R, L, U, D, RR, LL, UU, DD)
 ; @param cursor_x starting X position
 ; @param cursor_y starting Y position
 ; @return DE clobbered; HL = frame properties; A = frame length
@@ -345,6 +345,17 @@ move_player_anim::
       add 16
       ld [roll_y],a
     .no_ballreturn:
+
+    ; If a continued roll can begin here, invalidate
+    ; "no peeking" achievement
+    bit FRLB_KEEPROLL,l
+    jr z,.not_peeking
+      ld d,a
+      ld a,[move_flags]
+      set MVFB_PEEKED_SINCE_START,a
+      ld [move_flags],a
+      ld a,d
+    .not_peeking:
 
     ; If the last frame, reset to frame A (which is 0)
     bit FRHB_LAST,h

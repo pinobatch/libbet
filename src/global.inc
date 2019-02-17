@@ -80,33 +80,41 @@ vwf_page_width = 16
 vwf_page_first_tileid = 256 - 8 * vwf_page_width
 
 ; achievements needs NUM_FLOORS to calculate Completionist
+; this is 5 for production or often 2 for debugging
 NUM_FLOORS = 5
 
 ; 1: use the attract mode floor for a predictable
 ; when testing achievements
 USE_ATTRACT_FLOOR = 0
 
+; 1: Hold Start to pause 
+SPRING_LOAD_PAUSE = 0
+
 ACH_100PCT = 0
 ACH_100PCT_DEADEND = 1
 ACH_DASH_FOR_DOOR = 2
-ACH_RESTLESS = 3
-ACH_NO_SCOPE = 4
-NUM_ACHIEVEMENTS = 5
+ACH_NO_PEEKING = 3
+ACH_RESTLESS = 4
+ACH_NO_SCOPE = 5
+NUM_ACHIEVEMENTS = 6
 
 ; move_flags constants related to the achievements
 ; Sink it, Restless, and Dash for the door
 ; Moving without MOVED_ONCE clears PAUSED_SINCE_START
 ; Moving sets MOVED_ONCE and MOVED_SINCE_100
 ; Not moving sets PAUSED_SINCE_START and PAUSED_SINCE_100
+; Advancing from a FRLF_KEEPROLL frame sets PEEKED_SINCE_START
 ; Moving farther from the exit sets RETREATED_SINCE_100
-; Exit without PAUSED_SINCE_START earns Restless
 ; 100% clears PAUSED_SINCE_100 and MOVED_SINCE_100
+; Exit without PAUSED_SINCE_START earns Restless
 ; Exit without PAUSED_SINCE_100 earns Dash for the door
-; Entering dead end without MVF_MOVED_SINCE_100 earns Sink it
+; Exit without MOVED_SINCE_100 (possible only by landing on a
+; dead end) earns Sink it
 MVFB_MOVED_ONCE = 7
-MVFB_PAUSED_SINCE_START = 6
+MVFB_RETREATED_SINCE_100 = 6
 MVFB_MOVED_SINCE_100 = 5
 MVFB_PAUSED_SINCE_100 = 4
-MVFB_RETREATED_SINCE_100 = 3
+MVFB_PEEKED_SINCE_START = 1
+MVFB_PAUSED_SINCE_START = 0
 
   ENDC

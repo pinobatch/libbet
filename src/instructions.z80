@@ -458,6 +458,8 @@ attract_update::
     ld a,$FF
     jr .set_vwf_x_clear_linebuf
 
+; Attract mode map ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 section "attractdata", ROM0
 
 attract_map::
@@ -467,8 +469,34 @@ attract_map::
  db 3, 2, 2, 1  ; 1
  ;  a  b  c  d
 
+; This floor has 20 points and its solution is as follows:
+; _____ _____ _| |__ _____
+;|     |     |     |     |
+;|  3 >|  0 >|  0 >| (1) |
+;|__v__|__v__|__ __|__ __|
+;|  ^  |     |     |     |
+;|  2  |  2 >|< 1  |  3  |
+;|__v__|__ __|__v__|__ __|
+;|     |  ^  |  ^  |     |
+;|  0 >|  1  |< 0  |< 3  |
+;|__ __|__v__|__ __|__ __|
+;|  ^  |     |     |     |
+;|  3  |< 2  |< 2  | X1X |
+;|__ __|__ __|__ __|__ __|
+;
+; This route is used when testing Restless. It differs from the
+; attract mode route in not visiting the dead end.
+; AL U AR L D  L U R U AR
+; D L U AL U   R R D AD L
+; AU L U AD R  U L AD U R
+; U L U R AD   U L U R R
+; U
+
 ; Attract mode script ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+section "attractmap", ROM0
+
+; AM_constants are one greater than the underlying move code
 AM_R equ $01
 AM_L equ $02
 AM_U equ $03

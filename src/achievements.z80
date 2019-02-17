@@ -76,8 +76,8 @@ achievements_end_floor::
   ret nz
 
   ; "Sink it": Reach 100% by moving to a dead end
-  ld hl,move_flags
-  bit MVFB_MOVED_SINCE_100,[hl]
+  ld a,[move_flags]
+  bit MVFB_MOVED_SINCE_100,a
   jr nz,.not_sink_it
     ld a,ACH_100PCT_DEADEND
     call achievements_earn
@@ -86,14 +86,25 @@ achievements_end_floor::
 
   ; "Dash for the door": Clear without having hesitated or increased
   ; Manhattan distance from door since reaching 100%
-  bit MVFB_PAUSED_SINCE_100,[hl]
+  bit MVFB_PAUSED_SINCE_100,a
   jr nz,.not_dash_for_the_door
-  bit MVFB_RETREATED_SINCE_100,[hl]
-  jr nz,.not_dash_for_the_door
+  bit MVFB_RETREATED_SINCE_100,a
   ld a,ACH_DASH_FOR_DOOR
-  call achievements_earn
-
+  call z,achievements_earn
 .not_dash_for_the_door:
+
+  ; "Restless": Clear without having hesitated since first move
+  ld a,[move_flags]
+  bit MVFB_PAUSED_SINCE_START,a
+  ld a,ACH_RESTLESS
+  call z,achievements_earn
+
+  ; "No peeking": Clear without having hesitated long enough to
+  ; lift your head since first move
+  ld a,[move_flags]
+  bit MVFB_PEEKED_SINCE_START,a
+  ld a,ACH_NO_PEEKING
+  call z,achievements_earn
 
   ; "Completionist": Finish final floor with all floor scores
   ; equal to maximum
@@ -140,9 +151,10 @@ achievements_earn:
 section "achievement_names", ROM0
 achievement_names::
   dw ach_100pct_name, ach_100pct_deadend_name, ach_dash_for_door_name
-  dw ach_restless_name, ach_no_scope_name
+  dw ach_no_peeking_name, ach_restless_name, ach_no_scope_name
 ach_100pct_name: db "Completionist",0
 ach_100pct_deadend_name: db "Sink it",0
 ach_dash_for_door_name: db "Dash for the door",0
+ach_no_peeking_name: db "No peeking",0
 ach_restless_name: db "Restless",0
 ach_no_scope_name: db "No scope",0
