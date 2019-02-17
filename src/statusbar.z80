@@ -34,6 +34,12 @@ SMALL_SCORE_POS equ _SCRN0+32*17+14
 PCTAGE_POS equ _SCRN0+32*16+9
 DEBUGHEX_POS equ _SCRN0+32*17+0
 
+EARNED_BLANK = $FF
+EARNED_LABEL_BASE = $F8
+EARNED_LABEL_NTILES = 8
+EARNED_NAME_BASE = $C0
+EARNED_NAME_NTILES = 12
+
 section "debughex", WRAM0
 debughex:: ds 2
 
@@ -70,12 +76,38 @@ load_statusbar_chr::
     jr nz,.byteloop
     dec b
     jr nz,.byteloop
-  ret
+
+  ; Space for achievement name
+  call vwfClearBuf
+  ld hl,earned_msg
+  ld b,0
+  call vwfPuts
+  ld hl,CHRRAM0+16*EARNED_LABEL_BASE
+  ld bc,$FF00 | EARNED_LABEL_NTILES
+  call vwfPutBuf03_lenC
+  ld hl,CHRRAM0+16*EARNED_NAME_BASE
+  ld c,low(EARNED_NAME_NTILES * 16)
+  xor a
+  jp memset_tiny
 
 ;;
 ; Draws the unchanging parts of the status bar and prepares the
 ; current score in Popslide buffer.
 draw_statusbar_tilemap::
+
+  ; Prepare window for display of achievements
+  ld hl,_SCRN1
+  ld a,EARNED_BLANK
+  ld c,32+20
+  call memset_tiny
+  ld hl,_SCRN1+32*0+2
+  ld a,EARNED_LABEL_BASE
+  ld c,EARNED_LABEL_NTILES
+  call memset_inc
+  ld hl,_SCRN1+32*1+2
+  ld a,EARNED_NAME_BASE
+  ld c,EARNED_NAME_NTILES
+  call memset_inc
 
   ; Clear status bar to solid blank tiles
   ld hl,_SCRN0+32*16
@@ -242,6 +274,8 @@ draw_debughex::
   ld [hl+],a
   endc
   ret
+
+earned_msg: db "Earned:",0
 
 section "bigdigits_chr", ROM0, align[3]
 bigdigits_chr: incbin "obj/gb/bigdigits-h.chr1"

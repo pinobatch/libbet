@@ -30,6 +30,11 @@ achievements_init_clear_end:
 
 ; Floor on which each was earned, or $FF for none
 achievements_found_this_game:: ds NUM_ACHIEVEMENTS
+; Achievement to be displayed, or $FF for none
+ach_display_queue: ds NUM_ACHIEVEMENTS
+ach_display_state: ds 1
+ach_display_timer: ds 1
+ach_wy:: ds 1
 
 section "achievements", ROM0
 achievements_init::
@@ -40,17 +45,24 @@ achievements_init::
   jp memset_tiny
 
 achievements_new_game::
+  ; Clear
   ld a,$FF
-  ld c,NUM_ACHIEVEMENTS
+  ld c,NUM_ACHIEVEMENTS * 2  ; this game and display queue
   ld hl,achievements_found_this_game
-  jp memset_tiny
+  call memset_tiny
+  xor a
+  ld [hl+],a  ; clear state
+  ld [hl+],a  ; clear timer
+  ld [hl],144  ; move window off screen
+  ret
 
 achievements_new_floor::
   ld a,[attract_mode]
   or a
   ret nz
-
-  ; TODO: prep Restless
+  ; A is 0, so set the achievements display state to 0 (idle)
+  ld [ach_display_state],a
+ach_idle:
   ret
 
 achievements_frame::
@@ -68,7 +80,13 @@ achievements_frame::
   .distance_did_not_increase:
   ld a,b
   ld [last_exit_distance],a
-  ret
+
+  ; Now the achievements display engine state machine
+  ld a,[ach_display_state]
+  ld [debughex+1],a
+  ld de,ach_display_states
+  call de_index_a
+  jp hl
 
 achievements_end_floor::
   ld a,[attract_mode]
@@ -145,8 +163,26 @@ achievements_earn:
   ld [hl],a
 
   ; TODO: Save in achievements since power
-  ; TODO: Queue achievement for display
+
+  ; Queue achievement for display
+  ld a,l
+  sub LOW(achievements_found_this_game)  ; A is once again achievement ID
+  ld hl,ach_display_queue - 1
+  ld b,b
+  ; Skip queued achievements
+  .queueloop:
+    inc hl
+    bit 7,[hl]
+    jr z,.queueloop
+  ld [hl],a
   ret
+
+; Achievements display ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ach_display_states:
+  dw ach_idle
+
+; Achievement strings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section "achievement_names", ROM0
 achievement_names::

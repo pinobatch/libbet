@@ -196,9 +196,9 @@ page1txt:
 STATUS_BLANK equ $F7
 
 section "attractstate", WRAM0
-attract_src_ptr: ds 2
-attract_vwf_tile_id: ds 1
-attract_vwf_x: ds 1  ; X = $FF and tile id < $C0 means a clear is in progress
+attract_src_ptr:: ds 2
+attract_vwf_tile_id:: ds 1
+attract_vwf_x:: ds 1  ; X = $FF and tile id < $C0 means a clear is in progress
 
 
 section "attractcode", ROM0

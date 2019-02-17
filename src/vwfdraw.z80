@@ -247,14 +247,16 @@ vwfClearBuf::
 ; Copies the VWF buffer to VRAM address HL using fg color 3
 ; and bg color 0
 ; @param HL destination address
+; @param DE source address within lineImgBuf (if using _continue)
 ; @param C tile count (if using _lenC)
 ; @param B $00 for FG color 0 or $FF for FG color 3
 ; @return DE end of lineImgBuf; C=0; B unchanged
 vwfPutBuf03::
   ld c,lineImgBufLen/8
 vwfPutBuf03_lenC::
-  sla c
   ld de,lineImgBuf
+vwfPutBuf03_continue_lenC::
+  sla c
 .loop:
   rept 4
     ld a,[de]
