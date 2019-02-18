@@ -39,6 +39,7 @@ floor_scores:: ds (floor_sizes_end - floor_sizes)
 
 ; Used by achievements
 move_flags:: ds 1
+tracks_since_pause:: ds 1
 airrot_dir:: ds 1
 airrot_amt:: ds 1
 
@@ -127,6 +128,7 @@ another_floor:
   xor a
   ld [cur_score],a
   ld [move_flags],a
+  ld [tracks_since_pause],a
   ld [airrot_amt],a
   dec a
   ld [airrot_dir],a
@@ -164,11 +166,9 @@ another_floor:
   ldh [rLCDC],a
 
 forever:
-  call get_exit_distance
-  ld a,[airrot_dir]
+  ld a,[tracks_since_pause]
+  call bcd8bit_baa
   ld [debughex+0],a
-  ld a,[airrot_amt]
-;  ld [debughex+1],a
 
   call move_player_anim
   xor a
@@ -321,8 +321,9 @@ try_move:
     ; If the player hesitates (doesn't make a valid move) in a given
     ; frame, mark it as such
     ld hl,move_flags
-    set MVFB_PAUSED_SINCE_START,[hl]
     set MVFB_PAUSED_SINCE_100,[hl]
+    xor a
+    ld [tracks_since_pause],a
     ret
   .button_is_pressed:
 
@@ -390,7 +391,6 @@ try_move:
   ld hl,move_flags
   bit 7,[hl]
   jr nz,.is_not_first_move
-    res MVFB_PAUSED_SINCE_START,[hl]
     res MVFB_PEEKED_SINCE_START,[hl]
     set MVFB_MOVED_ONCE,[hl]
   .is_not_first_move:
@@ -429,6 +429,8 @@ try_move:
       ld [hl],a
       ld a,5
       call audio_play_fx  ; score point sound
+      ld hl,tracks_since_pause
+      inc [hl]
       ld hl,cur_score
       ld b,[hl]
       inc b

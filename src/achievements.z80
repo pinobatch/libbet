@@ -69,6 +69,12 @@ achievements_frame::
   or a
   ret nz
 
+  ; "Restless": many consecutive tracks without a hesitation
+  ld a,[tracks_since_pause]
+  cp RESTLESS_TRACKS
+  ld a,ACH_RESTLESS
+  call nc,achievements_earn
+
   ; If distance to the exit increased since 100%, "Dash for the door"
   ; is not awarded.
   call get_exit_distance
@@ -134,7 +140,6 @@ achievements_frame::
     ; Is it a full rotation (+4 or -4)?
     ld a,b
     and $07
-    ld [debughex+1],a
     cp 4
     ld a,ACH_AIRROT
     call z,achievements_earn
@@ -168,12 +173,6 @@ achievements_end_floor::
   ld a,ACH_DASH_FOR_DOOR
   call z,achievements_earn
 .not_dash_for_the_door:
-
-  ; "Restless": Clear without having hesitated since first move
-  ld a,[move_flags]
-  bit MVFB_PAUSED_SINCE_START,a
-  ld a,ACH_RESTLESS
-  call z,achievements_earn
 
   ; "No peeking": Clear without having hesitated long enough to
   ; lift your head since first move

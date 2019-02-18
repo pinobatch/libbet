@@ -100,13 +100,12 @@ NUM_ACHIEVEMENTS = 6
 
 ; move_flags constants related to the achievements
 ; Sink it, Restless, and Dash for the door
-; Moving without MOVED_ONCE clears PAUSED_SINCE_START
+; Moving without MOVED_ONCE clears PEEKED_SINCE_START
 ; Moving sets MOVED_ONCE and MOVED_SINCE_100
-; Not moving sets PAUSED_SINCE_START and PAUSED_SINCE_100
+; Not moving sets PAUSED_SINCE_100
 ; Advancing from a FRLF_KEEPROLL frame sets PEEKED_SINCE_START
 ; Moving farther from the exit sets RETREATED_SINCE_100
 ; 100% clears PAUSED_SINCE_100 and MOVED_SINCE_100
-; Exit without PAUSED_SINCE_START earns Restless
 ; Exit without PAUSED_SINCE_100 earns Dash for the door
 ; Exit without MOVED_SINCE_100 (possible only by landing on a
 ; dead end) earns Sink it
@@ -115,6 +114,8 @@ MVFB_RETREATED_SINCE_100 = 6
 MVFB_MOVED_SINCE_100 = 5
 MVFB_PAUSED_SINCE_100 = 4
 MVFB_PEEKED_SINCE_START = 1
-MVFB_PAUSED_SINCE_START = 0
+
+; If this many tracks are laid without hesitation, award Restless
+RESTLESS_TRACKS = 12
 
   ENDC
