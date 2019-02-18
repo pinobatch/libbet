@@ -95,7 +95,7 @@ ACH_100PCT_DEADEND = 1
 ACH_DASH_FOR_DOOR = 2
 ACH_NO_PEEKING = 3
 ACH_RESTLESS = 4
-ACH_NO_SCOPE = 5
+ACH_AIRROT = 5  ; rotate the control pad 360 deg during a distance 2 move
 NUM_ACHIEVEMENTS = 6
 
 ; move_flags constants related to the achievements

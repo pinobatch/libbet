@@ -36,7 +36,11 @@ section "mainvars", WRAM0
 cur_floor:: ds 1
 attract_mode:: ds 1
 floor_scores:: ds (floor_sizes_end - floor_sizes)
+
+; Used by achievements
 move_flags:: ds 1
+airrot_dir:: ds 1
+airrot_amt:: ds 1
 
 section "main", ROM0
 
@@ -123,6 +127,9 @@ another_floor:
   xor a
   ld [cur_score],a
   ld [move_flags],a
+  ld [airrot_amt],a
+  dec a
+  ld [airrot_dir],a
   call place_exit
 
   ; Clear the map
@@ -157,9 +164,11 @@ another_floor:
   ldh [rLCDC],a
 
 forever:
-;  call get_exit_distance
-;  ld a,[move_flags]
-;  ld [debughex+0],a
+  call get_exit_distance
+  ld a,[airrot_dir]
+  ld [debughex+0],a
+  ld a,[airrot_amt]
+;  ld [debughex+1],a
 
   call move_player_anim
   xor a
@@ -293,7 +302,16 @@ forever:
 
 try_move:
   ld b,a
-  and PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
+
+  ; Clear the air rotation
+  xor a
+  ld [airrot_amt],a
+  dec a
+  ld [airrot_dir],a
+
+  ; Is a button pressed at all?
+  ld a,PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
+  and b
   jr nz,.button_is_pressed
   .hesitated:
     ; Don't count hesitation if already in the exit
@@ -359,6 +377,15 @@ try_move:
   push af
   push hl
   push de
+
+  ; If this is a jump, set initial airrot direction
+  bit 2, c
+  jr z,.not_start_airrot
+    ld a,c
+    call facing_to_airrot
+    ld [airrot_dir],a
+  .not_start_airrot:
+
   call player_start_roll
   ld hl,move_flags
   bit 7,[hl]

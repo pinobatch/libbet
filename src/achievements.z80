@@ -69,6 +69,8 @@ achievements_frame::
   or a
   ret nz
 
+  ; If distance to the exit increased since 100%, "Dash for the door"
+  ; is not awarded.
   call get_exit_distance
   ld b,a
   ld a,[last_exit_distance]
@@ -80,9 +82,66 @@ achievements_frame::
   ld a,b
   ld [last_exit_distance],a
 
+  ; Air rotation preliminary tests
+  ld hl,airrot_dir
+  ld b,[hl]
+  bit 7,b
+  jr nz,.not_airrot  ; airrot_dir bit 7: currently on ground
+  ld a,[new_keys]
+  and $F0
+  jr z,.not_airrot  ; no keys pressed
+
+  ; Convert to a direction
+  ld c,$FF
+  swap a
+  .ctzloop:
+    inc c
+    rra
+    jr nc,.ctzloop
+  ld a,c
+  call facing_to_airrot
+  ld [hl+],a  ; Save new direction and point HL to airrot_amt
+
+  ; Calculate the difference
+  sub b
+  ld b,[hl]  ; A = change in airrot_dir; B = airrot_amt
+  rra
+  jr c,.airrot1or3
+  rra
+  jr nc,.not_airrot  ; 0: No change
+    ; 2: Clear airrot_amt
+    ld b,0
+    jr .have_new_airrot_amt
+  .airrot1or3:
+  rra
+  bit 7,b  ; Z = airrot_amt is positive; Cy: direction
+  jr c,.airrot3
+    ; 1: Clear if negative, then increase
+    jr z,.airrot1_noclear
+      ld b,0
+    .airrot1_noclear:
+    inc b
+    jr .have_new_airrot_amt
+  .airrot3:
+    ; 3: Clear if positive, then decrease
+    jr nz,.airrot3_noclear
+      ld b,0
+    .airrot3_noclear:
+    dec b
+  .have_new_airrot_amt:
+    ld [hl],b
+
+    ; Is it a full rotation (+4 or -4)?
+    ld a,b
+    and $07
+    ld [debughex+1],a
+    cp 4
+    ld a,ACH_AIRROT
+    call z,achievements_earn
+  .not_airrot:
+
   ; Now the achievements display engine state machine
   ld a,[ach_display_step]
-  ld [debughex+1],a
   ld de,ach_display_step_handlers
   call de_index_a
   jp hl
@@ -174,6 +233,31 @@ achievements_earn:
     jr z,.queueloop
   ld [hl],a
   ret
+
+; Logic for "No scope" achievement
+;
+; During a hesitation or roll, airrot_dir = $FF and airrot_amt = 0
+; During a jump, airrot_dir = facing_to_airrot(dir) and airrot_amt = 0
+; Each frame, update airrot:
+;   If airrot_dir bit 7 is 1 or (new_keys & $F0) == 0, do nothing
+;   new_dir = facing_to_airrot(ctz(new_keys >> 4))
+;   Switch (new_dir - airrot_dir) % 4:
+;     Case 1: Increase airrot_amt if positive, or set to 1 if negative
+;     Case 2: airrot_amt = 0
+;     Case 3: Decrease airrot_amt if positive, or set to -1 if positive
+;   airrot_dir = new_dir
+; If airrot_amt is 4 or -4, earn no scope
+
+;;
+; Swaps bits 1 and 0 in A to convert from R, L, U, D (GB key order)
+; to R, U, L, D (rotation order)
+facing_to_airrot::
+  and $03
+  rra
+  ret nc
+  or $02
+  ret
+
 
 ; Achievements display ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -289,10 +373,10 @@ ach_show:
 section "achievement_names", ROM0
 achievement_names::
   dw ach_100pct_name, ach_100pct_deadend_name, ach_dash_for_door_name
-  dw ach_no_peeking_name, ach_restless_name, ach_no_scope_name
+  dw ach_no_peeking_name, ach_restless_name, ach_airrot_name
 ach_100pct_name: db "Completionist",0
 ach_100pct_deadend_name: db "Sink it",0
 ach_dash_for_door_name: db "Dash for the door",0
 ach_no_peeking_name: db "No peeking",0
 ach_restless_name: db "Restless",0
-ach_no_scope_name: db "No scope",0
+ach_airrot_name: db "No scope",0
