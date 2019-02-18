@@ -32,7 +32,7 @@ achievements_init_clear_end:
 achievements_found_this_game:: ds NUM_ACHIEVEMENTS
 ; Achievement to be displayed, or $FF for none
 ach_display_queue: ds NUM_ACHIEVEMENTS
-ach_display_state: ds 1
+ach_display_step: ds 1
 ach_display_timer: ds 1
 ach_wy:: ds 1
 
@@ -61,8 +61,7 @@ achievements_new_floor::
   or a
   ret nz
   ; A is 0, so set the achievements display state to 0 (idle)
-  ld [ach_display_state],a
-ach_idle:
+  ld [ach_display_step],a
   ret
 
 achievements_frame::
@@ -82,9 +81,9 @@ achievements_frame::
   ld [last_exit_distance],a
 
   ; Now the achievements display engine state machine
-  ld a,[ach_display_state]
+  ld a,[ach_display_step]
   ld [debughex+1],a
-  ld de,ach_display_states
+  ld de,ach_display_step_handlers
   call de_index_a
   jp hl
 
@@ -168,7 +167,6 @@ achievements_earn:
   ld a,l
   sub LOW(achievements_found_this_game)  ; A is once again achievement ID
   ld hl,ach_display_queue - 1
-  ld b,b
   ; Skip queued achievements
   .queueloop:
     inc hl
@@ -179,8 +177,112 @@ achievements_earn:
 
 ; Achievements display ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-ach_display_states:
-  dw ach_idle
+ach_display_step_handlers:
+  dw ach_idle, ach_draw, ach_show
+
+;;
+; State 0 (idle)
+; If there is an achievement in queue slot 0, write it to the VWF
+; line buffer and go to state 1.  Otherwise, shift all items 1 slot ahead.
+ach_idle:
+  ld hl,ach_display_queue
+  ld c,[hl]
+  ; Move items other than C 1 step forward in the queue
+  ld b,NUM_ACHIEVEMENTS - 1
+  .shiftloop:
+    inc hl
+    ld a,[hl-]
+    ld [hl+],a
+    dec b
+    jr nz,.shiftloop
+  ld [hl],$FF
+
+  ; If bit 7 of C is set, it's not an achievement to be drawn
+  bit 7,c
+  ret nz
+
+  ; Clear buffer and get name of achievement C
+  push bc
+  call vwfClearBuf
+  pop bc
+  ld a,c
+  ld de,achievement_names
+  call de_index_a
+
+  ; Set up next step and draw name
+  xor a
+  ld b,a
+  ld [ach_display_timer],a
+  inc a
+  ld [ach_display_step],a
+  jp vwfPuts
+
+ach_draw:
+  ; If too full, don't fill it further
+  ld hl,popslide_used
+  ld a,[hl]
+  cp 72
+  ret nc
+  ld l,a
+
+  ; calculate packet header, assuming (EARNED_NAME_BASE & 0x0F) == 0
+  ld a,[ach_display_timer]
+  ld e,a
+  add a
+  ld d,HIGH(lineImgBuf)
+  ld [hl+],a
+  ld a,(CHRRAM0>>8)+(EARNED_NAME_BASE>>4)
+  ld [hl+],a
+  ld a,63
+  ld [hl+],a
+  inc hl
+
+  ; copy vwf line buffer to packet body
+  ld bc,4|$FF00
+  call vwfPutBuf03_continue_lenC
+  ld a,l
+  ld [popslide_used],a
+
+  ; move to next 4-tile chunk
+  ld hl,ach_display_timer
+  ld a,[hl]
+  add 32
+  ld [hl],a
+  cp 8 * EARNED_NAME_NTILES
+  ret c
+
+  ; after last chunk, set timer and go to next step
+  xor a
+  ld [hl-],a
+  inc [hl]
+  ret
+
+ach_show:
+  ld hl,ach_display_timer
+  ld a,[hl]
+  inc [hl]
+  cp 192
+  ld hl,ach_wy
+  ld a,[hl]
+  ; At this point:
+  ; HL = pointer to Y coordinate, A = Y coordinate
+  ; Cy = 1 if scrolling in, 0 if scrolling out
+  jr nc,.scroll_out
+    dec a
+    cp 126 ; 2 pixels above the status bar top
+    ret c
+    ld [hl],a
+    ret
+  .scroll_out:
+  inc a
+  ld [hl],a
+  cp 144
+  ret c
+
+  ; Done!
+  xor a
+  ld [ach_display_step],a
+  ret
 
 ; Achievement strings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

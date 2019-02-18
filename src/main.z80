@@ -72,7 +72,7 @@ main::
   ld [cur_floor],a
   ldh [rSCX],a
   ldh [rSCY],a
-  ld a,7
+  ld a,7+48
   ldh [rWX],a
   call achievements_new_game
 

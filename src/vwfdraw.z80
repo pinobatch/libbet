@@ -255,7 +255,7 @@ vwfPutBuf03::
   ld c,lineImgBufLen/8
 vwfPutBuf03_lenC::
   ld de,lineImgBuf
-vwfPutBuf03_continue_lenC::
+vwfPutBuf03_continue_lenC::  ; this entry good for popslide
   sla c
 .loop:
   rept 4

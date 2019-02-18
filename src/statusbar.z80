@@ -39,6 +39,7 @@ EARNED_LABEL_BASE = $F8
 EARNED_LABEL_NTILES = 8
 EARNED_NAME_BASE = $C0
 EARNED_NAME_NTILES = 12
+global EARNED_NAME_BASE, EARNED_NAME_NTILES
 
 section "debughex", WRAM0
 debughex:: ds 2
@@ -98,13 +99,13 @@ draw_statusbar_tilemap::
   ; Prepare window for display of achievements
   ld hl,_SCRN1
   ld a,EARNED_BLANK
-  ld c,32+20
+  ld c,32*2+14
   call memset_tiny
-  ld hl,_SCRN1+32*0+2
+  ld hl,_SCRN1+32*0+1
   ld a,EARNED_LABEL_BASE
   ld c,EARNED_LABEL_NTILES
   call memset_inc
-  ld hl,_SCRN1+32*1+2
+  ld hl,_SCRN1+32*1+1
   ld a,EARNED_NAME_BASE
   ld c,EARNED_NAME_NTILES
   call memset_inc
