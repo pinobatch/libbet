@@ -31,15 +31,19 @@ STATUS_PERCENT equ $F4
 STATUSBAR_CHR_COUNT = 40
 
 SMALL_SCORE_POS equ _SCRN0+32*17+14
+COMBO_POS equ _SCRN0+32*16+1
 PCTAGE_POS equ _SCRN0+32*16+9
-DEBUGHEX_POS equ _SCRN0+32*17+0
+DEBUGHEX_POS equ _SCRN0+32*16+15
 
-EARNED_BLANK = $FF
-EARNED_LABEL_BASE = $F8
-EARNED_LABEL_NTILES = 8
-EARNED_NAME_BASE = $C0
+EARNED_LABEL_BASE = $8C
+EARNED_LABEL_NTILES = 6
+EARNED_BLANK = $91
+EARNED_NAME_BASE = $80
 EARNED_NAME_NTILES = 12
 global EARNED_NAME_BASE, EARNED_NAME_NTILES
+
+COMBO_LABEL_BASE = $FC
+COMBO_LABEL_NTILES = 4
 
 section "debughex", WRAM0
 debughex:: ds 2
@@ -77,6 +81,25 @@ load_statusbar_chr::
     jr nz,.byteloop
     dec b
     jr nz,.byteloop
+
+  ; Word "Combo"
+  call vwfClearBuf
+  ld hl,combo_msg
+  ld b,4
+  call vwfPuts
+  ld hl,CHRRAM0+16*COMBO_LABEL_BASE
+  push hl
+  ld bc,$FF00 | COMBO_LABEL_NTILES
+  call vwfPutBuf03_lenC
+  pop hl
+  ; Convert from 0 and 3 to 1 and 3
+  ld a,$FF
+  ld b,COMBO_LABEL_NTILES*8
+  .combo_colorize:
+    ld [hl+],a
+    inc hl
+    dec b
+    jr nz,.combo_colorize
 
   ; Space for achievement name
   call vwfClearBuf
@@ -116,6 +139,12 @@ draw_statusbar_tilemap::
   ld c,32+20
   call memset_tiny
   ; HL is at end of status bar
+
+  ; Draw combo label
+  ld hl,COMBO_POS+32*1+2
+  ld a,COMBO_LABEL_BASE
+  ld c,COMBO_LABEL_NTILES
+  call memset_inc
 
   ; Draw percent sign
   ld a,STATUS_PERCENT
@@ -277,6 +306,7 @@ draw_debughex::
   ret
 
 earned_msg: db "Earned:",0
+combo_msg: db "Combo", 0
 
 section "bigdigits_chr", ROM0, align[3]
 bigdigits_chr: incbin "obj/gb/bigdigits-h.chr1"
