@@ -298,7 +298,9 @@ ach_idle:
   ld [ach_display_timer],a
   inc a
   ld [ach_display_step],a
-  jp vwfPuts
+  call vwfPuts
+  ld a,9
+  jp audio_play_fx
 
 ach_draw:
   ; If too full, don't fill it further

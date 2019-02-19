@@ -63,6 +63,8 @@ sfx_table:
 
   db 3, 0
   dw fx_land2
+  db 1, 0
+  dw fx_achieve
 
   db 2, 0
   dw fx_wavetest
@@ -141,6 +143,15 @@ fx_launch:
   db ENVF_PITCH|$40, 28
   db ENVF_PITCH|$8D, 26
   db $FF
+fx_achieve:
+  db ENVF_DPAR|ENVF_PITCH|$81, $C1, 37
+  db $42
+  db $81
+  db ENVF_DPAR|ENVF_PITCH|$43, $C1, 49
+  db $42
+  db $84
+  db $FF
+
 
 fx_wavetest:
   db ENVF_DPAR|ENVF_PITCH|$0F, $00, 24
