@@ -174,7 +174,7 @@ pages_end:
 page1txt:
  db LF
  db "Libbet and the Magic Floor",LF
- db "v0.04wip (2019-02-16)",LF
+ db "v0.04 (2019-02-20)",LF
  ; Row skipped because B=3
  db COPR," 2002, 2012 Martin Korth",LF
  db COPR," 2018, 2019 Damian Yerrick",LF
