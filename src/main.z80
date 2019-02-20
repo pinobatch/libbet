@@ -166,8 +166,8 @@ another_floor:
   ldh [rLCDC],a
 
 forever:
-  ld a,[move_flags]
-  ld [debughex+0],a
+;  ld a,[move_flags]
+;  ld [debughex+0],a
 
   call move_player_anim
   xor a

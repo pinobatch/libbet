@@ -72,7 +72,7 @@ USE_DAS equ 0
 SAVE_GB_TYPE equ 0
 
 ; Do we display a variable in-game?
-USE_DEBUGHEX equ 1
+USE_DEBUGHEX equ 0
 
 ; Both instructions and debrief use vwf_page_init, which defines a
 ; plane subject to this shape

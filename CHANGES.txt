@@ -1,14 +1,24 @@
-0.04 (future)
+0.04 (2019-02-xx)
 * A+B+Select+Start during gameplay to reset
+* Combo counter shows number of tracks laid without hesitation
+* Display achievements when they are earned:
+    - Completionist (100% on all floors)
+    - Sink it (reach 100% on a dead end)
+    - Dash for the door (reach 100% and do not retreat or hesitate
+      to the exit door)
+    - No scope (make a circle on the Control Pad during a jump)
+    - No peeking (make no invalid moves, and do not pause more than
+      1 second at a time from the first move to the exit)
+    - Restless (do not hesitate from the first move to the exit)
+* Build-time option to make Restless easier by changing it to a
+  combo threshold
 * Display floor scores and achievements after completing all 5 floors
-* Add achievements Completionist (100% on all floors),  Sink it
-  (reach 100% on a dead end), and Dash for the door (reach 100% and
-  do not retreat or pause on way to exit)
 * Popslide: Option to reduce maximum length of +32 runs and literals
   to save ROM size
-* Other size optimizations
 * "Debughex" option to display a variable at runtime even on hardware
+* Rules research: Confirm 92% chance of seeing a dead end in a game
 * Docs: Add guide to encoding video with bgb
+* 9540 bytes
 
 0.03 (2018-12-11)
 * Rolling and landing sound better fit the material
