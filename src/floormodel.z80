@@ -239,7 +239,7 @@ is_valid_move::
   call de_index_a
   ; B: 0 or $FF
   ; L: xmovedir
-  ; H: xmovedir
+  ; H: ymovedir
 
   ; First off, is the move in bounds?
   ld a,[floor_width]

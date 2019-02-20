@@ -120,6 +120,6 @@ MVFB_PAUSED_SINCE_START = 0
 ; Usually this'll be about 15 or so.  If it's 0, Restless is
 ; instead awarded at exit if PAUSED_SINCE_START is clear, like a
 ; hardcore version of No peeking
-RESTLESS_TRACKS = 12
+RESTLESS_TRACKS = 0
 
   ENDC

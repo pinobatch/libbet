@@ -69,11 +69,13 @@ achievements_frame::
   or a
   ret nz
 
-  ; "Restless": many consecutive tracks without a hesitation
-  ld a,[tracks_since_pause]
-  cp RESTLESS_TRACKS
-  ld a,ACH_RESTLESS
-  call nc,achievements_earn
+  if RESTLESS_TRACKS > 0
+    ; "Restless": many consecutive tracks without a hesitation
+    ld a,[tracks_since_pause]
+    cp RESTLESS_TRACKS
+    ld a,ACH_RESTLESS
+    call nc,achievements_earn
+  endc
 
   ; If distance to the exit increased since 100%, "Dash for the door"
   ; is not awarded.
@@ -180,6 +182,14 @@ achievements_end_floor::
   bit MVFB_PEEKED_SINCE_START,a
   ld a,ACH_NO_PEEKING
   call z,achievements_earn
+
+  if RESTLESS_TRACKS == 0
+    ; "Restless": complete entire floor without a hesitation
+    ld a,[move_flags]
+    bit MVFB_PAUSED_SINCE_START,a
+    ld a,ACH_RESTLESS
+    call z,achievements_earn
+  endc
 
   ; "Completionist": Finish final floor with all floor scores
   ; equal to maximum

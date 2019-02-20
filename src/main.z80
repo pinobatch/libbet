@@ -166,8 +166,7 @@ another_floor:
   ldh [rLCDC],a
 
 forever:
-  ld a,[tracks_since_pause]
-  call bcd8bit_baa
+  ld a,[move_flags]
   ld [debughex+0],a
 
   call move_player_anim
@@ -376,11 +375,9 @@ try_move:
     jp fade_out
   .have_valid_move:
 
-  ; A: 0 same shade, 1 next shade
-  ; B: Button presses
-  ; C: Move type (R, L, U, D, RR, LL, UU, DD)
-  ; E: Destination cell 00YYYXXX
-  ; HL: Pointer to destination cell
+  ; A: 1 for color change (possibly scoring); 0 for not
+  ; C: move attempted (0-7); E[5:3]: new Y; E[2:0]: new X;
+  ; HL: pointer to destination cell
   push af
   push hl
   push de
@@ -405,10 +402,8 @@ try_move:
   pop de
   pop hl
   pop af
+  ; restore previous regmap
 
-  ; A: 1 for color change (possibly scoring); 0 for not
-  ; C: move attempted; E[5:3]: new Y; E[2:0]: new X;
-  ; HL: pointer to destination cell
   or a
   jr z,.move_to_cell_e
     push de
@@ -417,7 +412,7 @@ try_move:
     ; Get which track bit corresponds to this move ID
     ld a,c
     and $03
-     ld b,a
+    ld b,a
     inc b
     ld a,$08
     .shlloop:
