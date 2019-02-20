@@ -304,8 +304,10 @@ move_player_anim::
     .no_land:
     ld [roll_z],a
   .no_move:
-
   ld a,b
+
+  ; regmap here:
+  ; A is current frame's remaining duration and HL is its bits
   dec a
   jr nz,.not_new_frame
     ; Ball return: Go to a Z position above home
@@ -313,6 +315,7 @@ move_player_anim::
     jr z,.no_ballreturn
 
       ; If player is earning Sink it, skip launch animation
+      ; and move directly to exit
       ld a,[move_flags]
       bit MVFB_MOVED_SINCE_100,a
       jr nz,.regular_launch
@@ -324,14 +327,14 @@ move_player_anim::
       .regular_launch:
 
       ; Play launch sound
-      push bc
       push hl
       ld a,7
       call audio_play_fx
       pop hl
-      pop bc
 
-      call set_roll_start_pos  ; go home
+      ; The dead end handler already moved cursor_x/y to the start
+      ; position, so update the sprite as such
+      call set_roll_start_pos
       xor a
       ld [roll_dz],a  ; up/down velocity to 0
       dec a
@@ -350,14 +353,15 @@ move_player_anim::
     ; "no peeking" achievement
     bit FRLB_KEEPROLL,l
     jr z,.not_peeking
-      ld d,a
-      ld a,[move_flags]
-      set MVFB_PEEKED_SINCE_START,a
-      ld [move_flags],a
-      ld a,d
+      push hl
+      ld hl,move_flags
+      set MVFB_PEEKED_SINCE_START,[hl]
+      call prepare_pctage
+      pop hl
     .not_peeking:
 
-    ; If the last frame, reset to frame A (which is 0)
+    ; If the last frame, go to frame 0; otherwise go to next frame
+    xor a
     bit FRHB_LAST,h
     jr nz,.inc_have_frame
       ld a,[roll_frame]

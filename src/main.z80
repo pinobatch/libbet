@@ -319,9 +319,10 @@ try_move:
     add a
     ret c
     ; If the player hesitates (doesn't make a valid move) in a given
-    ; frame, mark it as such
+    ; frame, mark it as such for "No peeking", "Restless", etc.
     ld hl,move_flags
     set MVFB_PAUSED_SINCE_100,[hl]
+    set MVFB_PAUSED_SINCE_START,[hl]
     xor a
     ld [tracks_since_pause],a
     ret
@@ -375,6 +376,11 @@ try_move:
     jp fade_out
   .have_valid_move:
 
+  ; A: 0 same shade, 1 next shade
+  ; B: Button presses
+  ; C: Move type (R, L, U, D, RR, LL, UU, DD)
+  ; E: Destination cell 00YYYXXX
+  ; HL: Pointer to destination cell
   push af
   push hl
   push de
@@ -392,6 +398,7 @@ try_move:
   bit 7,[hl]
   jr nz,.is_not_first_move
     res MVFB_PEEKED_SINCE_START,[hl]
+    res MVFB_PAUSED_SINCE_START,[hl]
     set MVFB_MOVED_ONCE,[hl]
   .is_not_first_move:
   set MVFB_MOVED_SINCE_100,[hl]
@@ -449,7 +456,6 @@ try_move:
       .not_100_percented:
 
       call prepare_hDrawCell
-      call prepare_pctage
     .already_have_track_bit:
     pop hl
     pop de
@@ -466,7 +472,11 @@ try_move:
   ld a,e
   and $07
   ld [cursor_x],a
-  ret
+
+  ; 2019-02-19: Always prepare the status bar after every move
+  ; in case the combo has reset to 0.  (The most recent combo is
+  ; displayed until Libbet peeks or moves again.)
+  jp prepare_pctage
 
 section "Libbet_chr", ROM0
 Libbet_pb16:

@@ -266,6 +266,52 @@ prepare_pctage::
   ld a,e
   ld [hl+],a
 
+  ; Top line of combo
+  ld a,low(COMBO_POS)
+  ld [hl+],a
+  ld a,high(COMBO_POS)
+  ld [hl+],a
+  ld a,1
+  ld [hl+],a
+  inc l
+  ld a,[tracks_since_pause]
+  call bcd8bit_baa
+  ld c,a
+  rrca
+  rrca
+  rrca
+  and $0F<<1
+  jr nz,.combo_more_than_ten
+    ld a,STATUS_BLANK-BIG_DIGIT_BASE
+  .combo_more_than_ten:
+  add BIG_DIGIT_BASE
+  ld [hl+],a
+  ld d,a
+  cp STATUS_BLANK
+  jr z,.combo_not_more_than_ten
+    inc d
+  .combo_not_more_than_ten:
+  ld a,c
+  and $0F
+  add a
+  add BIG_DIGIT_BASE
+  ld [hl+],a
+  inc a
+  ld e,a
+
+  ; Bottom row of combo
+  ld a,low(COMBO_POS+32)
+  ld [hl+],a
+  ld a,high(COMBO_POS+32)
+  ld [hl+],a
+  ld a,1
+  ld [hl+],a
+  inc l
+  ld a,d
+  ld [hl+],a
+  ld a,e
+  ld [hl+],a
+
   ld a,l
   ld [popslide_used],a
   ret
