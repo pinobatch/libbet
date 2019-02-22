@@ -87,8 +87,24 @@ NUM_FLOORS = 5
 ; when testing achievements
 USE_ATTRACT_FLOOR = 0
 
-; 1: Hold Start to pause 
+; 1: Hold Start to pause
 SPRING_LOAD_PAUSE = 0
+
+; 2019-02-21: mattcurrie in gbdev Discord wanted a game to test with
+; that uses $9C00 for playfield and $9800 for window
+SWAP_SCRNS = 0
+
+  if DEF(_SCRN1)
+  if SWAP_SCRNS
+SCRN_BG equ _SCRN1
+SCRN_WIN equ _SCRN0
+LCDCF_SCRNADDR equ LCDCF_WIN9800|LCDCF_BG9C00
+  else
+SCRN_BG equ _SCRN0
+SCRN_WIN equ _SCRN1
+LCDCF_SCRNADDR equ LCDCF_WIN9C00|LCDCF_BG9800
+  endc
+  endc
 
 ACH_100PCT = 0
 ACH_100PCT_DEADEND = 1

@@ -280,7 +280,7 @@ goto_tile_e_d::
   swap a
   add a  ; save the carry!
   ld l,a
-  ld a,high(_SCRN0) >> 1
+  ld a,high(SCRN_BG) >> 1
   rla
   ld h,a
 

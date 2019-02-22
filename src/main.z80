@@ -139,7 +139,7 @@ another_floor:
   ; Clear the map
   call lcd_off
   call popslide_init
-  ld de,_SCRN0
+  ld de,SCRN_BG
   ld bc,32*16
   ld h,$6F  ; background tile
   call memset
@@ -163,7 +163,7 @@ another_floor:
 
   ld a,%00011111  ; 1-3: black, light gray, white
   ldh [rOBP0],a
-  ld a,LCDCF_ON|LCDCF_BG9800|LCDCF_BG8800|LCDCF_BGON|LCDCF_OBJON|LCDCF_WINON|LCDCF_WIN9C00
+  ld a,LCDCF_ON|LCDCF_BG9800|LCDCF_SCRNADDR|LCDCF_BGON|LCDCF_OBJON|LCDCF_WINON
   ld [vblank_lcdc_value],a
   ldh [rLCDC],a
 
