@@ -23,6 +23,8 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
+LIBBET_NUM_TILES = 40
+
 section "floorsizes", ROM0
 floor_sizes:
   db 2, 8
@@ -68,7 +70,7 @@ main::
   call load_statusbar_chr
   ld hl,CHRRAM0
   ld de,Libbet_pb16
-  ld b,43
+  ld b,LIBBET_NUM_TILES
   call pb16_unpack_block
   ld bc,2
   call srand
