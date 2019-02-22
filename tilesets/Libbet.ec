@@ -5,11 +5,12 @@ palette 0 #000 #FFF=3
 
 frame Libbet_standS  32  36 12 12
 strip 0 34 35 8 8
-strip 0 30 43 16 5
+strip 0 30 43 14 5
 
 frame Libbet_curlS   44  36 12 12
 strip 0 46 35 8 8
-strip 0 42 43 16 5
+# strip 0 30 43 14 5 at 42 43
+strip 0 42 43 14 5
 
 frame Libbet_rollS1  56  36 12 12
 strip 0 58 40 8 8

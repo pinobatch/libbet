@@ -32,13 +32,14 @@ class InputFrame(object):
         self.strips = []
         self.hotspot = None
 
-    def add_strip(self, palette, rect=None):
+    def add_strip(self, palette, rect=None, dstpos=None):
         rect = rect or cliprect
         if not rect:
             raise TypeError("strip rect is required if no cliprect")
         l, t, w, h = rect
+        dstl, dstt = dstpos or (l, t)
         lpad = tpad = 0
-        if self.cliprect:
+        if self.cliprect and not dstpos:
             cl, ct, cw, ch = self.cliprect
             w = min(w, cl + cw - l)
             h = min(h, ct + ch - t)
@@ -54,7 +55,7 @@ class InputFrame(object):
                 print("warning: skipping strip rect %s outside clipping rect %s"
                       % (rect, self.cliprect), file=sys.stderr)
                 return
-        self.strips.append((palette, l, t, w, h, lpad, tpad))
+        self.strips.append((palette, l, t, w, h, lpad, tpad, dstl, dstt))
 
     def add_hotspot(self, xy):
         self.hotspot = xy
@@ -63,11 +64,11 @@ class InputFrame(object):
         """Return the specified clipping rectangle or make a guess."""
         if self.cliprect: return self.cliprect
 
-        # Guess cliprect based on bounding boxes of strips
-        l = r = self.strips[0][1][0]
-        t = b = self.strips[0][1][1]
+        # Guess cliprect based on destination bounding boxes of strips
+        l, t = r, b = self.strips[0][7:9]
         for row in strips:
-            sl, st, sw, sh = row[1:5]
+            sw, sh = row[3:5]
+            sl, st = row[7:9]
             l = min(l, sl)
             t = min(t, st)
             r = max(r, sl + sw)
@@ -143,10 +144,11 @@ class InputParser(object):
             raise ValueError("%d: %s" % (self.linecount, e))
 
     def add_frame(self, words):
+        isdig = [x.isdigit() for x in words]
         name, cliprect = words[0], None
         if name in self.frames:
             raise ValueError("duplicate definition of frame "+name)
-        if len(words) == 5 and all(x.isdigit() for x in words[1:5]):
+        if len(words) == 5 and all(isdig[1:5]):
             cliprect = tuple(int(x) for x in words[1:5])
         elif len(words) != 1:
             raise ValueError("unrecognized arguments to frame "
@@ -155,14 +157,21 @@ class InputParser(object):
         self.cur_frame = name
 
     def add_strip(self, words):
+        isdig = [x.isdigit() for x in words]
         frame = self.frames[self.cur_frame]
-        palette, rect = int(words[0]), frame.cliprect
-        if len(words) == 5 and all(x.isdigit() for x in words[1:5]):
+        palette, rect, dstpos = int(words[0]), frame.cliprect, None
+        if len(words) in (5, 8) and all(isdig[1:5]):
             rect = tuple(int(x) for x in words[1:5])
+            if len(words) == 8:
+                if words[5] == 'at' and all(isdig[6:8]):
+                    dstpos = tuple(int(x) for x in words[6:8])
+                else:
+                    raise ValueError("unrecognized destination in strip "
+                                     + " ".join(words))
         elif len(words) != 1:
             raise ValueError("unrecognized arguments to strip "
                              + " ".join(words))
-        frame.add_strip(palette, rect=rect)
+        frame.add_strip(palette, rect=rect, dstpos=dstpos)
 
     def add_hotspot(self, words):
         if len(words) != 2:
@@ -244,7 +253,7 @@ TILE_H = 8
 TILE_PLANEMAP = "0,1"
 
 def read_strip(im, strip, g2l, hotspot):
-    paletteid, l, t, w, h, lpad, tpad = strip
+    paletteid, l, t, w, h, lpad, tpad, dstl, dstt = strip
 
     # Crop and convert to subpalette
     cropped = im.crop((l, t, l + w, t + h)).point(g2l[paletteid])
@@ -261,15 +270,15 @@ def read_strip(im, strip, g2l, hotspot):
     striptiles = pilbmp2nes.pilbmp2chr(padded, TILE_W, TILE_H, tilefmt)
 
     # Convert coords to hotspot-relative
-    l -= lpad + hotspot[0]
-    t -= tpad + hotspot[1]
+    dstl -= hotspot[0]
+    dstt -= hotspot[1]
 
     # Convert tiles to horizontal strips
     tperrow = (TILE_H // 8) * (wnew // 8)
     tend = 0
     for y in range(hnew // TILE_H):
         tstart, tend = tend, tend + tperrow
-        yield paletteid, striptiles[tstart:tend], l, t + y * TILE_H
+        yield paletteid, striptiles[tstart:tend], dstl, dstt + y * TILE_H
 
 def read_all_strips(im, doc):
     out = []
