@@ -223,7 +223,7 @@ attract_init_vram::
     dec b
     jr nz,.msiloop
 
-  ; Clear
+  ; Clear VWF canvas
   ld a,$80
   .clrcanvasloop:
     ld [attract_vwf_tile_id],a
@@ -234,16 +234,19 @@ attract_init_vram::
     cp $C0
     jr c,.clrcanvasloop
 
+  ; Seek to start of attract mode script
   ld hl,attract_src_ptr
   ld a,low(attract_script)
   ld [hl+],a
   ld a,high(attract_script)
   ld [hl+],a
+
+  ; Initialize the text cursor
   ld a,$81
   ld [hl+],a  ; starting tile id
   xor a  ; starting pixel within tile
   ld [hl],a
-  ret
+  jp vwfClearBuf
 
 ;;
 ; Appends two 64-byte literal Popslide packets to fill a line with color 1.

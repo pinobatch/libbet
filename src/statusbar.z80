@@ -60,6 +60,7 @@ load_statusbar_chr::
     ld [hl],$DE
   endc
 
+  ; Load small and large digits with shadow
   ld de,bigdigits_chr
   ld hl,$8000 + SMALL_DIGIT_BASE * 16
   ld bc,(STATUSBAR_CHR_COUNT<<8)|$FF  ; B: tilecount; C: notlastbyte
@@ -100,6 +101,11 @@ load_statusbar_chr::
     inc hl
     dec b
     jr nz,.combo_colorize
+
+  ; Achievements and attract mode don't run at once
+  ld a,[attract_mode]
+  or a
+  ret nz
 
   ; Space for achievement name
   call vwfClearBuf
