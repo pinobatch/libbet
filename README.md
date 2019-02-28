@@ -18,9 +18,21 @@ Controls:
 - Control Pad: Roll
 - A + Control Pad: Jump
 
+Performing feats in the game will earn you achievements.  Some are
+harder to earn than others.
+
+Installation
+------------
 The game is written in assembly language.  Building it from source
 requires [RGBDS], GNU Make, Python 3, and [Pillow] (Python Imaging
-Library).
+Library).  Open a terminal or command prompt, put RGBDS, Make, and
+Python on your PATH, then type
+
+    make
+
+Once you've built it (or downloaded a binary release), it will play
+in SameBoy, bgb, or mGBA emulator, or on a Game Boy through a
+Catskull or EverDrive flash cart.
 
 Legal
 -----
