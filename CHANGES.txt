@@ -1,3 +1,14 @@
+Next release
+* Fix first word of attract text after achievements and combo
+* Improve arm position during rolling
+* Build-time option to use tilemap $9C00 instead of $9800 (requested
+  by mattcurrie)
+* Rules research: Discover that bidirectional evaluation does not
+  appreciably improve speed of floor reachability evaluation
+* Docs: Clarify that some achievements are harder than others
+  (requested by ISSOtm)
+* Docs: Document metasprite format (requested by ISSOtm)
+
 0.04 (2019-02-20)
 * A+B+Select+Start during gameplay to reset
 * Combo counter shows number of tracks laid without hesitation
