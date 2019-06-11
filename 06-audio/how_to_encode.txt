@@ -1,13 +1,14 @@
 How to make AVIs in bgb:
 
-In Options, open "audio" and enable wave and AVI output, then Apply.
-Play the demo, then disable them and hit Apply when the demo ends.
+In Options, open "Sound" and enable "WAV file writer" and "record
+AVI", output, then Apply.  Play the demo, then disable them and hit
+Apply when the demo ends.
 
 How to encode:
 
     ffmpeg -y -i bgb-1567896789.avi -i bgb-1567896789.wav -r 30 \
-      -s 320x288 -sws_flags neighbor -pix_fmt yuv420p -ab 64000 \
-      -movflags +faststart out.mp4
+      -vf 'scale=320:288:sws_flags=neighbor' \
+      -pix_fmt yuv420p -ab 64000 -movflags +faststart out.mp4
 
 What does this mean?
 
@@ -15,11 +16,21 @@ What does this mean?
 * `-i`: Video and audio track inputs
 * `-r`: Reduce frame rate, as DMG games don't need to run faster than
   30 fps, and YouTube doesn't support high motion LDTV, SDTV, or EDTV
-* `-s`: Scale video, where `-sws_flags neighbor` specifies blocky
-  resampling
+* `-vf`: Apply video filters, where `scale=` sets the video size and
+  `sws_flags=neighbor` specifies blocky resampling
 * `-pix_fmt yuv420p`: Encode color (U and V chroma planes) smaller
   than full resolution.  Many web-based players require this.
   The pixel doubling to 288p ensures that this step loses no quality.
 * `-ab`: Set AAC audio bitrate
 * `-movflags +faststart`: Add an index to allow playback before the
   entire video downloads
+
+To change the pixel aspect ratio to the 8:7 of an NTSC Super Game
+Boy, run two `scale` filters in a row.
+
+    ffmpeg -y -i bgb-1567896789.avi -i bgb-1567896789.wav -r 30 \
+      -vf 'scale=320:288:sws_flags=neighbor, scale=364:288:sws_flags=bilinear' \
+      -pix_fmt yuv420p -ab 64000 -movflags +faststart out.mp4
+
+If your recording has an SGB border, the sizes may need to be changed
+to `512:448` and `584:448`.
