@@ -17,7 +17,7 @@ version:=0.04
 # (use a backslash to continue on the next line)
 objlist := header init \
   main floorvram floormodel statusbar instructions rolling \
-  debrief achievements \
+  debrief achievements intro \
   fade audio pitchtable \
   ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 popslide
 
