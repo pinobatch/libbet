@@ -25,52 +25,59 @@ section "fadewram", WRAM0
 fade_level: ds 1
 fade_dir: ds 1
 fade_bgp:: ds 1
+fade_obp0:: ds 1
+fade_obp1:: ds 1
+fade_density:: ds 10
+fade_residue: ds 10
 
 section "fadecmds",ROM0
 fade_in::
   ld hl,fade_level
   xor a
-  ld [hl+],a
-  ld [hl],8   ; fade rate: 32 frames to full
-  ret
+  ld [hl+], a
+  ld [hl], 1   ; fade rate: 32 frames to full
+  
+  ld hl, fade_residue
+  ld c, 10
+  jp memset_tiny
 
 fade_out::
   ld hl,fade_level
-  ld a,248
+  ld a, 31
   ld [hl+],a
-  ld [hl],-8
+  ld [hl],-1
   ret
 
 section "fade", ROM0
 fade_update::
-  ld hl,fade_level
-  ld a,[hl+]
-  ld b,[hl]
-  ld c,a
-  add b
-  ld d,a
-  ; C: old fade level
-  ; B: fade rate
-  ; A, D: new fade level
-  ; If new fade level's sign matches that of fade rate, but
-  ; old fade level's sign does not, there was an overflow.
-  xor b
-  rla
-  jr c,.new_fade_level_is_d
-  ld a,b
-  xor c
-  rla
-  jr nc,.new_fade_level_is_d
-    ; There was an overflow.  Set the level to not bit 7 of the rate
-    ; and the rate to 0.
+  ld hl, fade_level
+  ld a, [hl+]
+  add [hl]  ; A = new fade level
+  cp 128
+  jr c, .new_fade_level_not_negative
+    ; Faded completely to white. Set both rate and level to white.
     xor a
-    ld [hl],a
-    rl b
-    adc $FF
-    ld d,a
-  .new_fade_level_is_d:
-  dec hl
-  ld [hl],d
+    ld [hl-], a
+    jr .have_new_fade_level
+  .new_fade_level_not_negative:
+  cp 31
+  jr nc, .faded_completely_in
+    dec hl  ; no update to fade level
+    jr .have_new_fade_level
+  .faded_completely_in:
+    ; Faded completely in.
+    xor a
+    ld [hl-], a
+    ld a, 31
+  .have_new_fade_level:
+  ld [hl], a
+
+  ; Rescale 0-31 to 0-248 for legacy fade routine
+  ; 0-31
+  add a
+  add a
+  add a
+  ld d, a
 
   ; Convert fade level in D to a BGP word
   ; Bit 1-0: Bit 7-6 of D
