@@ -1,0 +1,53 @@
+section "intro", ROM0
+load_rolling_girl_tiles::
+  ld de, roll32_chr
+  ld hl, $8400
+  ld b, 32
+  call pb16_unpack_block
+
+  ; Rotate Libbet's body
+  ld d, $84
+  ld h, $86
+  call rotate_4x4_tiles
+  ld d, $85
+  ld h, $87
+  call rotate_4x4_tiles
+  ret
+
+;;
+; Rotates the column-major 4x4-tile image at D*$100 clockwise by
+; 90 degrees to form an image at H*$100.
+rotate_4x4_tiles:
+  ld e, $00
+  ld a, $C0
+  .each_tile:
+    ; at this point, A = destination address low byte
+    ld c, a
+    .each_sliver:
+      ld l, c
+      ld a, [de]
+      inc e
+      scf     ; shift sentinel bit into bit 0 so that when it's
+      adc a   ; shifted out, this sliver is done
+      ld b, a
+      ld a, [de]
+      inc e
+      .each_bit:
+        rr [hl]
+        inc l
+        add a
+        rr [hl]
+        inc l
+        sla b
+        jr nz, .each_bit
+      ld a, $0F
+      and e
+      jr nz, .each_sliver
+    ld a, c
+    sub $40
+    jr nc, .each_tile
+    add $10
+    jr nz, .each_tile
+  ret
+
+roll32_chr:  incbin "obj/gb/roll32-h.chrgb.pb16"
