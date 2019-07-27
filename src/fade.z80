@@ -39,11 +39,23 @@ fade_in::
   
   ld hl, fade_residue
   ld c, 10
-  jp memset_tiny
+  call memset_tiny
+
+  ld hl, fade_density + 3
+  ld [hl-], a
+  ld a, 2
+  ld [hl-], a
+  ld a, 4
+  ld [hl-], a
+  ld a, 6
+  ld [hl], a
+  ret
+
+FADE_MAX = 32
 
 fade_out::
   ld hl,fade_level
-  ld a, 31
+  ld a, FADE_MAX
   ld [hl+],a
   ld [hl],-1
   ret
@@ -60,7 +72,7 @@ fade_update::
     ld [hl-], a
     jr .have_new_fade_level
   .new_fade_level_not_negative:
-  cp 31
+  cp FADE_MAX
   jr nc, .faded_completely_in
     dec hl  ; no update to fade level
     jr .have_new_fade_level
@@ -68,39 +80,78 @@ fade_update::
     ; Faded completely in.
     xor a
     ld [hl-], a
-    ld a, 31
+    ld a, FADE_MAX
   .have_new_fade_level:
   ld [hl], a
 
-  ; Rescale 0-31 to 0-248 for legacy fade routine
-  ; 0-31
-  add a
-  add a
-  add a
-  ld d, a
-
-  ; Convert fade level in D to a BGP word
-  ; Bit 1-0: Bit 7-6 of D
-  ; Bit 3-2: Bit 7-6 of 3/4 of D
-  ; Bit 4: Bit 7 of D
-  ld a,$C0
-  and d
-  rlca
-  jr nc,.nobit4
-    set 3,a
-  .nobit4:
-  rlca
-  ld b,a
-
-  ; Now the 3/4 bit
-  ld a,d
-  or a
-  rra
-  add d
-  rra
-  and $C0
-  swap a
-
-  or b
+  ; Calculate BGP
+  ld hl, fade_density+0
+  ld c, $80
+  call calc_dmg_palette_byte
   ld [fade_bgp],a
+
+  ; Calculate OBP0 and OBP1
+  ; XXX: Currently these do nothing because I'm not calculating
+  ; any densities
+  ld c, $20
+  call calc_dmg_palette_byte
+  ld [fade_obp0], a
+  ld c, $20
+  call calc_dmg_palette_byte
+  ld [fade_obp1], a
+  ret
+
+
+;;
+; @param HL fade_density to start
+; @param C $02 << (number of palette entries to compute * 2 - 2)
+; @return value suitable for BGP, OBP0, or OBP1
+calc_dmg_palette_byte:
+  ld a, [fade_level]
+  ld b, a
+  .nextpalent:
+    push bc
+    ld c, [hl]
+    ; Multiply fade level (b, 0-32) by density (c, 0-6)
+    xor a
+    rr c
+    jr nc,.nobit0
+      add b
+    .nobit0:
+    sla b
+    rr c
+    jr nc,.nobit1
+      add b
+    .nobit1:
+    sla b
+    rr c
+    jr nc,.nobit2
+      add b
+    .nobit2:
+
+    ; Add to the residue
+    ld de, fade_residue - fade_density
+    add hl, de
+    add [hl]
+    jr nc, .no_residue_overflow
+      ld a, 255  ; overflow may happen with density level 7
+    .no_residue_overflow:
+    ld c, a
+    and $3F  ; write back low 8 bits
+    ld [hl], a
+    ld de, fade_density + 1 - fade_residue
+    add hl, de
+    ld a, c
+
+    ; Keep the color bits
+    and $C0
+    pop bc
+    srl c
+    srl c
+    jr c, .islastcolor
+    or c
+    ld c, a
+    jr .nextpalent
+  .islastcolor:
+  or c
   ret
