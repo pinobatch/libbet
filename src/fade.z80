@@ -36,20 +36,21 @@ fade_in::
   xor a
   ld [hl+], a
   ld [hl], 1   ; fade rate: 32 frames to full
-  
-  ld hl, fade_residue
-  ld c, 10
-  call memset_tiny
 
-  ld hl, fade_density + 3
-  ld [hl-], a
-  ld a, 2
-  ld [hl-], a
-  ld a, 4
-  ld [hl-], a
-  ld a, 6
-  ld [hl], a
-  ret
+  ; initialize other fade related things
+  ld hl, initial_fade_density
+  ld de, fade_density
+  ld bc, 10
+  call memcpy
+  ; at this point de = fade_residue, so clear it
+  ld h, d
+  ld l, e
+  ld c, 10
+  xor a
+  jp memset_tiny
+
+initial_fade_density:
+  db 6, 4, 2, 0, 6, 1, 0, 6, 3, 0
 
 FADE_MAX = 32
 
@@ -84,15 +85,11 @@ fade_update::
   .have_new_fade_level:
   ld [hl], a
 
-  ; Calculate BGP
+  ; Calculate values for BGP, OBP0, and OBP1
   ld hl, fade_density+0
   ld c, $80
   call calc_dmg_palette_byte
   ld [fade_bgp],a
-
-  ; Calculate OBP0 and OBP1
-  ; XXX: Currently these do nothing because I'm not calculating
-  ; any densities
   ld c, $20
   call calc_dmg_palette_byte
   ld [fade_obp0], a
