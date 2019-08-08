@@ -22,7 +22,7 @@
 include "src/hardware.inc"
 
 section "fadewram", WRAM0
-fade_level: ds 1
+fade_level:: ds 1
 fade_dir: ds 1
 fade_bgp:: ds 1
 fade_obp0:: ds 1

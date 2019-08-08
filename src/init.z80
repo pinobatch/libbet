@@ -1,7 +1,7 @@
 ;
 ; Init code for Game Boy
 ;
-; Copyright 2018 Damian Yerrick
+; Copyright 2018-2019 Damian Yerrick
 ; 
 ; This software is provided 'as-is', without any express or implied
 ; warranty.  In no event will the authors be held liable for any damages
@@ -78,28 +78,27 @@ reset_handler::
   ; Initialize controller-related variables so that holding a button
   ; at power-on doesn't produce inconsistent results
   xor a
+  ldh [rSCY], a   ; clear scroll
+  ldh [rSCX], a   ; clear scroll
+  ldh [rNR52], a  ; disable (and reset) audio
   ld [cur_keys],a
   if USE_DAS
     ld [das_keys],a
     ld [das_timer],a
   endc
 
-  ; Fade out the IPL logo.  Skip it on GBC because IPL already faded.
-  ld a,c
-  cp a,$11
-  call nz,fadelogo
-
-  ; Rendering can be turned off only during blanking.
-  call lcd_off  ; A = 0
-  ldh [rSCY], a   ; clear scroll
-  ldh [rSCX], a   ; clear scroll
-  ldh [rNR52], a  ; disable (and reset) audio
+  ; Not fading the logo this time because a different effect
+  ; is planned: Libbet rolling across the logo and knocking
+  ; the (R) away if on mono.
 
   ; Copy the sprite DMA routine to HRAM
   ld hl,run_dma_master
   ld de,run_dma
   ld bc,run_dma_end-run_dma_master
   call memcpy
+
+  ld a,$80
+  ld [vblank_lcdc_value], a
 
   if bgbcompat
     ; BGB triggers spurious "reading uninitialized WRAM" exceptions
@@ -109,25 +108,14 @@ reset_handler::
     ld hl,SOAM
     ld c,160
     call memset_tiny
+    ld hl,decompbuf+256
+    ld c, a
+    call memset_tiny
+    call run_dma
   endc
 
   call achievements_init
   jp main
-
-fadelogo:
-  ld a,%00001000  ; bits 3-2: dark gray
-  call .fadestep
-  ld a,%00000100  ; bits 3-2: light gray
-.fadestep:
-  ldh [rBGP],a
-  ld b,10
-.fadeloop:
-  call wait_not_vblank
-.isgbc:
-  call busy_wait_vblank  ; Spin because interrupts are not yet set up
-  dec b
-  jr nz,.fadeloop
-  ret
 
 ;;
 ; Writes BC bytes of value H starting at DE.

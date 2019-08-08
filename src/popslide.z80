@@ -20,6 +20,8 @@
 ; 3. This notice may not be removed or altered from any source distribution.
 ;
 
+include "src/hardware.inc"
+
 
 ; Each packet starts with a 4-byte header:
 ; dst low, dst high, count/flags, first byte
@@ -193,3 +195,78 @@ popslide_blit::
   ld sp,popslide_buf
   ld de,32  ; for vertical packets
   jp popslide_next_packet
+
+; Hblank bulk copy
+; for copying bulk data (circa 1K per frame) without needing to
+; disable rendering
+
+; Copy C*8 bytes from HL to DE during horizontal blanking periods
+; (mode 2 into 0)
+; Interrupts are disabled for the duration
+popslide_hblank_copy::
+  ; Save which interrupts were enabled and the old stack pointer
+  di
+  ldh a, [rIE]
+  push af
+  ldh a, [rSTAT]
+  push af
+  ld [popslide_sp_save],sp
+
+  ; Set hblank as only interrupt that ends HALT
+  ld a, IEF_LCDC
+  ld [rIE], a
+  ld a, STATF_MODE00
+  ld [rSTAT], a
+
+  ; Point the stack at the source
+  ld sp,hl
+  ld hl, rLCDC
+  set 7, [hl]
+  ld h,d
+  ld l,e
+
+.rowloop:
+  xor a
+  ldh [rIF], a
+
+  ; Read first four bytes into A, B, E, D before hblank
+  pop de
+  ld b, d
+  ld a, e
+  pop de
+  halt
+
+  ; Push first four bytes first thing after hblank (14 cycles)
+  ld [hl+], a
+  ld a, b
+  ld [hl+], a
+  ld a, e
+  ld [hl+], a
+  ld a, d
+  ld [hl+], a
+
+  ; Push next four bytes (18 cycles)
+  pop de
+  ld a, e
+  ld [hl+], a
+  ld a, d
+  ld [hl+], a
+  pop de
+  ld a, e
+  ld [hl+], a
+  ld a, d
+  ld [hl+], a
+  dec c
+  jr nz, .rowloop
+
+  ; Restore the stack and interrupt
+  ld hl,popslide_sp_save
+  ld a,[hl+]
+  ld h,[hl]
+  ld l,a
+  ld sp,hl
+  pop af
+  ldh [rSTAT], a
+  pop af
+  ldh [rIE],a
+  reti

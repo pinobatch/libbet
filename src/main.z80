@@ -57,14 +57,20 @@ main::
   ei
 
   call audio_init
-  ld a,0
+  ld a, 0
   call audio_play_fx
+  call show_intro  ; Roll over the Nintendo logo
+  ld a, 0
+  call audio_play_fx
+  call do_instructions  ; Title screen
 
-  call do_instructions
+  ; Start a new game or the demo based on which button was pressed
+  ; to close the instructions
   ld a,[new_keys]
   and PADF_SELECT
   ld [attract_mode],a
 
+  ; Set up VRAM for the new game
   call lcd_off
   call load_floor_chr
   call load_statusbar_chr

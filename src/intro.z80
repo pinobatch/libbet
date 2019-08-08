@@ -1,18 +1,48 @@
+include "src/hardware.inc"
+
+; A 1 KiB (64 tile) buffer used for data decompression
+; (and which can be used for other purposes)
+section "decompbuf", wram0, align[8]
+decompbuf:: ds $200
+
 section "intro", ROM0
 load_rolling_girl_tiles::
-  ld de, roll32_chr
-  ld hl, $8400
-  ld b, 32
-  call pb16_unpack_block
 
-  ; Rotate Libbet's body
-  ld d, $84
-  ld h, $86
+  ; Decompress frame 1 of the animation
+  ld de, roll32_chr
+  ld hl, decompbuf
+  ld b, 16
+  call pb16_unpack_block
+  push de
+  ld de, $8400
+  call .copy_one_half
+
+  ; Decompress frame 2
+  pop de
+  ld hl, decompbuf
+  ld b, 16
+  call pb16_unpack_block
+  ld de, $8500
+.copy_one_half:
+
+  ; Copy the unrotated cel to VRAM
+  push de
+  ld hl, decompbuf
+  ld c, 16*2
+  call popslide_hblank_copy
+
+  ; Rotate the cel by 90 degrees
+  ld d, high(decompbuf) + 0
+  ld h, high(decompbuf) + 1
   call rotate_4x4_tiles
-  ld d, $85
-  ld h, $87
-  call rotate_4x4_tiles
-  ret
+
+  ; Copy the rotated cel 32 tiles later in VRAM
+  pop de
+  inc d
+  inc d
+  ld hl, decompbuf + 256
+  ld c, 16*2
+  jp popslide_hblank_copy
 
 ;;
 ; Rotates the column-major 4x4-tile image at D*$100 clockwise by
@@ -50,4 +80,108 @@ rotate_4x4_tiles:
     jr nz, .each_tile
   ret
 
+show_intro::
+  call load_rolling_girl_tiles
+  call fade_in
+  ld a, 32
+  ld [fade_level], a
+
+  xor a
+  ld [cursor_y], a
+  ld [cursor_x], a
+
+  ld a, %00001100
+  ldh [rOBP0], a
+  ld a, LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_OBJ16|LCDCF_BGON|LCDCF_OBJON
+  ld [vblank_lcdc_value],a
+  ldh [rLCDC], a
+  ld a, IEF_VBLANK
+  ldh [rIE], a
+
+  ld c, 60
+  .vtimeout:
+    ld a, [cursor_x]
+    add 3
+    ld [cursor_x], a
+    ld hl, cursor_y
+    inc [hl]
+
+    ; Draw the sprite
+    xor a
+    ld [oam_used], a
+
+    ld a, [cursor_y]
+    ld b, a  ; bit 4: flip?
+    and $0C  ; bits 3, 2: starting pos
+    add a
+    add a
+    add $40
+    ldh [hmsprBaseTile], a
+    ld a, b
+    and $10
+    swap a
+    ldh [hmsprFrame], a
+
+    ld a, [cursor_x]
+    ldh [hmsprXLo], a
+    ld a, 88
+    ldh [hmsprYLo], a
+    ld a, 1
+    ldh [hmsprSheetID], a
+    xor a
+    ldh [hmsprAttr], a
+    ldh [hmsprYHi], a
+    ldh [hmsprXHi], a
+    call draw_metasprite
+
+    call lcd_clear_oam
+    call fade_update
+    call audio_update
+
+    call wait_vblank_irq
+    call run_dma
+    ld a, [fade_obp0]
+    ldh [rOBP0], a
+
+    ; Wipe away logo
+    ld a, [cursor_x]
+    rrca
+    rrca
+    rrca
+    or $E0
+    ld l, a
+    ld h, $98
+    ld de, 32
+    xor a
+    ld [hl], a
+    add hl, de
+    ld [hl], a
+    add hl, de
+    ld [hl], a
+    add hl, de
+    ld [hl], a
+
+    ld a, [cursor_x]
+    cp 160
+    jr c, .vtimeout
+  ret
+
 roll32_chr:  incbin "obj/gb/roll32-h.chrgb.pb16"
+
+fourbyfour8x16_mspraddrs::
+  dw fourbyfour8x16_mspr
+  dw fourbyfour8x16flip_mspr
+
+fourbyfour8x16_mspr:
+  ;  Y   X   Att  Tile
+  ;  pos pos Len  IDs
+  db  96,112,$60, $00,$04,$08,$0C
+  db 112,112,$60, $02,$06,$0A,$0E
+  db 0
+
+fourbyfour8x16flip_mspr:
+  ;  Y   X   Att  Tile
+  ;  pos pos Len  IDs
+  db  96,112,$60, $CE,$CA,$C6,$C2
+  db 112,112,$60, $CC,$C8,$C4,$C0
+  db 0
