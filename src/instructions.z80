@@ -174,11 +174,8 @@ pages_end:
 page1txt:
  db LF
  db "Libbet and the Magic Floor",LF
- db "v0.04 (2019-02-20)",LF
+ db "v0.05wip (2019-08-08)",LF
  ; Row skipped because B=3
- db COPR," 2002, 2012 Martin Korth",LF
- db COPR," 2018, 2019 Damian Yerrick",LF
- db LF
  ; Can't cut 1 line here because "rearranging" and "passage" are so long
  db "One day, Libbet was",LF
  db "rearranging her basement",LF
@@ -187,6 +184,9 @@ page1txt:
  db "hall whose floor had a",LF
  db "peculiar pattern. She",LF
  db "rolled in to investigate.",LF
+ db LF
+ db "Direction: roll",LF
+ db "A+direction: jump",LF
  db LF
  db "Select: demo | Start: play",0
 

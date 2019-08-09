@@ -47,6 +47,14 @@ airrot_amt:: ds 1
 
 section "main", ROM0
 
+; A+B+Select+Start
+clear_vram_main:
+  call lcd_off
+  ld de, $8000
+  ld h, e
+  ld bc, $2000
+  call memset
+
 main::
   ; Set up vblank handler
   ld a,IEF_VBLANK
@@ -57,11 +65,8 @@ main::
   ei
 
   call audio_init
-  ld a, 0
-  call audio_play_fx
   call show_intro  ; Roll over the Nintendo logo
-  ld a, 0
-  call audio_play_fx
+skip_intro:
   call do_instructions  ; Title screen
 
   ; Start a new game or the demo based on which button was pressed
@@ -201,7 +206,7 @@ forever:
   ; A+B+Select+Start: reset
   ld a,[cur_keys]
   cp PADF_A|PADF_B|PADF_SELECT|PADF_START
-  jp z,main
+  jp z, clear_vram_main
 
   ; Hold Start: pause (if Restless test harness enabled)
   if SPRING_LOAD_PAUSE
@@ -214,7 +219,7 @@ forever:
   jr z,.not_attract_startcheck
     ld a,[new_keys]
     bit PADB_START,a
-    jp nz,main
+    jp nz, skip_intro
   .not_attract_startcheck:
 
   call check_exit_pct
@@ -237,7 +242,7 @@ forever:
       ld a,[attract_mode]
       or a
       jr z,.next_floor
-      jp main
+      jp skip_intro
     .not_next_floor:
 
     ; Sitting on a dead end after last move?
@@ -269,7 +274,7 @@ forever:
       call attract_update
       bit PADB_START,a
       jr z, .have_keys
-      jp main
+      jp skip_intro
     .not_attract_keyread:
       ld a,[cur_keys]
     .have_keys:
@@ -307,7 +312,7 @@ forever:
   cp NUM_FLOORS
   jp c,another_floor
   call debrief
-  jp main
+  jp clear_vram_main
 
 try_move:
   ld b,a

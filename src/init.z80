@@ -75,12 +75,17 @@ reset_handler::
   ld a,P1F_NONE
   ldh [rP1],a
 
+  ; Copy the sprite DMA routine to HRAM
+  ld hl,run_dma_master
+  ld de,run_dma
+  ld bc,run_dma_end-run_dma_master
+  call memcpy
+
   ; Initialize controller-related variables so that holding a button
   ; at power-on doesn't produce inconsistent results
   xor a
   ldh [rSCY], a   ; clear scroll
   ldh [rSCX], a   ; clear scroll
-  ldh [rNR52], a  ; disable (and reset) audio
   ld [cur_keys],a
   if USE_DAS
     ld [das_keys],a
@@ -90,15 +95,7 @@ reset_handler::
   ; Not fading the logo this time because a different effect
   ; is planned: Libbet rolling across the logo and knocking
   ; the (R) away if on mono.
-
-  ; Copy the sprite DMA routine to HRAM
-  ld hl,run_dma_master
-  ld de,run_dma
-  ld bc,run_dma_end-run_dma_master
-  call memcpy
-
-  ld a,$80
-  ld [vblank_lcdc_value], a
+  ; And because sound is used from step 1, keep the APU turned on
 
   if bgbcompat
     ; BGB triggers spurious "reading uninitialized WRAM" exceptions

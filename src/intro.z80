@@ -80,7 +80,20 @@ rotate_4x4_tiles:
     jr nz, .each_tile
   ret
 
+; $8000: Console maker logo
+; $8400: Libbet's cels
+; $8800: Copyright notice
+; $8C00: End
+
 show_intro::
+  ld a, %00001100
+  ldh [rBGP], a
+  ld a, LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_OBJ16|LCDCF_BGON|LCDCF_OBJON
+  ld [vblank_lcdc_value],a
+  ldh [rLCDC], a
+  ld a, IEF_VBLANK
+  ldh [rIE], a
+
   call load_rolling_girl_tiles
   call fade_in
   ld a, 32
@@ -90,21 +103,48 @@ show_intro::
   ld [cursor_y], a
   ld [cursor_x], a
 
-  ld a, %00001100
-  ldh [rOBP0], a
-  ld a, LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_OBJ16|LCDCF_BGON|LCDCF_OBJON
-  ld [vblank_lcdc_value],a
-  ldh [rLCDC], a
-  ld a, IEF_VBLANK
-  ldh [rIE], a
+  ; Clear the VWF area
+  ; TODO: Actually write something instead
+  ld hl, coprNotice
+  ld de, $8800
+  .vwflineloop:
+    push de  ; destination address in VRAM
+    push hl  ; string position in ROM
+    call vwfClearBuf
+    pop hl
+    ld b, 0
+    call vwfPuts
+    push hl
+    ld b, 0
+    ld hl, decompbuf
+    call vwfPutBuf03
+    pop hl
+    pop de
+    push de
+    push hl
+    ld hl, decompbuf
+    ld c, 256/8
+    call popslide_hblank_copy
+    pop hl
+    pop de
+    inc d
+    inc hl
+    ld a, d
+    cp $8C
+    jr nz, .vwflineloop
 
-  ld c, 60
-  .vtimeout:
+  .roll_loop:
     ld a, [cursor_x]
     add 3
     ld [cursor_x], a
     ld hl, cursor_y
+    ld a, [hl]
     inc [hl]
+    and $1F
+    jr nz,.no_sfx
+      ld a, 0
+      call audio_play_fx
+    .no_sfx:
 
     ; Draw the sprite
     xor a
@@ -123,7 +163,10 @@ show_intro::
     ldh [hmsprFrame], a
 
     ld a, [cursor_x]
+    sub 16
     ldh [hmsprXLo], a
+    sbc a
+    ldh [hmsprXHi], a
     ld a, 88
     ldh [hmsprYLo], a
     ld a, 1
@@ -131,7 +174,6 @@ show_intro::
     xor a
     ldh [hmsprAttr], a
     ldh [hmsprYHi], a
-    ldh [hmsprXHi], a
     call draw_metasprite
 
     call lcd_clear_oam
@@ -145,25 +187,69 @@ show_intro::
 
     ; Wipe away logo
     ld a, [cursor_x]
-    rrca
-    rrca
-    rrca
-    or $E0
-    ld l, a
-    ld h, $98
-    ld de, 32
-    xor a
-    ld [hl], a
-    add hl, de
-    ld [hl], a
-    add hl, de
-    ld [hl], a
-    add hl, de
-    ld [hl], a
+    sub 36
+    jr c,.nowipe
+    cp 128
+    jr nc,.nowipe
+      rrca
+      rrca
+      rrca
+      or $E0
+      add 2
+      ld l, a
+      ld h, $98
+      ld de, 32
+      sub $E2-$80  ; tiles $80-$BF are VWF canvas
+;      xor a  ; CHANGE THIS to change what tile is drawn
+      ld [hl], a
+      add hl, de
+      add 16
+      ld [hl], a
+      add hl, de
+      add 16
+      ld [hl], a
+      add hl, de
+      add 16
+      ld [hl], a
+    .nowipe:
 
     ld a, [cursor_x]
-    cp 160
-    jr c, .vtimeout
+    cp 192
+    jp c, .roll_loop
+
+  ld bc, 180 * 256 + 120
+  .vtimeout:
+    push bc
+    call read_pad
+    call audio_update
+    pop bc
+    call wait_vblank_irq
+    ; C unskippable vblanks, then B skippable ones
+    dec c
+    jr nz, .vtimeout
+    dec b
+    jr z,.closestart
+    inc c
+    ld a,[new_keys]
+    and PADF_START|PADF_A
+    jr z, .vtimeout
+  .closestart:
+
+  ld a, 1  ; jump
+  call audio_play_fx
+  ld hl, intro_close_scroll
+  .closeloop:
+    push hl
+    call read_pad
+    call audio_update
+    call wait_vblank_irq
+    pop hl
+    ld a, [hl+]
+    ldh [rSCY], a
+    ld a, l
+    cp low(intro_close_scroll_end)
+    jr nz, .closeloop
+
   ret
 
 roll32_chr:  incbin "obj/gb/roll32-h.chrgb.pb16"
@@ -185,3 +271,16 @@ fourbyfour8x16flip_mspr:
   db  96,112,$60, $CE,$CA,$C6,$C2
   db 112,112,$60, $CC,$C8,$C4,$C0
   db 0
+
+intro_close_scroll:
+  db 1, 2, 3, 4, 4, 3, 2, 1, 0, -2, -4, -7, -10, -14, -18, -23
+  db -28, -34, -40, -47, -54, -62, -70, -79, -88, -88
+intro_close_scroll_end:
+
+LF = $0A
+COPR equ $7F
+coprNotice:
+ db "",LF
+ db COPR," 2002, 2012 Martin Korth",LF
+ db COPR," 2018, 2019 Damian Yerrick",LF
+ db "",0

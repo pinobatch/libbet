@@ -24,7 +24,7 @@ include "src/global.inc"
 
 TMARGIN = 16
 LMARGIN = 8
-SPRITEHT = 8
+SPRITEHT = 8  ; or 16?
 SPRITEWID = 8
 
 ; args
@@ -233,7 +233,7 @@ draw_metasprite::
       add b
       ld [hmsprStripXLo],a
       ld a,[hmsprStripXHi]
-      add 0
+      adc 0
       bit 7,b
       jr z,.anoneg
         dec a
