@@ -6,18 +6,21 @@ Apply when the demo ends.
 
 How to encode:
 
-    ffmpeg -y -i bgb-1567896789.avi -i bgb-1567896789.wav -r 30 \
-      -vf 'scale=320:288:sws_flags=neighbor' \
+    ffmpeg -y -i bgb-1567896789.avi -i bgb-1567896789.wav \
+      -vf 'tblend=all_mode=average, framestep=2, scale=320:288:sws_flags=neighbor' \
       -pix_fmt yuv420p -ab 64000 -movflags +faststart out.mp4
 
 What does this mean?
 
 * `-y`: Overwrite previous encode if any
 * `-i`: Video and audio track inputs
-* `-r`: Reduce frame rate, as DMG games don't need to run faster than
-  30 fps, and YouTube doesn't support high motion LDTV, SDTV, or EDTV
-* `-vf`: Apply video filters, where `scale=` sets the video size and
-  `sws_flags=neighbor` specifies blocky resampling
+* `-vf`: Apply a chain of video filters
+    1. `tblend`: Average consecutive frames
+    2. `framestep`: Cut the frame rate exactly in half, as DMG games
+       don't need to run faster than 30 fps, and YouTube doesn't
+       support high motion LDTV, SDTV, or EDTV
+    3. `scale=` Set the video size, where `sws_flags=neighbor`
+       specifies blocky resampling
 * `-pix_fmt yuv420p`: Encode color (U and V chroma planes) smaller
   than full resolution.  Many web-based players require this.
   The pixel doubling to 288p ensures that this step loses no quality.
@@ -32,5 +35,7 @@ Boy, run two `scale` filters in a row.
       -vf 'scale=320:288:sws_flags=neighbor, scale=364:288:sws_flags=bilinear' \
       -pix_fmt yuv420p -ab 64000 -movflags +faststart out.mp4
 
-If your recording has an SGB border, the sizes may need to be changed
-to `512:448` and `584:448`.
+This uses the `-r` option to reduce frame rate the simple way.
+
+If your recording has an SGB border, change the sizes in the `scale`
+commands to `512:448` and `584:448`.
