@@ -88,7 +88,7 @@ rotate_4x4_tiles:
 show_intro::
   ld a, %00001100
   ldh [rBGP], a
-  ld a, LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_OBJ16|LCDCF_BGON|LCDCF_OBJON
+  ld a, LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJON
   ld [vblank_lcdc_value],a
   ldh [rLCDC], a
   ld a, IEF_VBLANK
@@ -254,22 +254,28 @@ show_intro::
 
 roll32_chr:  incbin "obj/gb/roll32-h.chrgb.pb16"
 
-fourbyfour8x16_mspraddrs::
-  dw fourbyfour8x16_mspr
-  dw fourbyfour8x16flip_mspr
+; 4x4 column major (was previously considering 8x16 but decided
+; against it given title screen uses 8x8)
+fourbyfourCM_mspraddrs::
+  dw fourbyfourCM_mspr
+  dw fourbyfourCMflip_mspr
 
-fourbyfour8x16_mspr:
+fourbyfourCM_mspr:
   ;  Y   X   Att  Tile
   ;  pos pos Len  IDs
   db  96,112,$60, $00,$04,$08,$0C
+  db 104,112,$60, $01,$05,$09,$0D
   db 112,112,$60, $02,$06,$0A,$0E
+  db 120,112,$60, $03,$07,$0B,$0F
   db 0
 
-fourbyfour8x16flip_mspr:
+fourbyfourCMflip_mspr:
   ;  Y   X   Att  Tile
   ;  pos pos Len  IDs
-  db  96,112,$60, $CE,$CA,$C6,$C2
-  db 112,112,$60, $CC,$C8,$C4,$C0
+  db  96,112,$60, $CF,$CB,$C7,$C3
+  db 104,112,$60, $CE,$CA,$C6,$C2
+  db 112,112,$60, $CD,$C9,$C5,$C1
+  db 120,112,$60, $CC,$C8,$C4,$C0
   db 0
 
 intro_close_scroll:

@@ -251,7 +251,7 @@ draw_metasprite::
 
 sheet_msprtables:
   dw Libbet_mspraddrs
-  dw fourbyfour8x16_mspraddrs
+  dw fourbyfourCM_mspraddrs
 
 Libbet_mspraddrs:
   include "obj/gb/Libbet.z80"

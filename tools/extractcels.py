@@ -13,6 +13,7 @@ Extract sprite cels from an image
 
 frame <nameofframe> <cliprect>?
 strip <palette> <cliprect>?
+strip <palette> <cliprect> at <dstpoint>
 hotspot <loc>
 
 """
@@ -249,10 +250,9 @@ def apply_global_palette(im, doc):
     return quantizetopalette(im.convert("RGB"), palim)
 
 TILE_W = 8
-TILE_H = 8
 TILE_PLANEMAP = "0,1"
 
-def read_strip(im, strip, g2l, hotspot):
+def read_strip(im, strip, g2l, hotspot, tile_ht):
     paletteid, l, t, w, h, lpad, tpad, dstl, dstt = strip
 
     # Crop and convert to subpalette
@@ -261,32 +261,33 @@ def read_strip(im, strip, g2l, hotspot):
     # Add padding at left and top for exceeding the crop rect,
     # and at right and bottom to a multiple of one tile
     wnew = -(-(w + lpad) // TILE_W) * TILE_W
-    hnew = -(-(h + tpad) // TILE_H) * TILE_H
+    hnew = -(-(h + tpad) // tile_ht) * tile_ht
     padded = Image.new('P', (wnew, hnew), 0)
     padded.paste(cropped, (lpad, tpad))
 
     # Convert image to tiles
     tilefmt = lambda x: pilbmp2nes.formatTilePlanar(x, TILE_PLANEMAP)
-    striptiles = pilbmp2nes.pilbmp2chr(padded, TILE_W, TILE_H, tilefmt)
+    striptiles = pilbmp2nes.pilbmp2chr(padded, TILE_W, tile_ht, tilefmt)
 
     # Convert coords to hotspot-relative
     dstl -= hotspot[0]
     dstt -= hotspot[1]
 
     # Convert tiles to horizontal strips
-    tperrow = (TILE_H // 8) * (wnew // 8)
+    tperrow = (tile_ht // 8) * (wnew // 8)
     tend = 0
-    for y in range(hnew // TILE_H):
+    for y in range(hnew // tile_ht):
         tstart, tend = tend, tend + tperrow
-        yield paletteid, striptiles[tstart:tend], dstl, dstt + y * TILE_H
+        yield paletteid, striptiles[tstart:tend], dstl, dstt + y * tile_ht
 
-def read_all_strips(im, doc):
+def read_all_strips(im, doc, tile_ht):
     out = []
     for framename, frame in doc.frames.items():
         hotspot = frame.get_hotspot()
         strips = []
+        gtl = doc.global_to_local
         for strip in frame.strips:
-            strips.extend(read_strip(im, strip, doc.global_to_local, hotspot))
+            strips.extend(read_strip(im, strip, gtl, hotspot, tile_ht))
         out.append(strips)
     return out
 
@@ -440,16 +441,19 @@ def parse_argv(argv):
                    help="where to write asm")
     p.add_argument("-v", "--verbose", action="store_true",
                    help="print debug info and write preview images")
+    p.add_argument("--8x16", action="store_true", dest="is_8x16",
+                   help="use 8x16 pixel sprites (not yet functional)")
     return p.parse_args(argv[1:])
 
 def main(argv=None):
     args = parse_argv(argv or sys.argv)
+    tile_ht = 16 if args.is_8x16 else 8
     im = Image.open(args.CELIMAGE)
     with open(args.STRIPSFILE, "r") as infp:
         doc = InputParser(infp)
     im = apply_global_palette(im, doc)
 
-    framestrips = read_all_strips(im, doc)
+    framestrips = read_all_strips(im, doc, tile_ht)
     alltiles = [
         tile for frame in framestrips for row in frame for tile in row[1]
     ]
