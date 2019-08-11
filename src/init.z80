@@ -64,7 +64,6 @@ reset_handler::
   ; A=FF: Game Boy Pocket or SGB2
   ; A=11, B.0=0: GBC
   ; A=11, B.0=1: GBA
-  ld c,a
   if SAVE_GB_TYPE
     ld [initial_a], a
     ld a,b
@@ -87,6 +86,7 @@ reset_handler::
   ldh [rSCY], a   ; clear scroll
   ldh [rSCX], a   ; clear scroll
   ld [cur_keys],a
+  ld [r_symbol_kick_dist], a  ; kick only on boot, not A+B+Select+Start
   if USE_DAS
     ld [das_keys],a
     ld [das_timer],a

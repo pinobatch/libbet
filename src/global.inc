@@ -69,7 +69,7 @@ USE_DAS equ 0
 
 ; Do we save what Game Boy type is running, or do we just use it
 ; to skip the logo fade?
-SAVE_GB_TYPE equ 0
+SAVE_GB_TYPE equ 1
 
 ; Do we display a variable in-game?
 USE_DEBUGHEX equ 0

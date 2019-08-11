@@ -5,6 +5,10 @@ include "src/hardware.inc"
 section "decompbuf", wram0, align[8]
 decompbuf:: ds $200
 
+KICK_TRIGGER_X = 132
+KICK_STARTING_X = (4+12)*8 + 8
+KICK_STARTING_Y = 8*8 + 16
+
 section "intro", ROM0
 load_rolling_girl_tiles::
 
@@ -80,7 +84,86 @@ rotate_4x4_tiles:
     jr nz, .each_tile
   ret
 
+intro_draw_character:
+  ld a, [cursor_y]
+  ld b, a  ; bit 4: flip?
+  and $0C  ; bits 3, 2: starting pos
+  add a
+  add a
+  add $40
+  ldh [hmsprBaseTile], a
+  ld a, b
+  and $10
+  swap a
+  ldh [hmsprFrame], a
+
+  ld a, [cursor_x]
+  sub 16
+  ldh [hmsprXLo], a
+  sbc a
+  ldh [hmsprXHi], a
+  ld a, 88
+  ldh [hmsprYLo], a
+  ld a, 1
+  ldh [hmsprSheetID], a
+  xor a
+  ldh [hmsprAttr], a
+  ldh [hmsprYHi], a
+  call draw_metasprite
+  ; fall through to moving and drawing the (R) symbol
+
+intro_kick_check:
+  ; Do this only on mono
+  ld a, [initial_a]
+  xor $11
+  ret z
+
+  ; Has it already moved far enough?
+  ld a, [r_symbol_kick_dist]
+  cp (168 - KICK_STARTING_X) / 6
+  ret nc
+
+  ; Draw (R) at distance A
+  ld hl, oam_used
+  ld l, [hl]
+  ld b, a  ; B = kick_distance
+  add a
+  add b
+  ld b, a  ; B = kick_distance * 3
+  cpl  ; A = 255 - kick_distance * 3
+  add 1 + KICK_STARTING_Y
+  ld [hl+], a
+  ld a, b
+  add a  ; kick_distance * 6
+  add KICK_STARTING_X
+  ld [hl+], a
+  ld [hl], $19
+  inc l
+  xor a
+  ld [hl+], a
+  ld a, l
+  ld [oam_used], a
+
+  ; Do we need to kick?
+  ld hl, r_symbol_kick_dist
+  ld a, [hl]
+  or a
+  jr nz, .already_kicked
+  ; Not already kicked:
+    ld a, [cursor_x]
+    cp KICK_TRIGGER_X
+    ret c  ; Not yet far enough
+    ; Set r_symbol_kick_dist to nonzero for the first time
+    inc [hl]
+    ld a, 2
+    jp audio_play_fx
+    ret
+  .already_kicked:
+    inc [hl]
+    ret
+
 ; $8000: Console maker logo
+; $8190: (R) sign if initial_a != $11
 ; $8400: Libbet's cels
 ; $8800: Copyright notice
 ; $8C00: End
@@ -98,10 +181,6 @@ show_intro::
   call fade_in
   ld a, 32
   ld [fade_level], a
-
-  xor a
-  ld [cursor_y], a
-  ld [cursor_x], a
 
   ; Clear the VWF area
   ; TODO: Actually write something instead
@@ -133,6 +212,18 @@ show_intro::
     cp $8C
     jr nz, .vwflineloop
 
+  ; Now that decompbuf is done: Take starting positions
+  call wait_vblank_irq
+  xor a
+  ld [cursor_y], a
+  ld [cursor_x], a
+  ; Move the (R) from tilemap to sprite
+  ld [_SCRN0+8*32+16], a
+  ld [oam_used], a
+  call intro_kick_check
+  call lcd_clear_oam
+  call run_dma
+
   .roll_loop:
     ld a, [cursor_x]
     add 3
@@ -149,32 +240,7 @@ show_intro::
     ; Draw the sprite
     xor a
     ld [oam_used], a
-
-    ld a, [cursor_y]
-    ld b, a  ; bit 4: flip?
-    and $0C  ; bits 3, 2: starting pos
-    add a
-    add a
-    add $40
-    ldh [hmsprBaseTile], a
-    ld a, b
-    and $10
-    swap a
-    ldh [hmsprFrame], a
-
-    ld a, [cursor_x]
-    sub 16
-    ldh [hmsprXLo], a
-    sbc a
-    ldh [hmsprXHi], a
-    ld a, 88
-    ldh [hmsprYLo], a
-    ld a, 1
-    ldh [hmsprSheetID], a
-    xor a
-    ldh [hmsprAttr], a
-    ldh [hmsprYHi], a
-    call draw_metasprite
+    call intro_draw_character
 
     call lcd_clear_oam
     call fade_update

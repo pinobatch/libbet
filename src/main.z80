@@ -44,6 +44,7 @@ move_flags:: ds 1
 tracks_since_pause:: ds 1
 airrot_dir:: ds 1
 airrot_amt:: ds 1
+r_symbol_kick_dist:: ds 1
 
 section "main", ROM0
 
