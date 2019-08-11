@@ -171,6 +171,7 @@ intro_kick_check:
 show_intro::
   ld a, %00001100
   ldh [rBGP], a
+  ldh [rOBP0], a
   ld a, LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJON
   ld [vblank_lcdc_value],a
   ldh [rLCDC], a
@@ -182,8 +183,7 @@ show_intro::
   ld a, 32
   ld [fade_level], a
 
-  ; Clear the VWF area
-  ; TODO: Actually write something instead
+  ; Write notice to the VWF area
   ld hl, coprNotice
   ld de, $8800
   .vwflineloop:
