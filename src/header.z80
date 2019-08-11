@@ -90,7 +90,7 @@ SECTION "header", ROM0[$0100]
   DB "OK"
 
   ; SGB mode
-  DB SGB_NONE
+  DB SGB_SUPPORT
 
   ; Mapper
   DB CART_ROM

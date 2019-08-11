@@ -64,8 +64,9 @@ FORCE_FLOOR_SIZE equ 0
 ; GB stops a noise early under certain conditions; BGB does not.
 TEST_PNOISE_BUG equ 0
 
-; Do we build code for autorepeat?
+; Do we build code for autorepeat and Super Game Boy detection?
 USE_DAS equ 0
+DETECT_SGB equ 1
 
 ; Do we save what Game Boy type is running, or do we just use it
 ; to skip the logo fade?

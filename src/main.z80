@@ -48,7 +48,28 @@ r_symbol_kick_dist:: ds 1
 
 section "main", ROM0
 
-; A+B+Select+Start
+main::
+  ; If not a Super Game Boy, head straight in.
+  ld a, [is_sgb]
+  or a
+  jr z, no_clear_vram_main
+
+  ; This is where we'd send all the SGB enhancements, such as border
+  ; and palette.  Currently there are none, but the SGB BIOS still
+  ; ignores the first roughly 40 frames after the GB-side boot ROM
+  ; jumps to $0100.  So for now, set the screen white, wait a bit,
+  ; and continue with VRAM cleared.  This means only DMG/MGB get to
+  ; see the (R) fly off.
+  xor a
+  ldh [rBGP], a
+  ld c, 40
+  .sgbcountdown:
+    call wait_not_vblank
+    call busy_wait_vblank
+    dec c
+    jr nz, .sgbcountdown
+
+; A+B+Select+Start lands here
 clear_vram_main:
   call lcd_off
   ld de, $8000
@@ -56,7 +77,7 @@ clear_vram_main:
   ld bc, $2000
   call memset
 
-main::
+no_clear_vram_main:
   ; Set up vblank handler
   ld a,IEF_VBLANK
   ldh [rIE],a  ; enable IRQs

@@ -34,6 +34,10 @@ das_keys:: ds 1
 das_timer:: ds 1
 endc
 
+if DETECT_SGB
+is_sgb:: ds 1
+endc
+
 SECTION "rom_pads", ROM0
 
 ; Controller reading ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,7 +95,8 @@ read_pad::
   or $F0   ; A7-4 = 1; A3-0 = unpressed keys
   ret
 
-; Don't include autorepeat code if not needed
+; Autorepeat ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 if USE_DAS
 
 ;;
@@ -130,5 +135,128 @@ autorepeat::
 .have_das_timer:
   ld [das_timer],a
   ret
+endc
 
+; Super Game Boy detection ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+if DETECT_SGB
+;;
+; Fill variable is_sgb with 1 if Super Game Boy or 0 otherwise,
+; then set controller back to 1 player mode.
+detect_sgb::
+  ; Try to set the SGB to 2-player mode
+  di
+  ld hl,sgb_packet_twoplayers
+  call sgb_send
+  call sgb_wait
+
+  ; When the key matrix is released, SGB returns player number in
+  ; bits 1-0 (active low).
+  ld a,[rP1]
+  and $03
+  xor $03
+  jr nz, .isSGB
+
+  ; When the key matrix is asserted and released, such as when one
+  ; controller is read, SGB advances to the next controller.
+  call read_pad
+  ld a,[rP1]
+  and $03
+  xor $03
+  jr z, .haveSGB ; a = 0
+
+.isSGB:
+  ld a, 1
+.haveSGB:
+  ld [is_sgb],a
+  ld hl,sgb_packet_oneplayer
+  jp sgb_send
+
+SIZEOF_SGB_PACKET EQU 16
+CHAR_BIT EQU 8
+
+;;
+; Sends a Super Game Boy packet starting at HL.
+; Assumes no IRQ handler does any sort of controller autoreading.
+
+sgb_send:
+
+  ; B: Number of remaining bytes in this packet
+  ; C: Number of remaining packets
+  ; D: Remaining bit data
+  ; E: Number of remaining bits in this byte
+  ld a,$07
+  and [hl]
+  ret z
+  ld c,a
+
+.packetloop:
+  ; Start transfer by asserting both halves of the key matrix
+  ; momentarily.  (This is like strobing an NES controller.)
+  xor a
+  ldh [rP1],a
+  ld a,$30
+  ldh [rP1],a
+  push bc
+  ld b,SIZEOF_SGB_PACKET
+.byteloop:
+  ; Read a byte from the packet
+  ld e,CHAR_BIT
+  ld a,[hl+]
+  ld d,a
+.bitloop:
+  ; Send a 1 as $10 then $30, or a 0 as $20 then $30.
+  ; This is constant time thanks to ISSOtm, unlike SGB BIOS
+  ; which takes 1 mcycle longer to send a 0 then a 1.
+  ld a,$10
+  bit 0,d
+  jr nz,.bitIs1
+  add a,a ; ld a,$20
+.bitIs1:
+  ldh [rP1],a
+  ld a,$30
+  ldh [rP1],a
+
+  ; Advance D to next bit (this is like NES MMC1)
+  rr d
+  dec e
+  jr nz,.bitloop
+  dec b
+  jr nz,.byteloop
+
+  ; Send $20 $30 as end of packet
+  ld a,$20
+  ld [rP1],a
+  ld a,$30
+  ld [rP1],a
+
+  call sgb_wait
+  pop bc
+  dec c
+  jr nz,.packetloop
+  ret
+
+;;
+; Waits about 4 frames for Super Game Boy to have processed a command
+sgb_wait:
+  ld de, 7000
+.loop:
+  nop
+  nop
+  nop
+  dec de
+  ld a, e
+  or d
+  jr nz, .loop
+  ret
+
+sgb_packet_twoplayers:
+  db ($11 << 3) + 1
+  db 1
+  ds 14
+
+sgb_packet_oneplayer:
+  db ($11 << 3) + 1
+  db 0
+  ds 14
 endc
