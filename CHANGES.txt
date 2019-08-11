@@ -8,6 +8,10 @@ Next release
 * Docs: Clarify that some achievements are harder than others
   (requested by ISSOtm)
 * Docs: Document metasprite format (requested by ISSOtm)
+* Add intro that wipes away console maker logo
+* Make fades much smoother (#9)
+* Make skin color distinct from sack color using 7-shade display
+* Encoding guide: Add SGB aspect ratio and frame blending
 
 0.04 (2019-02-20)
 * A+B+Select+Start during gameplay to reset
