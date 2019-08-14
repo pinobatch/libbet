@@ -9,3 +9,7 @@ __pycache__
 /libbet-*.zip
 /*.sn1
 /*.sav
+*.pb16
+*.o
+*.chr
+
