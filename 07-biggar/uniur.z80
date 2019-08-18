@@ -1,0 +1,87 @@
+; IUR: Incrementing Uniques and Runs, an experimental tilemap codec
+;
+; Incr. run  Code  Meaning
+;         0     0  Repeat last tile ID
+;         0    10  Increment max tile ID
+;         1     0  Increment max tile ID
+;         1    10  Repeat last tile ID
+;         X    11  Literal tile number follows in next full byte
+
+getbit: macro
+  sll b
+  ; Once out of bits, CF is 1 and B is 0
+  jr nz, .nonewbyte\@
+    ld b, [hl]
+    inc hl
+    rl b
+  .nonewbyte\@:
+  endm
+
+hBytesLeftHi = hLocals + $00
+hInNewRun    = hLocals + $01
+hMaxTile     = hLocals + $02
+hPrevTile    = hLocals + $03
+
+;;
+; Decompress IUR tilemap data
+;
+; Uses 4 bytes of locals
+; @param HL source address (usually in ROM)
+; @param DE destination address (usually in VRAM)
+; @param BC number of bytes in tilemap
+; @param A starting tile ID (e.g. $80 for $8800 VRAM)
+iur_unpack::
+  ; Initial codec state
+  ldh [hMaxTile], a
+  ldh [hPrevTile], a
+  xor a
+  ldh [hInNewRun], a
+
+  ; Correct tile count for 16-bit pseudo-dec
+  dec bc
+  inc b
+  inc c
+  ld a, b
+  ldh [hBytesLeftHi], a
+
+  ; Prime bit fetcher loop
+  scf
+  jr .byteloop+3
+.byteloop:
+  ; 0: same runtype
+  getbit
+  ldh a, [hInNewRun]
+  jr nc, .do_runtype_a
+
+  ; 10: opposite runtype
+  getbit
+  inc a
+  ldh [hInNewRun], a
+  jr nc, .do_runtype_a
+
+  ; 11: Read literal byte
+  ld a, [hl+]
+  jr .write_byte_a
+
+.do_runtype_a:
+  ; Runtype 0: same as previous tile
+  rra
+  jr nc, .is_repeat
+  ; Runtype 1: Write 1 more than last runtype 1 tile
+  ld a, [hMaxTile]
+  inc a
+  ldh [hMaxTile], a
+  jr .write_byte_a
+
+.is_repeat:
+  ldh a, [hPrevTile]
+.write_byte_a:
+  ldh [hPrevTile], a
+  ld [de], a
+  inc de
+  dec c
+  jr z, .byteloop
+  ldh a, [hBytesLeftHi]
+  dec a
+  ldh [hBytesLeftHi], a
+  ret

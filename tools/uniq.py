@@ -20,6 +20,13 @@ def parse_argv(argv):
     return args
 
 def uniq(it):
+    """Find unique items in an iterable and return lists (uniques, order).
+
+Items in it hashable.
+(uniques[i] for i in order) produces same elements as it.
+uniques appear in the same order as their first appearances in it:
+order[0] == 0 and order[x] <= max(order[:x]) + 1
+"""
     tiles = []
     tile2id = {}
     tilemap = []
