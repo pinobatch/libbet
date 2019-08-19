@@ -1,3 +1,24 @@
+;
+; Incrementing unique tiles and runs unpacker
+; Copyright 2019 Damian Yerrick
+;
+; This software is provided 'as-is', without any express or implied
+; warranty.  In no event will the authors be held liable for any damages
+; arising from the use of this software.
+;
+; Permission is granted to anyone to use this software for any purpose,
+; including commercial applications, and to alter it and redistribute it
+; freely, subject to the following restrictions:
+; 
+; 1. The origin of this software must not be misrepresented; you must not
+;    claim that you wrote the original software. If you use this software
+;    in a product, an acknowledgment in the product documentation would be
+;    appreciated but is not required.
+; 2. Altered source versions must be plainly marked as such, and must not be
+;    misrepresented as being the original software.
+; 3. This notice may not be removed or altered from any source distribution.
+;
+
 ; IUR: Incrementing Uniques and Runs, an experimental tilemap codec
 ;
 ; Incr. run  Code  Meaning
@@ -7,8 +28,11 @@
 ;         1    10  Repeat last tile ID
 ;         X    11  Literal tile number follows in next full byte
 
+; For local variable area
+.include "global.inc"
+
 getbit: macro
-  sll b
+  sla b
   ; Once out of bits, CF is 1 and B is 0
   jr nz, .nonewbyte\@
     ld b, [hl]
@@ -21,6 +45,8 @@ hBytesLeftHi = hLocals + $00
 hInNewRun    = hLocals + $01
 hMaxTile     = hLocals + $02
 hPrevTile    = hLocals + $03
+
+section "uniur", ROM0
 
 ;;
 ; Decompress IUR tilemap data
@@ -46,7 +72,7 @@ iur_unpack::
 
   ; Prime bit fetcher loop
   scf
-  jr .byteloop+3
+  jr .byteloop+4
 .byteloop:
   ; 0: same runtype
   getbit
@@ -59,7 +85,9 @@ iur_unpack::
   ldh [hInNewRun], a
   jr nc, .do_runtype_a
 
-  ; 11: Read literal byte
+  ; 11: Read literal byte and go to runtype 0
+  xor a
+  ldh [hInNewRun], a
   ld a, [hl+]
   jr .write_byte_a
 
@@ -80,8 +108,9 @@ iur_unpack::
   ld [de], a
   inc de
   dec c
-  jr z, .byteloop
+  jr nz, .byteloop
   ldh a, [hBytesLeftHi]
   dec a
   ldh [hBytesLeftHi], a
+  jr nz, .byteloop
   ret

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
+# Copr, 2019 Damian Yerrick
+# insert zlib license here
 import os
 import sys
-from PIL import Image
 sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), "../tools"))
-from pilbmp2nes import pilbmp2chr, formatTilePlanar
 from uniq import uniq
 import pb16
 
@@ -35,7 +35,6 @@ class BitByteInterleave(object):
                 self.bitsleft = -length  # space left for more bits
                 self.out[self.bitsindex] |= value << -length
 
-
     def __len__(self):
         return len(self.out)
 
@@ -45,16 +44,10 @@ class BitByteInterleave(object):
     def __iter__(self):
         return iter(self.out)
 
-def do_stats(chrdata):
+def iur_encode(chrdata, *, report=False):
     """Test experimental IUR tilemap codec"""
 
     utiles, tilemap = uniq(chrdata)
-    pbunique = b''.join(pb16.pb16(b''.join(utiles)))
-    sameas1ago = [l for l, r in zip(tilemap, tilemap[1:]) if l == r]
-    sameas2ago = [l for l, r in zip(tilemap, tilemap[2:]) if l == r]
-    sameaslplus1 = [l for l, r in zip(tilemap, tilemap[1:]) if l + 1 == r]
-    print("%d map entries match left; %d match 2 to the left; %d match left + 1"
-          % (len(sameas1ago), len(sameas2ago), len(sameaslplus1)))
 
     # Test type stickiness (brand new uniques vs. horizontal runs)
     lastwasnew, lastbyte, maxsofar = False, 0, 0
@@ -87,37 +80,54 @@ def do_stats(chrdata):
         lastbyte, lastwasnew = t, isnew
         maxsofar = max(t, maxsofar)
 
-    mapbits = (newnew + oldmatches
-               + 2 * matchafternew + 2 * newafternonnew
+    if report:
+        pbunique = b''.join(pb16.pb16(b''.join(utiles)))
+        sameas1ago = [l for l, r in zip(tilemap, tilemap[1:]) if l == r]
+        sameas2ago = [l for l, r in zip(tilemap, tilemap[2:]) if l == r]
+        sameaslplus1 = [l for l, r in zip(tilemap, tilemap[1:]) if l + 1 == r]
+        print("%d map entries match left; %d match 2 to the left; %d match left + 1"
+              % (len(sameas1ago), len(sameas2ago), len(sameaslplus1)))
+
+        mapbits = (newnew + oldmatches
+                   + 2 * matchafternew + 2 * newafternonnew
                + 10 * diffold)
-    mapbytes = -(-mapbits // 8)
-    line = ("mapsz=%d utiles=%3d nn=%3d om=%3d man=%3d nao=%3d do=%3d bits=%4d"
-            % (len(chrdata), len(utiles), newnew, oldmatches, matchafternew,
-               newafternonnew, diffold, mapbits))
-    print(line)
-    print("%d bytes tiles, %d bytes map, %d bytes total"
-          % (len(pbunique), mapbytes, len(pbunique) + mapbytes))
-    assert len(out) == mapbytes
+        mapbytes = -(-mapbits // 8)
+        line = ("mapsz=%d utiles=%3d nn=%3d om=%3d man=%3d nao=%3d do=%3d bits=%4d"
+                % (len(chrdata), len(utiles),
+                   newnew, oldmatches, matchafternew,
+                   newafternonnew, diffold, mapbits))
+        print(line)
+        print("%d bytes tiles, %d bytes map, %d bytes total"
+              % (len(pbunique), mapbytes, len(pbunique) + mapbytes))
+        assert len(out) == mapbytes
 
-gbformat = lambda tile: formatTilePlanar(tile, "0,1")
+    return bytes(out)
 
-test_filenames = [
-    ("Proposed MF title screen",
-     "../renders/title_bgonly.png"),
-    ("Green Hill Zone for GB",
-     "../../240p-test-mini/gameboy/tilesets/greenhillzone.png"),
-    ("Gus portrait for DMG",
-     "../../240p-test-mini/gameboy/tilesets/Gus_portrait.png"),
-    ("Linearity quadrant for GB",
-     "../../240p-test-mini/gameboy/tilesets/linearity-quadrant.png"),
-    ("Sharpness for GB",
-     "../../240p-test-mini/gameboy/tilesets/sharpness.png"),
-    ("Stopwatch face for GB",
-     "../../240p-test-mini/gameboy/tilesets/stopwatchface.png"),
-]
-for title, filename in test_filenames:
-    print("Stats for %s (%s)" % (title, os.path.basename(filename)))
-    im = Image.open(filename)
-    chrdata = pilbmp2chr(im, formatTile=gbformat)
-    do_stats(chrdata)
-    print()
+def test_iur():
+    from PIL import Image
+    from pilbmp2nes import pilbmp2chr, formatTilePlanar
+
+    gbformat = lambda tile: formatTilePlanar(tile, "0,1")
+    test_filenames = [
+        ("Proposed MF title screen",
+         "../renders/title_bgonly.png"),
+        ("Green Hill Zone for GB",
+         "../../240p-test-mini/gameboy/tilesets/greenhillzone.png"),
+        ("Gus portrait for DMG",
+         "../../240p-test-mini/gameboy/tilesets/Gus_portrait.png"),
+        ("Linearity quadrant for GB",
+         "../../240p-test-mini/gameboy/tilesets/linearity-quadrant.png"),
+        ("Sharpness for GB",
+         "../../240p-test-mini/gameboy/tilesets/sharpness.png"),
+        ("Stopwatch face for GB",
+         "../../240p-test-mini/gameboy/tilesets/stopwatchface.png"),
+    ]
+    for title, filename in test_filenames:
+        print("Stats for %s (%s)" % (title, os.path.basename(filename)))
+        im = Image.open(filename)
+        chrdata = pilbmp2chr(im, formatTile=gbformat)
+        iur_encode(chrdata, report=True)
+        print()
+
+if __name__=='__main__':
+    test_iur()
