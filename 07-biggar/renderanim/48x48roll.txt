@@ -1,0 +1,182 @@
+sheet Libbet ../Libbet_16x16.png
+sheetbg 0
+cel standS  64  72 24 32
+cel curlS   88  72 24 32
+cel rollS1 112  72 24 32
+cel rollS2 136  72 24 32
+cel rollS3 160  72 24 32
+cel rollS4 184  72 24 32
+cel rollS5 208  72 24 32
+cel rollS6 232  72 24 32
+cel rollS7 256  72 24 32
+cel rollS8 280  72 24 32
+cel jumpS1 112 200 24 32
+cel jumpS2 136 200 24 32
+cel jumpS3 160 200 24 32
+cel jumpS4 184 200 24 32
+cel jumpS5 208 200 24 32
+
+cel standE  64 104 24 32
+cel curlE   88 104 24 32
+cel rollE1 112 104 24 32
+cel rollE2 136 104 24 32
+cel rollE3 160 104 24 32
+cel rollE4 184 104 24 32
+cel rollE5 208 104 24 32
+cel rollE6 232 104 24 32
+cel rollE7 256 104 24 32
+cel rollE8 280 104 24 32
+cel jumpE1 112 232 24 32
+cel jumpE2 136 232 24 32
+cel jumpE3 160 232 24 32
+cel jumpE4 184 232 24 32
+cel jumpE5 208 232 24 32
+
+cel standN  64 136 24 32
+cel curlN   88 136 24 32
+cel rollN1 112 136 24 32
+cel rollN2 136 136 24 32
+cel rollN3 160 136 24 32
+cel rollN4 184 136 24 32
+cel rollN5 208 136 24 32
+cel rollN6 232 136 24 32
+cel rollN7 256 136 24 32
+cel rollN8 280 136 24 32
+cel jumpN1 112 264 24 32
+cel jumpN2 136 264 24 32
+cel jumpN3 160 264 24 32
+cel jumpN4 184 264 24 32
+cel jumpN5 208 264 24 32
+
+cel shadow 280 232 24 32
+
+sheet bg 48x48bg.png
+cel stand
+
+size 240 240
+bgcolor #fff
+
+layer 2 bg stand 120 120
+layer 0 Libbet standE 48 168 h
+wait 1000
+
+# Roll down
+move 0 curlS flip none
+wait 130
+move 0 rollS1
+wait 70
+move 0 rollS2 by 0 6
+wait 70
+move 0 rollS3 by 0 6
+wait 70
+move 0 rollS4 by 0 6
+wait 70
+move 0 rollS5 by 0 6
+wait 70
+move 0 rollS6 by 0 6
+wait 70
+move 0 rollS7 by 0 6
+wait 70
+move 0 rollS8 by 0 6
+wait 70
+move 0 rollS1 by 0 6
+wait 1000
+move 0 curlS
+wait 130
+move 0 standS
+wait 1000
+
+# Roll right
+move 0 curlE
+wait 130
+move 0 rollE1
+wait 70
+move 0 rollE2 by 6 0
+wait 70
+move 0 rollE3 by 6 0
+wait 70
+move 0 rollE4 by 6 0
+wait 70
+move 0 rollE5 by 6 0
+wait 70
+move 0 rollE6 by 6 0
+wait 70
+move 0 rollE7 by 6 0
+wait 70
+move 0 rollE8 by 6 0
+wait 70
+move 0 rollE1 by 6 0
+wait 1000
+move 0 curlE
+wait 130
+move 0 standE
+wait 1000
+
+# Roll up
+move 0 curlN
+wait 130
+move 0 rollN1
+wait 70
+move 0 rollN2 by 0 -6
+wait 70
+move 0 rollN3 by 0 -6
+wait 70
+move 0 rollN4 by 0 -6
+wait 70
+move 0 rollN5 by 0 -6
+wait 70
+move 0 rollN6 by 0 -6
+wait 70
+move 0 rollN7 by 0 -6
+wait 70
+move 0 rollN8 by 0 -6
+wait 70
+move 0 rollN1 by 0 -6
+wait 1000
+move 0 curlN
+wait 130
+move 0 standN
+wait 1000
+
+# Roll left
+move 0 curlE flip h
+wait 130
+move 0 rollE1
+wait 70
+move 0 rollE2 by -6 0
+wait 70
+move 0 rollE3 by -6 0
+wait 70
+move 0 rollE4 by -6 0
+wait 70
+move 0 rollE5 by -6 0
+wait 70
+move 0 rollE6 by -6 0
+wait 70
+move 0 rollE7 by -6 0
+wait 70
+move 0 rollE8 by -6 0
+wait 70
+move 0 rollE1 by -6 0
+wait 1000
+move 0 curlE
+wait 130
+
+#move 0 standE
+#wait 1000
+
+# TODO: jump right
+
+#move 0 curlE flip none
+#wait 130
+
+# TODO: jump up
+
+# TODO: jump down
+
+# TODO: jump left
+
+# Twitter has a habit of cutting off a GIF's last frame
+# so repeat the first frame
+move 0 standE flip h
+wait 30
