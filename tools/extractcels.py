@@ -95,7 +95,7 @@ def parse_color(s):
         if len(m) == 3:
             return tuple(int(c, 16) * 17 for c in m)
         elif len(m) == 6:
-            return tuple(int(c[i:i + 2], 16) for i in range(0, 6, 2))
+            return tuple(int(m[i:i + 2], 16) for i in range(0, 6, 2))
     raise ValueError("color %s not recognized" % s)
 
 def parse_subpalette(words):

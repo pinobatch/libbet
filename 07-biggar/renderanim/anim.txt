@@ -1,0 +1,107 @@
+# load an image
+sheet scooting swinging2x2.png
+# load cels
+cel stand   0 0 32 48  16 48
+cel walk1  32 0 32 48  48 48
+cel walk2  64 0 32 48  80 48
+cel walk3  96 0 32 48 112 48
+cel walk4 128 0 32 48 144 48
+cel walk5 160 0 32 48 176 48
+cel walk6 192 0 32 48 208 48
+cel walk7 224 0 32 48 238 48
+
+# load another
+sheet hello_world hello_world.png
+# default rect is whole, default hotspot is centered
+cel stand
+
+# Establish a camera
+size 160 144
+bgcolor #ffffff
+
+# Create a frame
+layer 1 hello_world stand 80 24
+layer 0 scooting stand 16 128
+wait 1000
+move 0 by 6 0 walk1
+wait 260
+move 0 by 6 0 walk2
+wait 130
+move 0 by 6 0 walk3
+wait 130
+move 0 by 6 0 walk4
+wait 130
+move 0 by 6 0 walk5
+wait 130
+move 0 by 6 0 walk6
+wait 130
+move 0 by 6 0 walk7
+wait 130
+move 0 by 6 0 walk1
+wait 130
+move 0 by 6 0 walk2
+wait 130
+move 0 by 6 0 walk3
+wait 130
+move 0 by 6 0 walk4
+wait 130
+move 0 by 6 0 walk5
+wait 130
+move 0 by 6 0 walk6
+wait 130
+move 0 by 6 0 walk7
+wait 130
+move 0 by 6 0 walk1
+wait 130
+move 0 by 6 0 walk2
+wait 130
+move 0 by 6 0 walk3
+wait 130
+move 0 by 6 0 walk4
+wait 130
+move 0 by 6 0 walk5
+wait 260
+move 0 by 6 0 stand
+wait 1000
+move 0 flip h
+wait 1000
+move 0 by -6 0 walk1
+wait 260
+move 0 by -6 0 walk2
+wait 130
+move 0 by -6 0 walk3
+wait 130
+move 0 by -6 0 walk4
+wait 130
+move 0 by -6 0 walk5
+wait 130
+move 0 by -6 0 walk6
+wait 130
+move 0 by -6 0 walk7
+wait 130
+move 0 by -6 0 walk1
+wait 130
+move 0 by -6 0 walk2
+wait 130
+move 0 by -6 0 walk3
+wait 130
+move 0 by -6 0 walk4
+wait 130
+move 0 by -6 0 walk5
+wait 130
+move 0 by -6 0 walk6
+wait 130
+move 0 by -6 0 walk7
+wait 130
+move 0 by -6 0 walk1
+wait 130
+move 0 by -6 0 walk2
+wait 130
+move 0 by -6 0 walk3
+wait 130
+move 0 by -6 0 walk4
+wait 130
+move 0 by -6 0 walk5
+wait 260
+move 0 by -6 0 stand
+wait 1000
