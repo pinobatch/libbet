@@ -161,20 +161,217 @@ move 0 rollE1 by -6 0
 wait 1000
 move 0 curlE
 wait 130
+move 0 standE
+wait 1000
 
-#move 0 standE
-#wait 1000
+# jump right
 
-# TODO: jump right
+move 0 curlE flip none
+wait 70
+move 0 by 6 0
+wait 70
+move 0 jumpE1 by 6 0
+wait 70
+move 0 by 6 0
+wait 70
+move 0 jumpE2 by 6 0
+wait 70
+layer 1 Libbet shadow 72 167
+move 1 by 6 0
+move 0 by 6 -4
+wait 70
+move 1 by 6 0
+move 0 by 6 -3
+wait 70
+move 1 by 6 0
+move 0 jumpE3 by 6 -2
+wait 70
+move 1 by 6 0
+move 0 by 6 -1
+wait 70
+move 1 by 6 0
+move 0 by 6 0
+wait 70
+move 1 by 6 0
+move 0 jumpE4 by 6 1
+wait 70
+move 1 by 6 0
+move 0 by 6 2
+wait 70
+move 1 by 6 0
+move 0 by 6 3
+wait 70
+layer 1
+move 0 jumpE5 by 6 4
+wait 70
+move 0 by 6 0
+wait 70
+move 0 rollE8 by 6 0
+wait 70
+move 0 rollE1 by 6 0
+wait 70
+move 0 rollE1
+wait 1000
+move 0 curlE
+wait 130
+move 0 standE
+wait 1000
 
-#move 0 curlE flip none
-#wait 130
+# jump up
+move 0 curlN
+wait 70
+move 0 by 0 -6
+wait 70
+move 0 jumpN1 by 0 -6
+wait 70
+move 0 by 0 -6
+wait 70
+move 0 jumpN2 by 0 -6
+wait 70
+layer 1 Libbet shadow 144 143
+move 1 by 0 -6
+move 0 by 0 -10
+wait 70
+move 1 by 0 -6
+move 0 by 0 -9
+wait 70
+move 1 by 0 -6
+move 0 jumpN3 by 0 -8
+wait 70
+move 1 by 0 -6
+move 0 by 0 -7
+wait 70
+move 1 by 0 -6
+move 0 by 0 -6
+wait 70
+move 1 by 0 -6
+move 0 jumpN4 by 0 -5
+wait 70
+move 1 by 0 -6
+move 0 by 0 -4
+wait 70
+move 1 by 0 -6
+move 0 by 0 -3
+wait 70
+layer 1
+move 0 jumpN5 by 0 -2
+wait 70
+move 0 by 0 -6
+wait 70
+move 0 rollN8 by 0 -6
+wait 70
+move 0 rollN1 by 0 -6
+wait 70
+move 0 rollN1
+wait 1000
+move 0 curlN
+wait 130
+move 0 standN
+wait 1000
 
-# TODO: jump up
+# jump down
 
-# TODO: jump down
+move 0 curlS
+wait 70
+move 0 by 0 6
+wait 70
+move 0 jumpS1 by 0 6
+wait 70
+move 0 by 0 6
+wait 70
+move 0 jumpS2 by 0 6
+wait 70
+layer 1 Libbet shadow 144 119
+move 1 by 0 6
+move 0 by 0 2
+wait 70
+move 1 by 0 6
+move 0 by 0 3
+wait 70
+move 1 by 0 6
+move 0 jumpS3 by 0 4
+wait 70
+move 1 by 0 6
+move 0 by 0 5
+wait 70
+move 1 by 0 6
+move 0 by 0 6
+wait 70
+move 1 by 0 6
+move 0 jumpS4 by 0 7
+wait 70
+move 1 by 0 6
+move 0 by 0 8
+wait 70
+move 1 by 0 6
+move 0 by 0 9
+wait 70
+layer 1
+move 0 jumpS5 by 0 10
+wait 70
+move 0 by 0 6
+wait 70
+move 0 rollS8 by 0 6
+wait 70
+move 0 rollS1 by 0 6
+wait 70
+move 0 rollS1
+wait 1000
+move 0 curlS
+wait 130
+move 0 standS
+wait 1000
 
-# TODO: jump left
+# jump left
+
+move 0 curlE flip h
+wait 70
+move 0 by -6 0
+wait 70
+move 0 jumpE1 by -6 0
+wait 70
+move 0 by -6 0
+wait 70
+move 0 jumpE2 by -6 0
+wait 70
+layer 1 Libbet shadow 120 167
+move 1 by -6 0
+move 0 by -6 -4
+wait 70
+move 1 by -6 0
+move 0 by -6 -3
+wait 70
+move 1 by -6 0
+move 0 jumpE3 by -6 -2
+wait 70
+move 1 by -6 0
+move 0 by -6 -1
+wait 70
+move 1 by -6 0
+move 0 by -6 0
+wait 70
+move 1 by -6 0
+move 0 jumpE4 by -6 1
+wait 70
+move 1 by -6 0
+move 0 by -6 2
+wait 70
+move 1 by -6 0
+move 0 by -6 3
+wait 70
+layer 1
+move 0 jumpE5 by -6 4
+wait 70
+move 0 by -6 0
+wait 70
+move 0 rollE8 by -6 0
+wait 70
+move 0 rollE1 by -6 0
+wait 70
+move 0 rollE1
+wait 1000
+move 0 curlE
+wait 130
 
 # Twitter has a habit of cutting off a GIF's last frame
 # so repeat the first frame

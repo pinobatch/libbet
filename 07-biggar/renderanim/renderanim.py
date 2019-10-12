@@ -70,6 +70,7 @@ def main(argv=None):
     # (is there an ordered map in Python?)
     frames, sheets, layers = [], {}, {}
     curframe = cursheet = bgcolor = imw = imh = whlinenum = None
+    skipping = False
 
     for linenum, line in lines:
         try:
@@ -153,7 +154,12 @@ def main(argv=None):
                         thislayer[1] = cmd
                     else:
                         raise KeyError(cmd)
+            elif word0 == 'skip':
+                skipping = True
+            elif word0 == 'noskip':
+                skipping = False
             elif word0 == 'wait':
+                if skipping: continue
                 duration = int(line[1])
                 slayers = sorted(layers.items(), reverse=True)
                 im = Image.new("RGB", (imw, imh), bgcolor)
