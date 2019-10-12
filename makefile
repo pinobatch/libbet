@@ -72,7 +72,7 @@ objlisto = $(foreach o,$(objlist),obj/gb/$(o).o)
 
 $(title).gb: $(objlisto)
 	rgblink -p 0xFF -m$(title).map -n$(title).sym -o$@ $^
-	rgbfix -p0 -v $@
+	rgbfix -p 0xFF -v $@
 
 obj/gb/%.o: obj/gb/%-dedent.z80 src/hardware.inc src/global.inc
 	rgbasm -o $@ $<
