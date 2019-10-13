@@ -14,6 +14,14 @@ wait 200
 # hide a layer
 hide 1
 
+# A bug in either Pillow or GIMP occasionally makes some
+# frames corrupt in such a way that GIMP stops loading
+# them and produces the following error message:
+#     GIF: too much input data, ignoring extra...
+# To work around this, break the GIF into segments.
+# Load the first using File > Open (Ctrl+O), and add
+# the rest using File > Open as Layers (Ctrl+Alt+O).
+segment
 
 
 """
@@ -71,6 +79,7 @@ def main(argv=None):
     frames, sheets, layers = [], {}, {}
     curframe = cursheet = bgcolor = imw = imh = whlinenum = None
     skipping = False
+    segment_breaks = {0}
 
     for linenum, line in lines:
         try:
@@ -158,6 +167,8 @@ def main(argv=None):
                 skipping = True
             elif word0 == 'noskip':
                 skipping = False
+            elif word0 == 'segment':
+                segment_breaks.add(len(frames))
             elif word0 == 'wait':
                 if skipping: continue
                 duration = int(line[1])
@@ -189,14 +200,26 @@ def main(argv=None):
             print("Exception on line %d" % (linenum + 1))
             raise
 
-    # Save all frames
-    frames[0][0].save(
-        gifname,
-        save_all=True,  # make animation
-        append_images=[f[0] for f in frames[1:]],  # frames after first
-        duration=tuple(f[1] for f in frames),  # in milliseconds
-        loop=0
-    )
+    segment_breaks.add(len(frames))
+    segment_breaks = sorted(segment_breaks)
+    print("segment breaks are", segment_breaks)
+    for s, e in zip(segment_breaks, segment_breaks[1:]):
+        if len(segment_breaks) > 2:
+            namepart, extpart = os.path.splitext(gifname)
+            outfilename = "%s_%d%s" % (namepart, s, extpart)
+            print("%s: writing %s" % (txtname, outfilename))
+        else:
+            outfilename = gifname
+        first_cel = frames[s][0]
+        subsequent_cels = [f[0] for f in frames[s + 1:e]]
+        cel_durations = [f[1] for f in frames[s:e]]
+        first_cel.save(
+            outfilename,
+            save_all=True,  # make animation
+            append_images=subsequent_cels,  # frames after first
+            duration=cel_durations,  # in milliseconds
+            loop=0
+        )
 
 if __name__=='__main__':
     if 'idlelib' in sys.modules:

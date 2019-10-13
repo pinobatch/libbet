@@ -209,8 +209,6 @@ wait 70
 move 0 rollE8 by 6 0
 wait 70
 move 0 rollE1 by 6 0
-wait 70
-move 0 rollE1
 wait 1000
 move 0 curlE
 wait 130
@@ -261,8 +259,6 @@ wait 70
 move 0 rollN8 by 0 -6
 wait 70
 move 0 rollN1 by 0 -6
-wait 70
-move 0 rollN1
 wait 1000
 move 0 curlN
 wait 130
@@ -281,7 +277,7 @@ move 0 by 0 6
 wait 70
 move 0 jumpS2 by 0 6
 wait 70
-layer 1 Libbet shadow 144 119
+layer 1 Libbet shadow 144 95
 move 1 by 0 6
 move 0 by 0 2
 wait 70
@@ -303,6 +299,7 @@ wait 70
 move 1 by 0 6
 move 0 by 0 8
 wait 70
+segment
 move 1 by 0 6
 move 0 by 0 9
 wait 70
@@ -314,8 +311,6 @@ wait 70
 move 0 rollS8 by 0 6
 wait 70
 move 0 rollS1 by 0 6
-wait 70
-move 0 rollS1
 wait 1000
 move 0 curlS
 wait 130
@@ -367,8 +362,6 @@ wait 70
 move 0 rollE8 by -6 0
 wait 70
 move 0 rollE1 by -6 0
-wait 70
-move 0 rollE1
 wait 1000
 move 0 curlE
 wait 130
