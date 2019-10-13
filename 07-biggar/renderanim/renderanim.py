@@ -29,7 +29,7 @@ import os
 import sys
 import re
 import argparse
-from PIL import Image
+from PIL import Image, ImageChops
 from contextlib import closing
 
 colorRE = re.compile('#([0-9a-fA-F]{3,6})$')
@@ -57,27 +57,44 @@ Return a byte string ready to be written to a file whose name ends in
     from io import BytesIO
     from html import escape as H
     zipfp = BytesIO()
+    lastframe = None
     with closing(zipfile.ZipFile(zipfp, "w", zipfile.ZIP_STORED)) as ora:
         layers = []
         im0size = None
         for i, (im, duration) in enumerate(frames):
-            if im0size is None: im0size = im.size
-            layername = "Frame %d (%dms)(replace)" % (i + 1, duration)
-            layerfilename = "data/f%04d.png" % (i + 1)
-            layers.append((layername, layerfilename))
-            with BytesIO() as imfp:
-                im.save(imfp, format="PNG")
-                ora.writestr(layerfilename, imfp.getvalue())
+            # Perform the same dirty rectangle optimization that
+            # Pillow's (semi-broken) animated GIF export performs.
+            # Can be improved by replacing horizontal rows where
+            # difference is black but im has more than one color
+            # with transparency, as GIMP's GIF optimizer does.
+            if lastframe is not None:
+                imdiff = ImageChops.difference(lastframe.convert("RGB"), im.convert("RGB"))
+                diffbox = imdiff.getbbox()
+                layer_x, layer_y = diffbox[:2]
+                imcrop = im.crop(diffbox)
+            else:
+                imcrop, im0size, layer_x, layer_y = im, im.size, 0, 0
 
-        # At end of loop, im holds the last frame
-        if im.mode not in ('RGB', 'RGBA'):
-            im = im.convert("RGBA")
+            layername = (
+                "Frame %d (%dms)%s"
+                % (i + 1, duration, "(combine)" if lastframe else "")
+            )
+            layerfilename = "data/f%04d.png" % (i + 1)
+            layers.append((layername, layerfilename, layer_x, layer_y))
+            with BytesIO() as imfp:
+                imcrop.save(imfp, format="PNG")
+                ora.writestr(layerfilename, imfp.getvalue())
+            lastframe = im
+
+        # OpenRaster requires preview at 2 sizes
+        if lastframe.mode not in ('RGB', 'RGBA'):
+            lastframe = lastframe.convert("RGBA")
         with BytesIO() as imfp:
-            im.save(imfp, format="PNG")
+            lastframe.save(imfp, format="PNG")
             ora.writestr("mergedimage.png", imfp.getvalue())
-        im.thumbnail((256, 256))
+        lastframe.thumbnail((256, 256))
         with BytesIO() as imfp:
-            im.save(imfp, format="PNG")
+            lastframe.save(imfp, format="PNG")
             ora.writestr("Thumbnails/thumbnail.png", imfp.getvalue())
 
         # Form layer stack
@@ -85,9 +102,9 @@ Return a byte string ready to be written to a file whose name ends in
 <image version="0.0.3" w="%d" h="%d" xres="96" yres="96"><stack>"""
                  % im0size]
         stackxml.extend(
-            '<layer name="%s" src="%s" x="0" y="0" />'
-            % (H(layername), H(layerfilename))
-            for layername, layerfilename in reversed(layers)
+            '<layer name="%s" src="%s" x="%d" y="%d" />'
+            % (H(layername), H(layerfilename), x, y)
+            for layername, layerfilename, x, y in reversed(layers)
         )
         stackxml.append("</stack></image>")
         stackxml = "\n".join(stackxml).encode("utf-8")
