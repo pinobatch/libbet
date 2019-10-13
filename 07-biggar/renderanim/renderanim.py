@@ -30,6 +30,7 @@ import sys
 import re
 import argparse
 from PIL import Image
+from contextlib import closing
 
 colorRE = re.compile('#([0-9a-fA-F]{3,6})$')
 def parse_color(s):
@@ -42,6 +43,58 @@ def parse_color(s):
         elif len(m) == 6:
             return tuple(int(m[i:i + 2], 16) for i in range(0, 6, 2))
     raise ValueError("color %s not recognized" % s)
+
+def make_ora_from_frames(frames):
+    """Create OpenRaster data from a list of (image, duration) tuples
+
+OpenRaster is defined at
+https://www.freedesktop.org/wiki/Specifications/OpenRaster/Draft/
+
+Return a byte string ready to be written to a file whose name ends in
+.ora or sent over the Internet with Content-type: image/openraster
+"""
+    import zipfile
+    from io import BytesIO
+    from html import escape as H
+    zipfp = BytesIO()
+    with closing(zipfile.ZipFile(zipfp, "w", zipfile.ZIP_STORED)) as ora:
+        layers = []
+        im0size = None
+        for i, (im, duration) in enumerate(frames):
+            if im0size is None: im0size = im.size
+            layername = "Frame %d (%dms)(replace)" % (i + 1, duration)
+            layerfilename = "data/f%04d.png" % (i + 1)
+            layers.append((layername, layerfilename))
+            with BytesIO() as imfp:
+                im.save(imfp, format="PNG")
+                ora.writestr(layerfilename, imfp.getvalue())
+
+        # At end of loop, im holds the last frame
+        if im.mode not in ('RGB', 'RGBA'):
+            im = im.convert("RGBA")
+        with BytesIO() as imfp:
+            im.save(imfp, format="PNG")
+            ora.writestr("mergedimage.png", imfp.getvalue())
+        im.thumbnail((256, 256))
+        with BytesIO() as imfp:
+            im.save(imfp, format="PNG")
+            ora.writestr("Thumbnails/thumbnail.png", imfp.getvalue())
+
+        # Form layer stack
+        stackxml = ["""<?xml version='1.0' encoding='UTF-8'?>
+<image version="0.0.3" w="%d" h="%d" xres="96" yres="96"><stack>"""
+                 % im0size]
+        stackxml.extend(
+            '<layer name="%s" src="%s" x="0" y="0" />'
+            % (H(layername), H(layerfilename))
+            for layername, layerfilename in reversed(layers)
+        )
+        stackxml.append("</stack></image>")
+        stackxml = "\n".join(stackxml).encode("utf-8")
+        ora.writestr("mimetype", b"image/openraster")
+        ora.writestr("stack.xml", stackxml)
+
+    return zipfp.getvalue()
 
 flipnames = {
     'none': (None, 0),
@@ -202,29 +255,36 @@ def main(argv=None):
 
     segment_breaks.add(len(frames))
     segment_breaks = sorted(segment_breaks)
-    print("segment breaks are", segment_breaks)
+    namepart, extpart = os.path.splitext(gifname)
     for s, e in zip(segment_breaks, segment_breaks[1:]):
         if len(segment_breaks) > 2:
-            namepart, extpart = os.path.splitext(gifname)
             outfilename = "%s_%d%s" % (namepart, s, extpart)
             print("%s: writing %s" % (txtname, outfilename))
         else:
             outfilename = gifname
-        first_cel = frames[s][0]
-        subsequent_cels = [f[0] for f in frames[s + 1:e]]
-        cel_durations = [f[1] for f in frames[s:e]]
-        first_cel.save(
-            outfilename,
-            save_all=True,  # make animation
-            append_images=subsequent_cels,  # frames after first
-            duration=cel_durations,  # in milliseconds
-            loop=0
-        )
+        extlower = extpart.lower()
+        if extlower == '.gif':
+            first_cel = frames[s][0]
+            subsequent_cels = [f[0] for f in frames[s + 1:e]]
+            cel_durations = [f[1] for f in frames[s:e]]
+            first_cel.save(
+                outfilename,
+                save_all=True,  # make animation
+                append_images=subsequent_cels,  # frames after first
+                duration=cel_durations,  # in milliseconds
+                loop=0
+            )
+        elif extlower == '.ora':
+            filedata = make_ora_from_frames(frames[s:e])
+            with open(outfilename, "wb") as outfp:
+                outfp.write(filedata)
+        else:
+            raise ValueError("unknown extension %s" % extpart)
 
 if __name__=='__main__':
     if 'idlelib' in sys.modules:
         main("""
-./renderanim.py anim.txt ../../renders/renderanim-out.gif
+./renderanim.py anim.txt ../../renders/renderanim-out.ora
 """.split())
     else:
         main()

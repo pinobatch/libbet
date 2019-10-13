@@ -57,13 +57,9 @@ size 240 240
 bgcolor #fff
 
 layer 2 bg stand 120 120
-layer 0 Libbet standE 48 168 h
-wait 1000
+layer 0 Libbet rollS1 48 168
 
 # Roll down
-move 0 curlS flip none
-wait 130
-move 0 rollS1
 wait 70
 move 0 rollS2 by 0 6
 wait 70
@@ -80,15 +76,9 @@ wait 70
 move 0 rollS8 by 0 6
 wait 70
 move 0 rollS1 by 0 6
-wait 1000
-move 0 curlS
-wait 130
-move 0 standS
-wait 1000
+wait 70
 
 # Roll right
-move 0 curlE
-wait 130
 move 0 rollE1
 wait 70
 move 0 rollE2 by 6 0
@@ -106,15 +96,9 @@ wait 70
 move 0 rollE8 by 6 0
 wait 70
 move 0 rollE1 by 6 0
-wait 1000
-move 0 curlE
-wait 130
-move 0 standE
-wait 1000
+wait 70
 
 # Roll up
-move 0 curlN
-wait 130
 move 0 rollN1
 wait 70
 move 0 rollN2 by 0 -6
@@ -132,16 +116,10 @@ wait 70
 move 0 rollN8 by 0 -6
 wait 70
 move 0 rollN1 by 0 -6
-wait 1000
-move 0 curlN
-wait 130
-move 0 standN
-wait 1000
+wait 70
 
 # Roll left
-move 0 curlE flip h
-wait 130
-move 0 rollE1
+move 0 rollE1 flip h
 wait 70
 move 0 rollE2 by -6 0
 wait 70
@@ -158,11 +136,7 @@ wait 70
 move 0 rollE8 by -6 0
 wait 70
 move 0 rollE1 by -6 0
-wait 1000
-move 0 curlE
-wait 130
-move 0 standE
-wait 1000
+wait 70
 
 # jump right
 
@@ -209,11 +183,7 @@ wait 70
 move 0 rollE8 by 6 0
 wait 70
 move 0 rollE1 by 6 0
-wait 1000
-move 0 curlE
-wait 130
-move 0 standE
-wait 1000
+wait 70
 
 # jump up
 move 0 curlN
@@ -259,11 +229,7 @@ wait 70
 move 0 rollN8 by 0 -6
 wait 70
 move 0 rollN1 by 0 -6
-wait 1000
-move 0 curlN
-wait 130
-move 0 standN
-wait 1000
+wait 70
 
 # jump down
 
@@ -299,8 +265,6 @@ wait 70
 move 1 by 0 6
 move 0 by 0 8
 wait 70
-# a segment is needed here if exporting to GIF
-#segment
 move 1 by 0 6
 move 0 by 0 9
 wait 70
@@ -312,11 +276,7 @@ wait 70
 move 0 rollS8 by 0 6
 wait 70
 move 0 rollS1 by 0 6
-wait 1000
-move 0 curlS
-wait 130
-move 0 standS
-wait 1000
+wait 70
 
 # jump left
 
@@ -363,11 +323,9 @@ wait 70
 move 0 rollE8 by -6 0
 wait 70
 move 0 rollE1 by -6 0
-wait 1000
-move 0 curlE
-wait 130
+wait 70
 
 # Twitter has a habit of cutting off a GIF's last frame
 # so repeat the first frame
-move 0 standE flip h
+move 0 rollS1 flip none
 wait 30
