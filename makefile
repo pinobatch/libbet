@@ -16,8 +16,9 @@ version:=0.05wip
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
 objlist := header init \
-  main floorvram floormodel statusbar instructions rolling \
-  debrief achievements intro \
+  main floorvram floormodel \
+  statusbar rolling prevcombo \
+  instructions debrief achievements intro \
   fade audio pitchtable \
   ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 popslide
 

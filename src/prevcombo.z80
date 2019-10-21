@@ -1,0 +1,108 @@
+; When combo breaks, the previous combo rises off the status bar
+
+MIN_PREVCOMBO equ 3
+PREVCOMBO_X equ 8
+PREVCOMBO_START_Y equ 128
+PREVCOMBO_START_DY equ -20
+PREVCOMBO_FRAMES equ 80
+
+section "prevcomboram", WRAM0
+prevcombo_timeleft: ds 1
+prevcombo_dy: ds 1
+prevcombo_y: ds 1
+prevcombo_digits: ds 1
+
+section "prevcombo", ROM0
+prevcombo_update::
+  ; decrement this particle's life
+  ld hl, prevcombo_timeleft
+  ld a, [hl]
+  or a
+  ret z
+  dec a
+  ld [hl+], a
+
+  ; Add 1px of downward velocity every fourth frame if still rising
+  ld a, [hl]
+  cp $80  ; carry 0 if negative or 1 if positive
+  sbc $FF  ; add 1 - carry
+  ld [hl+], a
+
+  ; Add a fraction of velocity to Y position
+  and $FC
+  sra a
+  sra a
+  sra a
+  adc [hl]
+  ld [hl+], a
+  ld b, a     ; B = Y position
+  ld c, [hl]  ; C = digits
+
+  ; Draw each digit
+  ld hl, oam_used
+  ld l, [hl]  ; HL = OAM pointer
+  ld a, c
+  cp $10
+  jr c, .no_tens
+    swap c
+    ld e, PREVCOMBO_X + 8
+    call .onedigit
+    swap c
+  .no_tens:
+  ld e, PREVCOMBO_X + 16
+  call .onedigit
+  ld a, l
+  ld [oam_used], a
+  ret
+
+.onedigit:
+  ; Y, X coords of top sprite
+  ld a, b
+  ld [hl+], a
+  ld a, e
+  ld [hl+], a
+
+  ; Tile number and attribute of top sprite
+  ld a, c
+  and $0F
+  add a
+  add SPRITE_BIG_DIGIT_BASE
+  ld [hl+], a
+  inc a
+  ld d, a
+  xor a
+  ld [hl+], a
+
+  ; Y, X coords of bottom sprite
+  ld a, b
+  add 8
+  ld [hl+], a
+  ld a, e
+  ld [hl+], a
+
+  ; Tile number and attribute of bottom sprite
+  ld a, d
+  ld [hl+], a
+  xor a
+  ld [hl+], a
+  ret
+
+prevcombo_init::
+  xor a
+  ld [prevcombo_timeleft], a
+  ret
+
+prevcombo_set::
+  cp MIN_PREVCOMBO
+  ret c
+  call bcd8bit_baa
+  ld hl, prevcombo_digits
+  ld [hl-], a
+  ld a, PREVCOMBO_START_Y + 16
+  ld [hl-], a
+  ld a, PREVCOMBO_START_DY
+  ld [hl-], a
+  ld a, PREVCOMBO_FRAMES
+  ld [hl], a
+  ld a, 10
+  jp audio_play_fx  ; oh no, combo stopped!

@@ -27,8 +27,10 @@ SMALL_DIGIT_BASE equ $D0
 STATUS_SLASH equ $F6
 STATUS_BLANK equ $F7
 BIG_DIGIT_BASE equ $E0
+SPRITE_BIG_DIGIT_BASE equ $60
 STATUS_PERCENT equ $F4
 STATUSBAR_CHR_COUNT = 40
+global SPRITE_BIG_DIGIT_BASE
 
 SMALL_SCORE_POS equ SCRN_BG+32*17+14
 COMBO_POS equ SCRN_BG+32*16+1
@@ -102,7 +104,28 @@ load_statusbar_chr::
     dec b
     jr nz,.combo_colorize
 
-  ; Achievements and attract mode don't run at once
+  ; Load sprite versions of large digits into tiles $60-$69
+  ; for use in "oh no, combo stopped!"
+  ld hl, CHRRAM0+16*BIG_DIGIT_BASE
+  ld de, CHRRAM0+16*SPRITE_BIG_DIGIT_BASE
+  ld b, 16*10
+.copy_big_digits:
+  ; Map colors from 0, 1, 3 to 0, 0, 1
+  ; new plane 0 = old plane 1
+  inc hl
+  ld a, [hl+]
+  ld [de], a
+  inc de
+  ; new plane 0 = 0
+  xor a
+  ld [de], a
+  inc de
+  dec b
+  jr nz, .copy_big_digits
+
+  ; Achievements and attract mode don't run at once.
+  ; Attract mode uses BG tiles $80-$BF for instruction text
+  ; Achievements use BG tiles $80-$91
   ld a,[attract_mode]
   or a
   ret nz

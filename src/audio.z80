@@ -65,6 +65,8 @@ sfx_table:
   dw fx_land2
   db 1, 0
   dw fx_achieve
+  db 1, 0
+  dw fx_combostop
 
   db 2, 0
   dw fx_wavetest
@@ -150,6 +152,16 @@ fx_achieve:
   db ENVF_DPAR|ENVF_PITCH|$43, $C1, 49
   db $42
   db $84
+  db $FF
+fx_combostop:
+  db ENVF_DPAR|ENVF_PITCH|$42, $A1, 31
+  db ENVF_DPAR|ENVF_PITCH|$42, $A1, 36
+  db ENVF_DPAR|ENVF_PITCH|$41, $A1, 40
+  db $82
+  db ENVF_DPAR|ENVF_PITCH|$42, $A1, 31
+  db ENVF_DPAR|ENVF_PITCH|$42, $A1, 34
+  db ENVF_DPAR|ENVF_PITCH|$41, $A1, 38
+  db $86
   db $FF
 
 
