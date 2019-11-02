@@ -348,14 +348,15 @@ class Job(object):
         # Step all cel sequences forward even if skipping rendering
         for k, thislayer in list(self.layers.items()):
             sheetname, celseqname, x, y, flipname, seqstep = thislayer
+            flipmethod, vhflags = flipnames[flipname]
             sheetseqs = self.sheets[sheetname].celseqs
             if celseqname not in sheetseqs: continue
             celseq = sheetseqs[celseqname]
             seqstep += 1
             if seqstep >= len(celseq): seqstep = 0
             _, sx, sy = celseq[seqstep]
-            x += sx
-            y += sy
+            x += -sx if vhflags & 1 else sx
+            y += -sy if vhflags & 2 else sy
             self.layers[k] = thislayer._replace(x=x, y=y, seqstep=seqstep)
         celname = celseqname = None
         if self.skipping: return
