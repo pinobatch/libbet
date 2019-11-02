@@ -50,8 +50,106 @@ cel jumpN5 208 264 24 32
 
 cel shadow 280 232 24 32
 
+celseq rollS
+move rollS2 by 0 6
+move rollS3 by 0 6
+move rollS4 by 0 6
+move rollS5 by 0 6
+move rollS6 by 0 6
+move rollS7 by 0 6
+move rollS8 by 0 6
+move rollS1 by 0 6
+
+celseq rollE
+move rollE2 by 6 0
+move rollE3 by 6 0
+move rollE4 by 6 0
+move rollE5 by 6 0
+move rollE6 by 6 0
+move rollE7 by 6 0
+move rollE8 by 6 0
+move rollE1 by 6 0
+
+celseq rollN
+move rollN2 by 0 -6
+move rollN3 by 0 -6
+move rollN4 by 0 -6
+move rollN5 by 0 -6
+move rollN6 by 0 -6
+move rollN7 by 0 -6
+move rollN8 by 0 -6
+move rollN1 by 0 -6
+
+celseq jumpE
+move curlE  by 6 0
+move jumpE1 by 6 0
+move jumpE1 by 6 0
+move jumpE2 by 6 0
+move jumpE2 by 6 -4
+move jumpE2 by 6 -3
+move jumpE3 by 6 -2
+move jumpE3 by 6 -1
+move jumpE3 by 6 0
+move jumpE4 by 6 1
+move jumpE4 by 6 2
+move jumpE4 by 6 3
+move jumpE5 by 6 4
+move jumpE5 by 6 0
+move rollE8 by 6 0
+move rollE1 by 6 0
+
+celseq jumpN
+move curlN by 0 -6
+move jumpN1 by 0 -6
+move jumpN1 by 0 -6
+move jumpN2 by 0 -6
+move jumpN2 by 0 -10
+move jumpN2 by 0 -9
+move jumpN3 by 0 -8
+move jumpN3 by 0 -7
+move jumpN3 by 0 -6
+move jumpN4 by 0 -5
+move jumpN4 by 0 -4
+move jumpN4 by 0 -3
+move jumpN5 by 0 -2
+move jumpN5 by 0 -6
+move rollN8 by 0 -6
+move rollN1 by 0 -6
+
+celseq jumpS
+move curlS by 0 6
+move jumpS1 by 0 6
+move jumpS1 by 0 6
+move jumpS2 by 0 6
+move jumpS2 by 0 2
+move jumpS2 by 0 3
+move jumpS3 by 0 4
+move jumpS3 by 0 5
+move jumpS3 by 0 6
+move jumpS4 by 0 7
+move jumpS4 by 0 8
+move jumpS4 by 0 9
+move jumpS5 by 0 10
+move jumpS5 by 0 6
+move rollS8 by 0 6
+move rollS1 by 0 6
+
+celseq shadowE
+move shadow by 6 0
+
+celseq shadowN
+move shadow by 0 -6
+
+celseq shadowW
+move shadow by -6 0
+
+celseq shadowS
+move shadow by 0 6
+
+
 sheet bg 48x48bg.png
 cel stand
+
 
 size 240 240
 bgcolor #fff
@@ -61,268 +159,148 @@ layer 0 Libbet rollS1 48 168
 
 # Roll down
 wait 70
-move 0 rollS2 by 0 6
+move 0 rollS
 wait 70
-move 0 rollS3 by 0 6
 wait 70
-move 0 rollS4 by 0 6
 wait 70
-move 0 rollS5 by 0 6
 wait 70
-move 0 rollS6 by 0 6
 wait 70
-move 0 rollS7 by 0 6
 wait 70
-move 0 rollS8 by 0 6
 wait 70
-move 0 rollS1 by 0 6
 wait 70
 
 # Roll right
 move 0 rollE1
 wait 70
-move 0 rollE2 by 6 0
+move 0 rollE
 wait 70
-move 0 rollE3 by 6 0
 wait 70
-move 0 rollE4 by 6 0
 wait 70
-move 0 rollE5 by 6 0
 wait 70
-move 0 rollE6 by 6 0
 wait 70
-move 0 rollE7 by 6 0
 wait 70
-move 0 rollE8 by 6 0
 wait 70
-move 0 rollE1 by 6 0
 wait 70
 
 # Roll up
 move 0 rollN1
 wait 70
-move 0 rollN2 by 0 -6
+move 0 rollN
 wait 70
-move 0 rollN3 by 0 -6
 wait 70
-move 0 rollN4 by 0 -6
 wait 70
-move 0 rollN5 by 0 -6
 wait 70
-move 0 rollN6 by 0 -6
 wait 70
-move 0 rollN7 by 0 -6
 wait 70
-move 0 rollN8 by 0 -6
 wait 70
-move 0 rollN1 by 0 -6
 wait 70
 
 # Roll left
 move 0 rollE1 flip h
 wait 70
-move 0 rollE2 by -6 0
+move 0 rollE
 wait 70
-move 0 rollE3 by -6 0
 wait 70
-move 0 rollE4 by -6 0
 wait 70
-move 0 rollE5 by -6 0
 wait 70
-move 0 rollE6 by -6 0
 wait 70
-move 0 rollE7 by -6 0
 wait 70
-move 0 rollE8 by -6 0
 wait 70
-move 0 rollE1 by -6 0
 wait 70
 
 # jump right
 
 move 0 curlE flip none
 wait 70
-move 0 by 6 0
+move 0 jumpE
 wait 70
-move 0 jumpE1 by 6 0
 wait 70
-move 0 by 6 0
 wait 70
-move 0 jumpE2 by 6 0
 wait 70
-layer 1 Libbet shadow 72 167
-move 1 by 6 0
-move 0 by 6 -4
+layer 1 Libbet shadowE 72 167
 wait 70
-move 1 by 6 0
-move 0 by 6 -3
 wait 70
-move 1 by 6 0
-move 0 jumpE3 by 6 -2
 wait 70
-move 1 by 6 0
-move 0 by 6 -1
 wait 70
-move 1 by 6 0
-move 0 by 6 0
 wait 70
-move 1 by 6 0
-move 0 jumpE4 by 6 1
 wait 70
-move 1 by 6 0
-move 0 by 6 2
 wait 70
-move 1 by 6 0
-move 0 by 6 3
 wait 70
 layer 1
-move 0 jumpE5 by 6 4
 wait 70
-move 0 by 6 0
 wait 70
-move 0 rollE8 by 6 0
 wait 70
-move 0 rollE1 by 6 0
 wait 70
 
 # jump up
 move 0 curlN
 wait 70
-move 0 by 0 -6
+move 0 jumpN
 wait 70
-move 0 jumpN1 by 0 -6
 wait 70
-move 0 by 0 -6
 wait 70
-move 0 jumpN2 by 0 -6
 wait 70
-layer 1 Libbet shadow 144 143
-move 1 by 0 -6
-move 0 by 0 -10
+layer 1 Libbet shadowN 144 143
 wait 70
-move 1 by 0 -6
-move 0 by 0 -9
 wait 70
-move 1 by 0 -6
-move 0 jumpN3 by 0 -8
 wait 70
-move 1 by 0 -6
-move 0 by 0 -7
 wait 70
-move 1 by 0 -6
-move 0 by 0 -6
 wait 70
-move 1 by 0 -6
-move 0 jumpN4 by 0 -5
 wait 70
-move 1 by 0 -6
-move 0 by 0 -4
 wait 70
-move 1 by 0 -6
-move 0 by 0 -3
 wait 70
 layer 1
-move 0 jumpN5 by 0 -2
 wait 70
-move 0 by 0 -6
 wait 70
-move 0 rollN8 by 0 -6
 wait 70
-move 0 rollN1 by 0 -6
 wait 70
 
 # jump down
 
 move 0 curlS
 wait 70
-move 0 by 0 6
+move 0 jumpS
 wait 70
-move 0 jumpS1 by 0 6
 wait 70
-move 0 by 0 6
 wait 70
-move 0 jumpS2 by 0 6
 wait 70
-layer 1 Libbet shadow 144 95
-move 1 by 0 6
-move 0 by 0 2
+layer 1 Libbet shadowS 144 95
 wait 70
-move 1 by 0 6
-move 0 by 0 3
 wait 70
-move 1 by 0 6
-move 0 jumpS3 by 0 4
 wait 70
-move 1 by 0 6
-move 0 by 0 5
 wait 70
-move 1 by 0 6
-move 0 by 0 6
 wait 70
-move 1 by 0 6
-move 0 jumpS4 by 0 7
 wait 70
-move 1 by 0 6
-move 0 by 0 8
 wait 70
-move 1 by 0 6
-move 0 by 0 9
 wait 70
 layer 1
-move 0 jumpS5 by 0 10
 wait 70
-move 0 by 0 6
 wait 70
-move 0 rollS8 by 0 6
 wait 70
-move 0 rollS1 by 0 6
 wait 70
 
 # jump left
 
 move 0 curlE flip h
 wait 70
-move 0 by -6 0
+move 0 jumpE
 wait 70
-move 0 jumpE1 by -6 0
 wait 70
-move 0 by -6 0
 wait 70
-move 0 jumpE2 by -6 0
 wait 70
-layer 1 Libbet shadow 120 167
-move 1 by -6 0
-move 0 by -6 -4
+layer 1 Libbet shadowW 120 167
 wait 70
-move 1 by -6 0
-move 0 by -6 -3
 wait 70
-move 1 by -6 0
-move 0 jumpE3 by -6 -2
 wait 70
-move 1 by -6 0
-move 0 by -6 -1
 wait 70
-move 1 by -6 0
-move 0 by -6 0
 wait 70
-move 1 by -6 0
-move 0 jumpE4 by -6 1
 wait 70
-move 1 by -6 0
-move 0 by -6 2
 wait 70
-move 1 by -6 0
-move 0 by -6 3
 wait 70
 layer 1
-move 0 jumpE5 by -6 4
 wait 70
-move 0 by -6 0
 wait 70
-move 0 rollE8 by -6 0
 wait 70
-move 0 rollE1 by -6 0
 wait 70
 
 # Twitter has a habit of cutting off a GIF's last frame

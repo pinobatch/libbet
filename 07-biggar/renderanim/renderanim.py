@@ -106,9 +106,7 @@ Return a byte string ready to be written to a file whose name ends in
             # with transparency, as GIMP's GIF optimizer does.
             if lastframe is not None:
                 imdiff = ImageChops.difference(lastframe.convert("RGB"), im.convert("RGB"))
-                diffbox = imdiff.getbbox()
-                if diffbox is None:
-                    im.show()
+                diffbox = imdiff.getbbox() or (0, 0, 4, 4)
                 layer_x, layer_y = diffbox[:2]
                 imcrop = im.crop(diffbox)
             else:
