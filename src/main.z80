@@ -46,6 +46,9 @@ airrot_dir:: ds 1
 airrot_amt:: ds 1
 r_symbol_kick_dist:: ds 1
 
+; Used to prevent buzz sound from repeating
+last_tried_move: ds 1
+
 section "main", ROM0
 
 main::
@@ -161,6 +164,7 @@ another_floor:
   .have_floor_layout:
 
   xor a
+  ld [last_tried_move], a
   ld [cur_score],a
   ld [move_flags],a
   ld [tracks_since_pause],a
@@ -200,8 +204,12 @@ another_floor:
   ldh [rLCDC],a
 
 forever:
-;  ld a,[move_flags]
-;  ld [debughex+0],a
+
+  if 1
+  ld a,[move_flags]
+  and (1<<MVFB_RETREATED_SINCE_100)|(1<<MVFB_PAUSED_SINCE_100)
+  ld [debughex+0],a
+  endc
 
   call move_player_anim
   xor a
@@ -246,14 +254,9 @@ forever:
     jp nz, skip_intro
   .not_attract_startcheck:
 
+  ; 90%: Exit just opened
   call check_exit_pct
-  jr nc,.exit_not_opened
-    ; 90%: Exit just opened
-    ld a,6
-    call audio_play_fx
-    call prepare_exit_door
-    call fade_in
-  .exit_not_opened:
+  call c, mark_exit_open
 
   call player_can_start_roll
   jr z,.not_begin_move
@@ -340,6 +343,11 @@ forever:
 
 try_move:
   ld b,a
+  ld hl, last_tried_move
+  ld d, [hl]
+  ld [hl], a
+  xor d
+  ld d, a  ; D = nonzero if a move is attempted
 
   ; Clear the air rotation
   xor a
@@ -361,6 +369,14 @@ try_move:
     ld hl,move_flags
     set MVFB_PAUSED_SINCE_100,[hl]
     set MVFB_PAUSED_SINCE_START,[hl]
+
+    ; If a new move was input, play the wrong move sound
+    ld a, [last_tried_move]
+    and PADF_RIGHT|PADF_LEFT|PADF_UP|PADF_DOWN
+    ld a, 11
+    call nz, audio_play_fx
+
+    ; Clear the combo if there is one
     ld a, [tracks_since_pause]
     or a
     ret z
@@ -380,6 +396,11 @@ try_move:
     jr nc,.ctzloop
   ld a,c
   ld [cursor_facing],a  ; Face the pressed direction
+
+  ; Don't try anything else if the move was not freshly input
+  ld a, d
+  or a
+  ret z
 
   ld a,b
   bit PADB_A,a  ; key A
@@ -427,6 +448,9 @@ try_move:
   push hl
   push de
 
+  xor a
+  ld [last_tried_move], a  ; make this move fresh
+
   ; If this is a jump, set initial airrot direction
   bit 2, c
   jr z,.not_start_airrot
@@ -437,7 +461,7 @@ try_move:
 
   call player_start_roll
   ld hl,move_flags
-  bit 7,[hl]
+  bit MVFB_MOVED_ONCE,[hl]
   jr nz,.is_not_first_move
     res MVFB_PEEKED_SINCE_START,[hl]
     res MVFB_PAUSED_SINCE_START,[hl]
@@ -482,18 +506,11 @@ try_move:
       ld b,[hl]
       inc b
       ld [hl],b
+
+      ; If reached 100%, play fanfare and set up achievement flags
       ld a,[max_score]
       cp b
-      jr nz,.not_100_percented
-        ; 100%: Prepare for Sink it and Dash for the door
-        ld a,6
-        call audio_play_fx
-        call fade_in
-        ld hl,move_flags
-        res MVFB_PAUSED_SINCE_100,[hl]
-        res MVFB_MOVED_SINCE_100,[hl]
-        res MVFB_RETREATED_SINCE_100,[hl]
-      .not_100_percented:
+      call z, mark_exit_open_100pct
 
       call prepare_hDrawCell
       call prepare_pctage
@@ -517,6 +534,19 @@ try_move:
   ; 2019-10-21: With prevcombo display added, we immediately reset
   ; the combo to 0 once Libbet stops making valid moves.
   ret
+
+mark_exit_open_100pct:
+  ; 100%: Prepare for Sink it and Dash for the door
+  ld hl, move_flags
+  ld a, [hl]
+  and ~((1<<MVFB_PAUSED_SINCE_100) | (1<<MVFB_MOVED_SINCE_100) | (1<<MVFB_RETREATED_SINCE_100))
+  ld [hl], a
+  ; fall through
+mark_exit_open:
+  ld a,6
+  call audio_play_fx
+  call prepare_exit_door
+  jp fade_in
 
 section "Libbet_chr", ROM0
 Libbet_pb16:

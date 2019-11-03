@@ -67,6 +67,8 @@ sfx_table:
   dw fx_achieve
   db 1, 0
   dw fx_combostop
+  db 3, 0
+  dw fx_lowcombo_bonk
 
   db 2, 0
   dw fx_wavetest
@@ -163,7 +165,10 @@ fx_combostop:
   db ENVF_DPAR|ENVF_PITCH|$41, $A1, 38
   db $86
   db $FF
-
+fx_lowcombo_bonk:
+  db ENVF_DPAR|ENVF_PITCH|2, $43, $5D
+  db ENVF_PITCH|2, $4D
+  db $FF
 
 fx_wavetest:
   db ENVF_DPAR|ENVF_PITCH|$0F, $00, 24
