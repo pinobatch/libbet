@@ -122,10 +122,13 @@ NUM_ACHIEVEMENTS = 6
 ; Not moving in a frame sets PAUSED_SINCE_*
 ; Advancing from a FRLF_KEEPROLL frame sets PEEKED_SINCE_START
 ; Moving farther from the exit sets RETREATED_SINCE_100
-; 100% clears PAUSED_SINCE_100 and MOVED_SINCE_100
-; Exit without PAUSED_SINCE_100 earns Dash for the door
+; 100% clears PAUSED_SINCE_100, RETREATED_SINCE_100,
+;   and MOVED_SINCE_100
+; Exit without PAUSED_SINCE_100 or RETREATED_SINCE_100 earns
+;   Dash for the door
 ; Exit without MOVED_SINCE_100 (possible only by landing on a
-; dead end) earns Sink it
+;   dead end) earns Sink it
+; Exit without MVFB_PEEKED_SINCE_START earns No peeking
 MVFB_MOVED_ONCE = 7
 MVFB_RETREATED_SINCE_100 = 6
 MVFB_MOVED_SINCE_100 = 5
@@ -135,8 +138,8 @@ MVFB_PAUSED_SINCE_START = 0
 
 ; If this many tracks are laid without hesitation, award Restless.
 ; Usually this'll be about 15 or so.  If it's 0, Restless is
-; instead awarded at exit if PAUSED_SINCE_START is clear, like a
-; hardcore version of No peeking
+; instead awarded at exit if MVFB_PAUSED_SINCE_START is clear,
+; like a hardcore version of No peeking.
 RESTLESS_TRACKS = 0
 
   ENDC

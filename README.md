@@ -18,9 +18,6 @@ Controls:
 - Control Pad: Roll
 - A + Control Pad: Jump
 
-Performing feats in the game will earn you achievements.  Some are
-harder to earn than others.
-
 Installation
 ------------
 The game is written in assembly language.  Building it from source
@@ -33,6 +30,22 @@ Python on your PATH, then type
 Once you've built it (or downloaded a binary release), it will play
 in SameBoy, bgb, or mGBA emulator, or on a Game Boy through a
 Catskull or EverDrive flash cart.
+
+Achievements
+------------
+Performing feats in the game will earn you achievements.  Some are
+harder to earn than others.
+
+- Completionist: Complete all floors with 100% score
+- Sink it: Complete a floor with 100% score, leaving the last track
+  while entering a dead end
+- Dash for the door: Complete a floor with 100% score, and then
+  reach the exit without retreating or resting
+- No peeking: Complete a floor without resting more than a second
+  or inputting an invalid move
+- Restless: Complete a floor while rolling continuously, without
+  resting a single frame or inputting an invalid move
+- No scope: Rotate the Control Pad by 360 degrees during a jump
 
 Legal
 -----

@@ -77,8 +77,8 @@ achievements_frame::
     call nc,achievements_earn
   endc
 
-  ; If distance to the exit increased since 100%, "Dash for the door"
-  ; is not awarded.
+  ; If exit with less than 100%, or distance to the exit increased
+  ; since 100%, "Dash for the door" is not awarded.
   call get_exit_distance
   ld b,a
   ld a,[last_exit_distance]
