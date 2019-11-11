@@ -52,8 +52,7 @@ strip 0 78 105 16 7
 hotspot 86 110
 
 frame Libbet_jumpS4  92 100 12 12
-strip 0 94 98 8 8
-strip 0 90 106 16 5
+strip 0 94 96 8 16
 hotspot 98 111
 
 frame Libbet_jumpS5 104 100 12 12
@@ -63,7 +62,7 @@ frame Libbet_standE  32  52 12 12
 strip 0 34 50 8 14
 
 frame Libbet_curlE   44  52 12 12
-strip 0 46 52 8 12
+strip 0 46 51 8 16
 
 frame Libbet_rollE1  56  52 12 12
 strip 0 58 56 8 8
@@ -159,8 +158,7 @@ strip 0 78 137 16 7
 hotspot 86 142
 
 frame Libbet_jumpN4  92 132 12 12
-strip 0 94 130 8 8
-strip 0 90 138 16 5
+strip 0 94 128 8 16
 hotspot 98 143
 
 frame Libbet_jumpN5 104 132 12 12
