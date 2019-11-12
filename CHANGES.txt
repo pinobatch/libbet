@@ -1,20 +1,23 @@
 Next release
 * Fix first word of attract text after achievements and combo
-* Improve arm position during rolling
-* Build-time option to use tilemap $9C00 instead of $9800 (requested
-  by mattcurrie)
+* Improve arm position in many cels
+* Buzz on invalid move (#10)
 * Make fades much smoother (#9)
 * Make skin color distinct from sack color using 7-shade display
 * Add pattern to black cell so as not to be misread as a hole
 * Add intro that wipes away console maker logo
 * Display combo that just ended, with sound effect
+* Build-time option to use tilemap $9C00 instead of $9800 (requested
+  by mattcurrie)
 * Rules research: Discover that bidirectional evaluation does not
   appreciably improve speed of floor reachability evaluation
-* Docs: Clarify that some achievements are harder than others
-  (requested by ISSOtm)
+* Docs: Describe achievement conditions, and clarify that some are
+  harder than others (requested by ISSOtm)
 * Docs: Document metasprite format (requested by ISSOtm)
 * Encoding guide: Add SGB aspect ratio and frame blending
 * Sketch larger versions of Libbet and title screen
+* Sketch SGB, GBC, and Genesis floors
+* Add tool to prototype an animation before coding it
 
 0.04 (2019-02-20)
 * A+B+Select+Start during gameplay to reset
