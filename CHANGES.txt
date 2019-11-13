@@ -1,4 +1,4 @@
-Next release
+0.05 (2019-11-13)
 * Fix first word of attract text after achievements and combo
 * Improve arm position in many cels
 * Buzz on invalid move (#10)
@@ -9,11 +9,11 @@ Next release
 * Display combo that just ended, with sound effect
 * Build-time option to use tilemap $9C00 instead of $9800 (requested
   by mattcurrie)
-* Rules research: Discover that bidirectional evaluation does not
-  appreciably improve speed of floor reachability evaluation
 * Docs: Describe achievement conditions, and clarify that some are
   harder than others (requested by ISSOtm)
 * Docs: Document metasprite format (requested by ISSOtm)
+* Rules research: Discover that bidirectional evaluation does not
+  appreciably improve speed of floor reachability evaluation
 * Encoding guide: Add SGB aspect ratio and frame blending
 * Sketch larger versions of Libbet and title screen
 * Sketch SGB, GBC, and Genesis floors
