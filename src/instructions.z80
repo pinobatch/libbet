@@ -56,10 +56,11 @@ vwf_page_init::
   ld bc,32*19
   call memset
 
-  ; Fill top rows
+  ; Fill top rows, centered horizontally and starting on
+  ; the second row of the first BG
   pop bc
   push bc
-  ld hl,_SCRN0 + 32*1 + (10 - vwf_page_width/2)
+  ldxy hl, 10 - vwf_page_width/2, 1, _SCRN0
   ld de,32 - vwf_page_width
   ld a,vwf_page_first_tileid
   call .filltilemaploop
@@ -205,14 +206,14 @@ section "attractcode", ROM0
 
 attract_init_vram::
   ; Extend status bar
-  ld hl,_SCRN0 + 32*12
+  ldxy hl, 0, 12
   ld a,STATUS_BLANK
   ld c,32*4
   call memset_tiny
 
   ; Set up VWF canvas on extended status bar
   ld a,$80
-  ld hl,_SCRN0 + 32*12 + 2
+  ldxy hl, 2, 12
   ld bc,$0410
   ld de,16
   .msiloop:

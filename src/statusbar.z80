@@ -32,10 +32,12 @@ STATUS_PERCENT equ $F4
 STATUSBAR_CHR_COUNT = 40
 global SPRITE_BIG_DIGIT_BASE
 
-SMALL_SCORE_POS equ SCRN_BG+32*17+14
-COMBO_POS equ SCRN_BG+32*16+1
-PCTAGE_POS equ SCRN_BG+32*16+9
-DEBUGHEX_POS equ SCRN_BG+32*16+15
+; The status bar is and occupies the last two rows of the tilemap
+SCRN_STATUS     equ SCRN_BG+32*16
+SMALL_SCORE_POS equ SCRN_STATUS+32+14
+COMBO_POS       equ SCRN_STATUS+1
+PCTAGE_POS      equ SCRN_STATUS+9
+DEBUGHEX_POS    equ SCRN_STATUS+15
 
 EARNED_LABEL_BASE = $8C
 EARNED_LABEL_NTILES = 6
@@ -163,7 +165,7 @@ draw_statusbar_tilemap::
   call memset_inc
 
   ; Clear status bar to solid blank tiles
-  ld hl,SCRN_BG+32*16
+  ld hl, SCRN_STATUS
   ld a,STATUS_BLANK
   ld c,32+20
   call memset_tiny

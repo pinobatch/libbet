@@ -107,13 +107,30 @@ LCDCF_SCRNADDR equ LCDCF_WIN9C00|LCDCF_BG9800
   endc
   endc
 
-ACH_100PCT = 0
-ACH_100PCT_DEADEND = 1
-ACH_DASH_FOR_DOOR = 2
-ACH_NO_PEEKING = 3
-ACH_RESTLESS = 4
-ACH_AIRROT = 5  ; rotate the control pad 360 deg during a distance 2 move
-NUM_ACHIEVEMENTS = 6
+;;
+; Syntax: ldxy rp, xpos, ypos, mapbase
+; Sets a register pair to the address of (x, y) tile coordinates
+; within a tilemap.
+; @param rp a register pair (BC, DE, HL)
+; @param x horizontal distance in tiles from left (0-31)
+; @param y vertical distance in tiles from top (0-31)
+; @param mapbase start address of 32-cell-wide tilemap:
+;   SCRN_BG (default), _SCRN0, _SCRN1, or a virtual tilemap in WRAM.
+ldxy: macro
+  if _NARG < 4
+    ld \1, (\3) * SCRN_VX_B + (\2) + SCRN_BG
+  else
+    ld \1, (\3) * SCRN_VX_B + (\2) + (\4)
+  endc
+  endm
+
+ACH_100PCT         equ 0
+ACH_100PCT_DEADEND equ 1
+ACH_DASH_FOR_DOOR  equ 2
+ACH_NO_PEEKING     equ 3
+ACH_RESTLESS       equ 4
+ACH_AIRROT         equ 5  ; rotate Control Pad 360 deg during a distance 2 move
+NUM_ACHIEVEMENTS   equ 6
 
 ; move_flags constants related to the achievements
 ; Sink it, Restless, and Dash for the door

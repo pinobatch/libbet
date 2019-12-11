@@ -269,7 +269,7 @@ goto_tile_at_cursor:
 
 ;;
 ; Sets HL to the tilemap address of cell (E, D)
-; _SCRN0 + 32 * (y * 2 + top row) + (x * 2 + 10 - width)
+; SCRN_BG + 32 * (y * 2 + top row) + (x * 2 + 10 - width)
 ; BCDE unchanged
 goto_tile_e_d::
   ld a,[floor_top_row]
