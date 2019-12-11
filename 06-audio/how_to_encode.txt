@@ -1,3 +1,19 @@
+How to set a fairly realistic palette:
+
+The default palette that bgb uses for monochrome games doesn't look
+much like a Game Boy.  Its white, in particular, looks a lot more
+turquoise than the yellow of the GB screen.  The following is closer
+to actual appearance while remaining easy to remember in hex form:
+
+    #CCCC44 rgb(204,204,68)
+    #88AA44 rgb(136,170,68)
+    #448844 rgb(68,136,68)
+    #006644 rgb(0,102,68)
+
+In Options, open GB Colors.  Select the first of the four colors to
+the left of "Interpolate", then enter the numbers after `rgb` in the
+fields.  Repeat for the last color, then click "Interpolate".
+
 How to make AVIs in bgb:
 
 In Options, open "Sound" and enable "WAV file writer" and "record
