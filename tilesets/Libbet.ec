@@ -55,8 +55,9 @@ frame Libbet_jumpS4  92 100 12 12
 strip 0 94 96 8 16
 hotspot 98 111
 
+# First principle of animation is extra squash on landing
 frame Libbet_jumpS5 104 100 12 12
-strip 0 106 104 8 8
+strip 0 102 104 16 8
 
 frame Libbet_standE  32  52 12 12
 strip 0 34 50 8 14
@@ -108,7 +109,7 @@ strip 0 95 119 8 8
 hotspot 99 127
 
 frame Libbet_jumpE5 104 116 12 12
-strip 0 106 120 8 8
+strip 0 102 120 16 8
 
 frame Libbet_standN  32  68 12 12
 strip 0 34 67 8 8
@@ -162,7 +163,7 @@ strip 0 94 128 8 16
 hotspot 98 143
 
 frame Libbet_jumpN5 104 132 12 12
-strip 0 106 136 8 8
+strip 0 102 136 16 8
 
 frame Libbet_shadow 142 127  8  1
 strip 0
