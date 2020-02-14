@@ -206,7 +206,6 @@ attract_vwf_x:: ds 1  ; X = $FF and tile id < $C0 means a clear is in progress
 ; While clearing:
 ; attract_vwf_x = $FF, attract_vwf_tile_id in $80-$BF
 
-
 section "attractcode", ROM0
 
 attract_init_vram::
@@ -230,15 +229,16 @@ attract_init_vram::
     jr nz,.msiloop
 
   ; Clear VWF canvas
-  ld a,$80
+  ld hl, CHRRAM1
+  xor a
+  ld b, a
   .clrcanvasloop:
-    ld [attract_vwf_tile_id],a
-    call attract_clear_half_line
-    call popslide_terminate_blit
-    ld a,[attract_vwf_tile_id]
-    add $08
-    cp $C0
-    jr c,.clrcanvasloop
+    rept 4
+      cpl
+      ld [hl+], a
+    endr
+    inc b
+    jr nz, .clrcanvasloop
 
   ; Seek to start of attract mode script
   ld hl,attract_src_ptr
@@ -255,49 +255,36 @@ attract_init_vram::
   jp vwfClearBuf
 
 ;;
-; Does one-eighth of the job of clearing the line.
-; Appends two 64-byte literal Popslide packets to fill a line with color 1.
+; Does one-eighth of the job of clearing the VWF area.
+; Appends two 32-byte +32 run packets at $880x, $881x
 ; @param attract_vwf_tile_id the tile ID ($80, $88, $90, ..., $B8)
 attract_clear_half_line:
   ld hl,popslide_used
   ld l,[hl]
   ld a,l
-  add 2 * (4 + 64)
+  add 4 * 2
   ld [popslide_used],a
 
   ; Find the starting pointer
-  ld a,[attract_vwf_tile_id]
-  swap a
-  and $83
-  ld e,a
-  or high(CHRRAM1)
-  ld d,a
-  ld a,e
-  and $80
-  ld e,a
-  call .write_4_tiles
-  ld a,e
-  or $40
+  ld a,[attract_vwf_tile_id]  ; $80, $88, $A0, ..., $B8 becomes 
+  rra
+  rra      ; $20, $22, $24, ..., $2E
+  sub $0F  ; $11, $13, $15, ..., $1F
+  ld e, a
+  call .one_packet
+  ld a, e
+  sub $10
 
 ;;
-; Private entry: Writes one packet of four color $01 tiles with
-; destination DA to the Popslide packet at HL
-.write_4_tiles:
-  ld [hl+],a
-  ld a,d
-  ld [hl+],a
-  ld a,$3F
-  ld [hl+],a
-  inc hl
-  ld c,32
+; Private entry: Writes one run of 32
+.one_packet:
+  ld [hl+], a
+  ld a, $88
+  ld [hl+], a
+  ld a, $DF  ; bit 7: +32; bit 6: run; length 31+1
+  ld [hl+], a
   xor a
-  .clrloop:
-    cpl
-    ld [hl+],a
-    cpl
-    ld [hl+],a
-    dec c
-    jr nz,.clrloop
+  ld [hl+], a
   ret
 
 ;;

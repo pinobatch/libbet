@@ -39,7 +39,7 @@ include "src/hardware.inc"
 ; then copy next ceil(lengthvalue / 2) * 2 bytes, adding 32 to dst
 
 HORIZONTAL_MAX = 64
-VERTICAL_MAX = 20
+VERTICAL_MAX = 32
 
 if VERTICAL_MAX <= 32
   LOG2_VERTICAL_MAX = 5
