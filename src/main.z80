@@ -51,6 +51,12 @@ last_tried_move: ds 1
 
 section "main", ROM0
 
+clear_all_vram:
+  ld de, $8000
+  ld h, e
+  ld bc, $2000
+  jp memset
+
 main::
   ; If not a Super Game Boy, head straight in.
   ld a, [is_sgb]
@@ -64,7 +70,7 @@ main::
   ; and continue with VRAM cleared.  This means only DMG/MGB get to
   ; see the (R) fly off.
   xor a
-  ldh [rBGP], a
+  call set_bgp
   ld c, 40
   .sgbcountdown:
     call wait_not_vblank
@@ -75,10 +81,16 @@ main::
 ; A+B+Select+Start lands here
 clear_vram_main:
   call lcd_off
-  ld de, $8000
-  ld h, e
-  ld bc, $2000
-  call memset
+  ld hl, initial_a
+  bit 7, [hl]
+  jr z, .not_gbc
+    ld a, 1
+    ldh [rVBK], a
+    call clear_all_vram
+    xor a
+    ldh [rVBK], a
+  .not_gbc:
+  call clear_all_vram
 
 no_clear_vram_main:
   ; Set up vblank handler
@@ -128,11 +140,7 @@ another_floor:
     call srand
   endc
 
-  xor a
-  ldh [rBGP],a
-  ldh [rOBP0],a
-  ldh [rOBP1],a
-
+  call lcd_off
   ld a,[attract_mode]
   if USE_ATTRACT_FLOOR
     inc a
@@ -205,7 +213,7 @@ another_floor:
 
 forever:
 
-  if 1
+  if 0
   ld a,[move_flags]
   and (1<<MVFB_RETREATED_SINCE_100)|(1<<MVFB_PAUSED_SINCE_100)
   ld [debughex+0],a
@@ -221,18 +229,23 @@ forever:
 .restlesswait:
   call draw_debughex
   call wait_vblank_irq
-  call run_dma
   call popslide_terminate_blit
   ld a,[fade_bgp]
-  ldh [rBGP],a
+  call set_bgp
   ld a,[fade_obp0]
-  ldh [rOBP0],a
+  call set_obp0
   ld a,[fade_obp1]
-  ldh [rOBP1],a
+  call set_obp1
   ld a,[ach_wy]
   ldh [rWY],a
-  call audio_update
 
+  ; Unlike on NES, you want to run DMA last because it's allowed
+  ; to overflow into draw time at the cost of sprites not showing
+  ; up on one scanline.  Currently when clearing out a page of text
+  ; in attract mode, set_obp* + the longer popslide makes it take
+  ; just a bit too long.
+  call run_dma
+  call audio_update
   call read_pad
 
   ; A+B+Select+Start: reset

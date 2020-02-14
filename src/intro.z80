@@ -169,9 +169,6 @@ intro_kick_check:
 ; $8C00: End
 
 show_intro::
-  ld a, %00001100
-  ldh [rBGP], a
-  ldh [rOBP0], a
   ld a, LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJON
   ld [vblank_lcdc_value],a
   ldh [rLCDC], a
@@ -214,6 +211,8 @@ show_intro::
 
   ; Now that decompbuf is done: Take starting positions
   call wait_vblank_irq
+  ld a, %00001100
+  call set_bgp
   xor a
   ld [cursor_y], a
   ld [cursor_x], a
@@ -249,7 +248,7 @@ show_intro::
     call wait_vblank_irq
     call run_dma
     ld a, [fade_obp0]
-    ldh [rOBP0], a
+    call set_obp0
 
     ; Wipe away logo
     ld a, [cursor_x]

@@ -65,9 +65,9 @@ reset_handler::
   ; A=11, B.0=0: GBC
   ; A=11, B.0=1: GBA
   if SAVE_GB_TYPE
-    ld [initial_a], a
-    ld a,b
-    ld [initial_b], a
+    ld hl, initial_a
+    ld [hl+], a
+    ld [hl], b
   endc
 
   ; Release the key matrix right now

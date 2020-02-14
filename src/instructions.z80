@@ -32,8 +32,6 @@ section "instructions", ROM0
 ; Sets up a 128-pixel-wide VWF window on rows 1 to B and B+2 to 17
 ; @param B number of rows before first blank row
 vwf_page_init::
-  ld a,%00001100
-  ldh [rBGP],a
   xor a
   ldh [rSCX],a
   ld a,4
@@ -45,6 +43,8 @@ vwf_page_init::
   push bc
 
   call lcd_off
+  ld a,%00001100
+  call set_bgp
 
   ; Clear CHR banks 1 and 2
   ld de,$8800

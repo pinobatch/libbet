@@ -23,7 +23,7 @@ include "src/hardware.inc"
 include "src/global.inc"
 
 USE_NAM equ 0
-USE_GBC equ 0
+USE_GBC equ 1
 GBMONO_GREEN equ 0
 
 section "irqvars",HRAM
@@ -189,7 +189,9 @@ if USE_GBC
 ; Call this only during blanking.
 set_obp1::
   ldh [rOBP1],a
-  ld bc,$8800 + low(rOCPS)
+  rra
+  rra
+  ld bc,$8A00 + low(rOCPS)
   jr set_gbc_mono_palette
 
 ;;
@@ -197,7 +199,9 @@ set_obp1::
 ; Call this only during blanking.
 set_obp0::
   ldh [rOBP0],a
-  ld bc,$8000 + low(rOCPS)
+  ld bc,$8200 + low(rOCPS)
+  rra
+  rra
   jr set_gbc_mono_palette
 
 ;;
@@ -218,8 +222,12 @@ set_gbc_mono_palette::
   ld e,a
   ld a,b  ; Regmap now: E=BGP<<1, A=palette offset, C=address port
   ld [$FF00+c],a
-  inc c   ; ad
-  ld b,4
+  inc c   ; C=data port
+  ld a, b
+  rra
+  or %11111100
+  ld b, a
+  ld b, b
   ld h,high(gbmonopalette)
   ; Regmap now: B=count of remaining colors, C=data port address,
   ;   E=BGP value rlc 1, HL=pointer to start of palette
@@ -234,7 +242,7 @@ set_gbc_mono_palette::
     ld [$FF00+c],a
     rrc e  ; move to next bitfield of BGP
     rrc e
-    dec b
+    inc b
     jr nz,loop
 
   ; Restore BGP value
@@ -260,8 +268,7 @@ set_gbc_palette::
   ret
 
 ;;
-; Turns off rendering, marks help page as needing to be reloaded,
-; and clears the attribute plane of the GBC tilemaps.
+; Turns off rendering and clears the attribute plane of GBC tilemaps.
 ; @return A=0
 clear_gbc_attr::
   call lcd_off
