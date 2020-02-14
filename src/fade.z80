@@ -152,3 +152,52 @@ calc_dmg_palette_byte:
   .islastcolor:
   or c
   ret
+
+
+; Game Boy Color fading ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;
+; UNTESTED
+; Loads native GBC palette data in hblank.
+; @param A offset into palette memory (0, 8, 16, ..., 56) plus $80
+; @param B number of 4-color or 8-byte subpalettes to copy
+; @param C palette port to write: LOW(rBCPS) or LOW(rOCPS)
+; @param HL data source
+; @return HL at end, C increased by 1, B = 0
+set_gbc_palette_hblank:
+  ld [$FF00+c],a
+  inc c
+
+  ; catch all VRAM slots
+  di
+  ldh a, [rIE]
+  ld d, a
+  ldh a, [rSTAT]
+  ld e, a
+  push de
+  ld a, IEF_LCDC      ; listen only to STAT
+  ldh [rIE], a
+  ld a, STATF_MODE00  ; STAT on hblank
+  ldh [rSTAT], a
+
+.palblastloop:
+  xor a
+  ldh [rIF], a
+  ld a, [hl+]
+  halt
+  ; At worst, we get 85 dots of mode 0 plus 80 dots of mode 2
+  ; on next line, for 165 dots or 41 cycles. We'll use 30.
+  ld [$FF00+c], a
+    rept 7
+    ld a, [hl+]
+    ld [$FF00+c], a
+  endr
+  dec b
+  jr nz, .palblastloop
+
+  pop de
+  ld a, e
+  ldh [rSTAT], a
+  ld a, d
+  ldh [rIE], a
+  reti

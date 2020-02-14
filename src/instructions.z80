@@ -198,8 +198,13 @@ STATUS_BLANK equ $F7
 
 section "attractstate", WRAM0
 attract_src_ptr:: ds 2
-attract_vwf_tile_id:: ds 1
+attract_vwf_tile_id:: ds 1  ; $80 through $BF
 attract_vwf_x:: ds 1  ; X = $FF and tile id < $C0 means a clear is in progress
+
+; While writing text:
+; attract_vwf_x in 0-7, attract_vwf_tile_id in $80-$BF
+; While clearing:
+; attract_vwf_x = $FF, attract_vwf_tile_id in $80-$BF
 
 
 section "attractcode", ROM0
@@ -250,7 +255,9 @@ attract_init_vram::
   jp vwfClearBuf
 
 ;;
+; Does one-eighth of the job of clearing the line.
 ; Appends two 64-byte literal Popslide packets to fill a line with color 1.
+; @param attract_vwf_tile_id the tile ID ($80, $88, $90, ..., $B8)
 attract_clear_half_line:
   ld hl,popslide_used
   ld l,[hl]
@@ -295,6 +302,8 @@ attract_clear_half_line:
 
 ;;
 ; Writes the current and next VWF tile to the Popslide buffer
+; @param attract_vwf_tile_id the tile number ($80-$BF); only one tile
+; gets written for $xF
 attract_push_vwf_tiles:
   ld hl,popslide_used
   ld l,[hl]
@@ -345,7 +354,7 @@ attract_update::
     jr c,.clear_have_tile_id
       ld a,8
       ld [attract_vwf_x],a
-      ld a,$80
+      swap a  ; ld a,$80
     .clear_have_tile_id:
     ld [attract_vwf_tile_id],a
     xor a
