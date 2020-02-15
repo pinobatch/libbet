@@ -156,6 +156,13 @@ calc_dmg_palette_byte:
 
 ; Game Boy Color fading ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+section "gbcfadedata", WRAMX, BANK[2], align[8]
+gbcfade_palette: ds 192
+gbcfade_faded:   ds 192  ; CROSSES page boundary
+gbcfade_dest:    ds 128
+
+section "gbcfadecode", ROM0
+
 ;;
 ; UNTESTED
 ; Loads native GBC palette data in hblank.
@@ -201,3 +208,84 @@ set_gbc_palette_hblank:
   ld a, d
   ldh [rIE], a
   reti
+
+; It takes 72 scanlines just to calculate a fade level, let alone
+; push them to the VCE
+;;
+; UNTESTED
+; Calculate fade to white for Game Boy Color
+gbcfade_calc_white:
+  ld a, [fade_level]  ; value from 0 to 32
+  add 4
+  cp 32
+  jr c, .do_multiply_fade
+    ld c, b
+    ld b, 0
+    jp memcpy
+  .do_multiply_fade:
+  ; Each component takes quite a while to fade
+  and $1C
+  add a
+  add a
+  add a
+  ld c, a
+
+  .componentloop:
+    ; 31 cycles per component
+    ; if fading 64 colors that's 5952 cycles or 52 lines
+    xor a
+    sub c
+    bit 5, c
+    jr nc, .noadd4
+      add [hl]
+    .noadd4:
+    rra
+    bit 6, c
+    jr nc, .noadd2
+      add [hl]
+    .noadd2:
+    rra
+    bit 7, c
+    jr nc, .noadd1
+      add [hl]
+    .noadd1:
+    rra
+    ld [de], a
+    inc de
+    inc hl
+    dec b
+    jr nz, .componentloop
+  ret
+
+;;
+; UNTESTED
+; Combine red, green, and blue components of colors into RGB555 words
+; 35 cycles per color; for 64 colors that's 2240 cycles or 20 lines
+fade_combine_components:
+  ; first byte: 15 cycles
+  ld a, [hl+]  ; red, 0-31
+  ld c, a
+  ld a, [hl]   ; green
+  and $07
+  rrca
+  rrca
+  rrca
+  or c
+  ld [de], a
+  inc de
+  ; second byte: 16 cycles
+  ld a, [hl+]  ; green
+  and $18
+  rrca
+  rrca
+  rrca
+  ld c, a
+  ld a, [hl+]  ; blue
+  add a
+  or c
+  ld [de], a
+  inc de
+  ; loop: 4 cycles
+  dec b
+  jr nz, fade_combine_components
+  ret
