@@ -223,15 +223,15 @@ set_gbc_mono_palette::
   ld a,b  ; Regmap now: E=BGP<<1, A=palette offset, C=address port
   ld [$FF00+c],a
   inc c   ; C=data port
-  ld a, b
-  rra
+  rra  ; Count remaining colors
   or %11111100
   ld b, a
   ld h,high(gbmonopalette)
-  ; Regmap now: B=count of remaining colors, C=data port address,
-  ;   E=BGP value rlc 1, HL=pointer to start of palette
-  loop:
-    ld a,e
+  ld a, e
+  ; Regmap now: B=negative of remaining colors (-4 BGP or -3 OBPx),
+  ;   C=data port address, A=E=BGP value rlc 1,
+  ;   HL=pointer to start of palette
+.loop:
     and %00000110
     or low(gbmonopalette)
     ld l,a  ; now L points to this color so stuff it into the palette
@@ -239,13 +239,14 @@ set_gbc_mono_palette::
     ld [$FF00+c],a
     ld a,[hl-]
     ld [$FF00+c],a
-    rrc e  ; move to next bitfield of BGP
-    rrc e
+    ld a, e  ; move to next bitfield of BGP
+    rrca
+    rrca
+    ld e, a
     inc b
-    jr nz,loop
+    jr nz,.loop
 
   ; Restore BGP value
-  ld a,e
   rrca
   ret
 
