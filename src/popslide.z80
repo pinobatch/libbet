@@ -82,13 +82,14 @@ popslide_next_packet:
   pop hl
   bit 7,h
   jr nz,.not_done
+
   ; Restore old stack pointer
-  ld hl,popslide_sp_save
-  ld a,[hl+]
-  ld h,[hl]
-  ld l,a
-  ld sp,hl
+  ; Optimization thanks to NieDzejkob in gbdev discord
+  ld sp, popslide_sp_save
+  pop hl
+  ld sp, hl
   ret
+
 .not_done:
   pop bc
   bit 7,c
@@ -284,11 +285,11 @@ popslide_hblank_copy::
   jr nz, .rowloop
 
   ; Restore the stack and interrupt settings
-  ld hl,popslide_sp_save
-  ld a,[hl+]
-  ld h,[hl]
-  ld l,a
-  ld sp,hl
+  ; Optimization thanks to NieDzejkob in gbdev
+  ld sp, popslide_sp_save
+  pop hl
+  ld sp, hl
+
   pop af
   ldh [rSTAT], a
   pop af

@@ -156,7 +156,7 @@ calc_dmg_palette_byte:
 
 ; Game Boy Color fading ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-section "gbcfadedata", WRAMX, BANK[2], align[8]
+section "gbcfadewram", WRAMX, BANK[2], align[8]
 gbcfade_palette: ds 192
 gbcfade_faded:   ds 192  ; CROSSES page boundary
 gbcfade_dest:    ds 128
@@ -289,3 +289,30 @@ fade_combine_components:
   dec b
   jr nz, fade_combine_components
   ret
+
+section "gbc_palettes", ROM0
+gbc_ingame_palette:
+  db  0, 0, 0  ; BC0: gray (for dark gray and white tiles)
+  db 11,11,11
+  db 21,21,21
+  db 31,31,31
+  db  0, 0, 0  ; BC1: blue (for black tiles)
+  db  4, 4,20
+  db 16,16,31
+  db 31, 0,31
+  db  0, 0, 0  ; BC2: green (for light gray tiles)
+  db  4,18, 4
+  db 12,27,12
+  db 31,31,31
+  db  0, 0, 0  ; BC3: walls
+  db 18, 4, 4
+  db 27,18, 0
+  db 27,22,18
+  db  0, 0, 0  ; BC4: status and border
+  db 18, 8, 0
+  db 27,27,27
+  db 31,31,31
+  db 31, 0,31  ; OC0: status and border
+  db 18, 8, 0
+  db 31,22,18
+  db 31,31,11
