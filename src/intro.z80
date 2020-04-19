@@ -176,6 +176,7 @@ show_intro::
   ldh [rIE], a
 
   call load_rolling_girl_tiles
+  call gbc_fade_init
   call fade_in
   ld a, 32
   ld [fade_level], a

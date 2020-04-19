@@ -81,9 +81,9 @@ main::
 ; A+B+Select+Start lands here
 clear_vram_main:
   call lcd_off
-  ld hl, initial_a
-  bit 7, [hl]
-  jr z, .not_gbc
+  ld a, [initial_a]
+  cp $11
+  jr nz, .not_gbc
     ld a, 1
     ldh [rVBK], a
     call clear_all_vram
@@ -205,6 +205,7 @@ another_floor:
     call attract_init_vram
   .not_attract_vram:
 
+  call gbc_fade_init  ; load level palette
   call fade_in
 
   ld a,LCDCF_ON|LCDCF_BG9800|LCDCF_SCRNADDR|LCDCF_BGON|LCDCF_OBJON|LCDCF_WINON
@@ -231,11 +232,14 @@ forever:
   call wait_vblank_irq
   call popslide_terminate_blit
   ld a,[fade_bgp]
-  call set_bgp
+  ; call set_bgp
+  ldh [rBGP], a
   ld a,[fade_obp0]
-  call set_obp0
+  ; call set_obp0
+  ldh [rOBP0], a
   ld a,[fade_obp1]
-  call set_obp1
+  ; call set_obp1
+  ldh [rOBP1], a
   ld a,[ach_wy]
   ldh [rWY],a
 
@@ -246,6 +250,9 @@ forever:
   ; just a bit too long.
   call run_dma
   call audio_update
+
+  call gbc_ingame_push_palette
+
   call read_pad
 
   ; A+B+Select+Start: reset

@@ -96,6 +96,23 @@ fade_update::
   ld c, $20
   call calc_dmg_palette_byte
   ld [fade_obp1], a
+
+  ; If needed, calculate GBC fade level
+  ld a, [initial_a]
+  cp $11
+  ret nz
+  ld a, 2
+  ldh [rSVBK], a
+  ld hl, gbcfade_palette
+  ld de, gbcfade_faded
+  ld b, gbc_ingame_palette_end - gbc_ingame_palette
+  call gbcfade_calc_white
+  ld hl, gbcfade_faded
+  ld de, gbcfade_dest
+  ld b, (gbc_ingame_palette_end - gbc_ingame_palette)/3
+  call gbcfade_combine_components
+  xor a
+  ldh [rSVBK], a
   ret
 
 
@@ -177,6 +194,8 @@ set_gbc_palette_hblank:
 
   ; catch all VRAM slots
   di
+  ld a, 2
+  ldh [rSVBK], a
   ldh a, [rIE]
   ld d, a
   ldh a, [rSTAT]
@@ -207,17 +226,41 @@ set_gbc_palette_hblank:
   ldh [rSTAT], a
   ld a, d
   ldh [rIE], a
+  ld a, 1
+  ldh [rSVBK], a
   reti
+
+gbc_ingame_push_palette::
+  ld a, [initial_a]
+  cp $11
+  ret nz
+  ld a, 2
+  ldh [rSVBK], a
+
+  ld hl, gbcfade_dest
+  ld bc, 5 * 256 + low(rBCPS)
+  ld a, $80
+  call set_gbc_palette_hblank
+  ld bc, 1 * 256 + low(rOCPS)
+  ld a, $80
+  call set_gbc_palette_hblank
+
+  ld a, 1
+  ldh [rSVBK], a
+  ret
 
 ; It takes 72 scanlines just to calculate a fade level, let alone
 ; push them to the VCE
 ;;
 ; UNTESTED
 ; Calculate fade to white for Game Boy Color
+; @param HL palette source
+; @param DE palette destination
+; @param B  ; number of components
 gbcfade_calc_white:
   ld a, [fade_level]  ; value from 0 to 32
-  add 4
-  cp 32
+  add 2
+  cp FADE_MAX
   jr c, .do_multiply_fade
     ld c, b
     ld b, 0
@@ -233,20 +276,20 @@ gbcfade_calc_white:
   .componentloop:
     ; 31 cycles per component
     ; if fading 64 colors that's 5952 cycles or 52 lines
-    xor a
+    ld a, $FC
     sub c
     bit 5, c
-    jr nc, .noadd4
+    jr z, .noadd4
       add [hl]
     .noadd4:
     rra
     bit 6, c
-    jr nc, .noadd2
+    jr z, .noadd2
       add [hl]
     .noadd2:
     rra
     bit 7, c
-    jr nc, .noadd1
+    jr z, .noadd1
       add [hl]
     .noadd1:
     rra
@@ -261,7 +304,7 @@ gbcfade_calc_white:
 ; UNTESTED
 ; Combine red, green, and blue components of colors into RGB555 words
 ; 35 cycles per color; for 64 colors that's 2240 cycles or 20 lines
-fade_combine_components:
+gbcfade_combine_components:
   ; first byte: 15 cycles
   ld a, [hl+]  ; red, 0-31
   ld c, a
@@ -282,12 +325,27 @@ fade_combine_components:
   ld c, a
   ld a, [hl+]  ; blue
   add a
+  add a
   or c
   ld [de], a
   inc de
   ; loop: 4 cycles
   dec b
-  jr nz, fade_combine_components
+  jr nz, gbcfade_combine_components
+  ret
+
+gbc_fade_init::
+  ld a, [initial_a]
+  cp $11
+  ret nz
+  ld a, 2
+  ld [rSVBK], a
+  ld hl, gbc_ingame_palette
+  ld bc, gbc_ingame_palette_end - gbc_ingame_palette
+  ld de, gbcfade_palette
+  call memcpy
+  xor a
+  ld [rSVBK], a
   ret
 
 section "gbc_palettes", ROM0
@@ -312,7 +370,8 @@ gbc_ingame_palette:
   db 18, 8, 0
   db 27,27,27
   db 31,31,31
-  db 31, 0,31  ; OC0: status and border
-  db 18, 8, 0
-  db 31,22,18
+  db 31, 0,31  ; OC0: Libbet
+  db 12, 8, 0
+  db 31,16,12
   db 31,31,11
+gbc_ingame_palette_end:
