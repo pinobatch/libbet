@@ -184,9 +184,23 @@ another_floor:
   ; Clear the map
   call lcd_off
   call popslide_init
+
+  ; set up background if GBC
+  ld h,$6F  ; background tile
+  ld a, [initial_a]
+  cp $11
+  jr nz, .backdrop_notGBC
+    ldh [rVBK], a
+    ld de,SCRN_BG
+    ld bc,32*18
+    ld h,$04  ; background and status bar attribute
+    call memset
+    xor a
+    ldh [rVBK], a
+    ld h, $6D  ; background tile on GBC
+  .backdrop_notGBC:
   ld de,SCRN_BG
   ld bc,32*16
-  ld h,$6F  ; background tile
   call memset
   ; uncomment the following if using popslide_test_data
   ; call popslide_test

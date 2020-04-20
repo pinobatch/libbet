@@ -390,8 +390,56 @@ prepare_hDrawCell::
   ld [popslide_used],a
   ret
 
-;;
-; TODO: Some distinction between seen and unseen deadends
+gbc_prepare_cell_attr::
+  call goto_tile_at_cursor
+  ld d,h
+  ld a,l
+
+  ; Write first packet header to popslide_buf
+  ld hl,popslide_used
+  ld l,[hl]  ; now points into popslide_buf
+  ld [hl+],a
+  add 32
+  ld e,a
+  ld a,d
+  ld [hl+],a
+  jr nc,.noincde
+    inc d
+  .noincde:
+  push de  ; Stack: bottom half address
+
+  ld a,CELL_W  + 63  ; 2 horizontal
+  ld [hl+],a
+  push hl
+  call floor_read_at_cursor
+  pop hl
+  and $03  ; A = color
+
+  ; Calculate attribute: 1, 0, 2, 0
+  rra    ; 0 0 1 1
+  inc a  ; 1 1 2 2
+  jr nc, .notgray
+    xor a
+  .notgray:
+  ld [hl+], a
+  ld b, a
+  
+  ; Bottom half same
+  pop de
+  ld a, e
+  ld [hl+], a
+  ld a, d
+  ld [hl+], a
+  ld a, CELL_W  + 63  ; 2 horizontal
+  ld [hl+], a
+  ld a, b
+  ld [hl+], a
+
+  ; Save new pointer
+  ld a,l
+  ld [popslide_used],a
+  ret
+
 draw_whole_floor::
   xor a
   .rowloop:
@@ -409,6 +457,25 @@ draw_whole_floor::
       cp b
       jr nz,.tileloop
     call popslide_terminate_blit
+    
+    ld a, [initial_a]
+    cp $11
+    jr nz, .notGBC
+      ld [rVBK], a
+      xor a
+      .attrloop:
+        ld [cursor_x],a
+        call gbc_prepare_cell_attr
+        ld a,[floor_width]
+        ld b,a
+        ld a,[cursor_x]
+        inc a
+        cp b
+        jr nz,.attrloop
+      call popslide_terminate_blit
+      xor a
+      ld [rVBK], a
+    .notGBC:
 
     ; And move to the next row
     ld a,[floor_height]
@@ -451,6 +518,22 @@ draw_floor_border::
 ; @param C height in tile pairs
 ; @param A tile ID
 .do_one_side_wall:
+  push af
+  ld a, [initial_a]
+  cp $11
+  jr nz, .side_notGBC
+    ldh [rVBK], a
+    push bc
+    push hl
+    ld a, 3  ; walls palette
+    call .do_one_side_wall_plane
+    pop hl
+    pop bc
+    xor a
+    ldh [rVBK], a
+  .side_notGBC:
+  pop af
+.do_one_side_wall_plane:
   ld b,c
   ld de,32
   .sidewallloop:
@@ -471,6 +554,22 @@ draw_floor_border::
   dec d
   ld e,c
   add hl,de
+
+  ld a, [initial_a]
+  cp $11
+  jr nz, .toprow_notGBC
+    ldh [rVBK], a
+    push hl
+    ld a, [floor_width]
+    inc a
+    add a
+    ld c, a
+    ld a, 3  ; walls palette
+    call memset_tiny
+    pop hl
+    xor a
+    ldh [rVBK], a
+  .toprow_notGBC:
 
   ; Top left corner
   ld a,b

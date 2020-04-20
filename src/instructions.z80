@@ -55,6 +55,7 @@ vwf_page_init::
   ld h,$6F
   ld bc,32*19
   call memset
+  call clear_gbc_attr
 
   ; Fill top rows, centered horizontally and starting on
   ; the second row of the first BG
