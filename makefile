@@ -20,7 +20,7 @@ objlist := header init \
   statusbar rolling prevcombo \
   instructions debrief achievements intro \
   fade audio pitchtable \
-  ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 popslide
+  ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 popslide sgb
 
 ifdef COMSPEC
   ifndef GBEMU

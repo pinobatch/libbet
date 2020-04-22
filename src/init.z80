@@ -86,16 +86,18 @@ reset_handler::
   ldh [rSCY], a   ; clear scroll
   ldh [rSCX], a   ; clear scroll
   ld [cur_keys],a
-  if DETECT_SGB
-    call detect_sgb
-    ld a, [is_sgb]
-    rrca  ; kick distance $80 for SGB or $00 otherwise
-  endc
-  ld [r_symbol_kick_dist], a  ; kick only on boot, not A+B+Select+Start
   if USE_DAS
     ld [das_keys],a
     ld [das_timer],a
   endc
+  if DETECT_SGB
+    ld [hw_capability], a
+    call detect_sgb
+    ld a, [hw_capability]
+    and $01
+    rrca  ; kick distance $80 for SGB or $00 otherwise
+  endc
+  ld [r_symbol_kick_dist], a  ; kick only on boot, not A+B+Select+Start
 
 
   ; Not fading the logo this time because a different effect

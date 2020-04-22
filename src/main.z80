@@ -59,9 +59,9 @@ clear_all_vram:
 
 main::
   ; If not a Super Game Boy, head straight in.
-  ld a, [is_sgb]
-  or a
-  jr z, no_clear_vram_main
+  ld a, [hw_capability]
+  rra
+  jr nc, no_clear_vram_main
 
   ; This is where we'd send all the SGB enhancements, such as border
   ; and palette.  Currently there are none, but the SGB BIOS still

@@ -33,6 +33,28 @@ harrow_chr equ decomppos+8*16
 varrow_chr equ decomppos+9*16
 deadend_chr equ decomppos+10*16
 
+;;
+; UNTESTED
+; Convert all pixels with color 2 to color 1, in place
+; Useful to modify tiles for Super Game Boy colorization.
+; @param HL source and destination
+; @param B sliver count (e.g. 16 for two tiles)
+; @return AC trashed, B=0
+color2to1:
+  ld a, [hl+]
+  ld c, a      ; E: plane 0
+  ld a, [hl-]  ; A: plane 1
+  or c
+  ld [hl+], a
+  ld a, [hl]   ; A: plane 1
+  and c
+  ld [hl+], a
+  dec b
+  jr nz, color2to1
+  ret
+
+;;
+; Load the CHR 
 load_floor_chr::
   ; Stage 1: Unpack
   ld de,floortiles_pb16

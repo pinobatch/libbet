@@ -35,7 +35,7 @@ das_timer:: ds 1
 endc
 
 if DETECT_SGB
-is_sgb:: ds 1
+hw_capability:: ds 1
 endc
 
 SECTION "rom_pads", ROM0
@@ -85,14 +85,13 @@ read_pad::
   ret
 
 .onenibble:
-  ldh [rP1],a  ; switch the key matrix
-  ldh a,[rP1]  ; ignore value while waiting for the key matrix to settle
+  ldh [rP1],a     ; switch the key matrix
+  call .knownret  ; burn 10 cycles calling a known ret
+  ldh a,[rP1]     ; ignore value while waiting for the key matrix to settle
   ldh a,[rP1]
-  ldh a,[rP1]
-  ldh a,[rP1]
-  ldh a,[rP1]
-  ldh a,[rP1]  ; the actual read
+  ldh a,[rP1]     ; this read counts
   or $F0   ; A7-4 = 1; A3-0 = unpressed keys
+.knownret:
   ret
 
 ; Autorepeat ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,51 +139,87 @@ endc
 ; Super Game Boy detection ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 if DETECT_SGB
+
 ;;
-; Fill variable is_sgb with 1 if Super Game Boy or 0 otherwise,
-; then set controller back to 1 player mode.
+; Sets hw_capability to 1 if the player number is 2 or 4.
+; rP1 must be $30 (key matrix released), such as after sgb_send or
+; read_pad.  When this happens, SGB returns 4 - player number in
+; bits 1-0, where 3 means player 1, 2 means player 2, etc.
+; Fully reading advances to the next player.
+capa_1_if_player_2:
+  ldh a, [rP1]
+  rra  ; players 1 or 3: carry set; players 2 or 4: carry clear
+  ret c
+  ld a, $01
+  ld [hw_capability],a
+  ret
+;;
+; Sets hw_capability to $01 if on a Super Game Boy.
 detect_sgb::
   ; Try to set the SGB to 2-player mode
   di
-  ld hl,sgb_packet_twoplayers
-  call sgb_send
+  ld b, 1
+  call sgb_set_bplus1_players
   call sgb_wait
-
-  ; When the key matrix is released, SGB returns player number in
-  ; bits 1-0 (active low).
-  ld a,[rP1]
-  and $03
-  xor $03
-  jr nz, .isSGB
-
-  ; When the key matrix is asserted and released, such as when one
-  ; controller is read, SGB advances to the next controller.
+  call capa_1_if_player_2
   call read_pad
-  ld a,[rP1]
-  and $03
-  xor $03
-  jr z, .haveSGB ; a = 0
+  call capa_1_if_player_2
 
-.isSGB:
-  ld a, 1
-.haveSGB:
-  ld [is_sgb],a
-  ld hl,sgb_packet_oneplayer
-  jp sgb_send
+  ; Now turn off 2-player mode
+  ld b, 0
+  ; fall through
+
+;;
+; Set the number of controllers to read to B + 1, where B is
+; 0, 1, or 3 for 1, 2, or 4 (multitap only) players.
+sgb_set_bplus1_players::
+  ld a, ($11 << 3) + 1
+  ; fall through
+
+;;
+; Send a 1-packet SGB command whose first two bytes are A and B
+; and whose remainder is zero filled.
+sgb_send_ab::
+  ld c, 0
+  ; fall through
+
+;;
+; Send a 1-packet SGB command whose first three bytes are A, B, and C
+; and whose remainder is zero filled.
+sgb_send_abc::
+  ld hl, lineImgBuf  ; use this as the SGB temp buffer until we get a better one
+  push hl
+  ld [hl+], a
+  ld a, b
+  ld [hl+], a
+  ld a, c
+  ld [hl+], a
+  xor a
+  ld c, 13
+  call memset_tiny
+  pop hl
+  jr sgb_send
 
 SIZEOF_SGB_PACKET EQU 16
 CHAR_BIT EQU 8
 
 ;;
+; Clears the Super Game Boy attribute table to 0.
+clear_sgb_attr::
+  ld hl, sgb_cmd_clear_attrs
+sgb_send_if_sgb::
+  ld a, [hw_capability]
+  rra
+  ret nc
+
+;;
 ; Sends a Super Game Boy packet starting at HL.
 ; Assumes no IRQ handler does any sort of controller autoreading.
-
-sgb_send:
+sgb_send::
 
   ; B: Number of remaining bytes in this packet
   ; C: Number of remaining packets
   ; D: Remaining bit data
-  ; E: Number of remaining bits in this byte
   ld a,$07
   and [hl]
   ret z
@@ -197,29 +232,32 @@ sgb_send:
   ldh [rP1],a
   ld a,$30
   ldh [rP1],a
-  push bc
   ld b,SIZEOF_SGB_PACKET
 .byteloop:
-  ; Read a byte from the packet
-  ld e,CHAR_BIT
-  ld a,[hl+]
+  ld a,[hl+]  ; Read a byte from the packet
+
+  ; Put bit 0 in carry and the rest (and a 1) into D.  Once this 1
+  ; is shifted out of D, D is 0 and the byte is finished.
+  ; (PB16 and IUR use the same principle for loop control.)
+  scf      ; A = hgfedcba, CF = 1
+  rra      ; A = 1hgfedcb, CF = a
   ld d,a
 .bitloop:
   ; Send a 1 as $10 then $30, or a 0 as $20 then $30.
   ; This is constant time thanks to ISSOtm, unlike SGB BIOS
   ; which takes 1 mcycle longer to send a 0 then a 1.
   ld a,$10
-  bit 0,d
-  jr nz,.bitIs1
+  jr c, .bitIs1
   add a,a ; ld a,$20
 .bitIs1:
   ldh [rP1],a
   ld a,$30
   ldh [rP1],a
 
+  ldh a, [rIE]  ; Burn 3 cycles to retain original loops's speed
+
   ; Advance D to next bit (this is like NES MMC1)
-  rr d
-  dec e
+  srl d
   jr nz,.bitloop
   dec b
   jr nz,.byteloop
@@ -231,32 +269,32 @@ sgb_send:
   ld [rP1],a
 
   call sgb_wait
-  pop bc
   dec c
   jr nz,.packetloop
   ret
 
 ;;
 ; Waits about 4 frames for Super Game Boy to have processed a command
+; 4 frames is 4*154 = 616 scanlines or 4*154*114 = 70224 M-cycles.
+; Each iteration of the inner loop takes 4 cycles.
+; Thus we wait 4*154*114/4 = 17556 iterations
 sgb_wait:
-  ld de, 7000
+  ld de, 65536 - (114 * 154 * 4 / 4)
 .loop:
-  nop
-  nop
-  nop
-  dec de
-  ld a, e
-  or d
+  inc e
+  jr nz, .loop
+  inc d
   jr nz, .loop
   ret
 
-sgb_packet_twoplayers:
-  db ($11 << 3) + 1
-  db 1
-  ds 14
+sgb_cmd_clear_attrs::
+  db $04*8+1  ; 1 packet holds up to 2 rectangles
+  db 1        ; number of rectangles
 
-sgb_packet_oneplayer:
-  db ($11 << 3) + 1
-  db 0
-  ds 14
+  db %00000111  ; bit 0: inside, 1: border, 2: outside
+  db %00000000  ; inside and border to palette 0, outside to palette 0
+  db 0, 0, 19, 17
+
+  db 0, 0, 0, 0, 0, 0, 0, 0
+
 endc
