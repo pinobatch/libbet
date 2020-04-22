@@ -42,6 +42,17 @@ fade_in::
   ld de, fade_density
   ld bc, 10
   call memcpy
+
+  ; SGB: want to make solid light gray, not a mix of light gray
+  ; and white
+  ld a, [hw_capability]
+  rra
+  jr nc, .no_sgb_fixes
+    ld hl, fade_density+5
+    inc [hl]
+  .no_sgb_fixes:
+
+
   ; at this point de = fade_residue, so clear it
   ld h, d
   ld l, e

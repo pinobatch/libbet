@@ -182,8 +182,15 @@ load_floor_chr::
     cp $95
     jr c,.fliploop
 
-  ; Cover up the decompression with border tiles
+  ; Finish by loading the border tiles into the area where
+  ; decompression was performed
   ld de,floorborder_pb16
+  ld a, [hw_capability]
+  rra
+  jr nc, .border_not_sgb
+    ld de, floorborder_sgb_pb16
+  .border_not_sgb:
+
   ld hl,CHRRAM2+$6C*16
   ld b,20
   jp pb16_unpack_block
@@ -268,6 +275,7 @@ add1arrow:
 section "floor_chr", ROM0
 floortiles_pb16: incbin "obj/gb/floorpieces-h.chrgb.pb16"
 floorborder_pb16: incbin "obj/gb/floorborder-h.chrgb.pb16"
+floorborder_sgb_pb16: incbin "obj/gb/floorborder-sgb-h.chrgb.pb16"
 
 ; Drawing cells to tile map ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

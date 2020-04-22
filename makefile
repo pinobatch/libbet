@@ -89,7 +89,8 @@ obj/gb/%-dedent.z80: src/%.z80
 obj/gb/intro.o: \
   obj/gb/roll32-h.chrgb.pb16
 obj/gb/floorvram.o: \
-  obj/gb/floorpieces-h.chrgb.pb16 obj/gb/floorborder-h.chrgb.pb16
+  obj/gb/floorpieces-h.chrgb.pb16 \
+  obj/gb/floorborder-h.chrgb.pb16 obj/gb/floorborder-sgb-h.chrgb.pb16
 obj/gb/statusbar.o: \
   obj/gb/bigdigits-h.chr1
 obj/gb/metasprite.o: \

@@ -215,6 +215,8 @@ show_intro::
   call wait_vblank_irq
   ld a, %00001100
   call set_bgp
+  ld a, %00011100
+  ld [fade_obp0], a
   xor a
   ld [cursor_y], a
   ld [cursor_x], a
@@ -230,15 +232,18 @@ show_intro::
   call set_gbc_palette
 
   .roll_loop:
+    ; Move sprite
     ld a, [cursor_x]
     add 3
     ld [cursor_x], a
+
+    ; Play a rolling sound effect every 3 frames
     ld hl, cursor_y
     ld a, [hl]
     inc [hl]
     and $1F
     jr nz,.no_sfx
-      ld a, 0
+      ; ld a, 0
       call audio_play_fx
     .no_sfx:
 
@@ -246,9 +251,17 @@ show_intro::
     xor a
     ld [oam_used], a
     call intro_draw_character
-
     call lcd_clear_oam
-    call fade_update
+
+    ; fade_update in the intro is needed only on DMG, not SGB
+    ld a, [initial_a]
+    cp $11
+    jr z, .no_fade_update
+    ld a, [hw_capability]
+    or a
+    call z, fade_update
+    .no_fade_update:
+
     call audio_update
 
     call wait_vblank_irq
