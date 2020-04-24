@@ -275,10 +275,11 @@ clear_gbc_attr::
   ld a,[hw_capability]
   and $80
   ret z
+  rlca
   ldh [rVBK],a
-  ld h,0
   ld de,_SCRN0
   ld bc,2048
+  ld h, e
   call memset
   xor a
   ldh [rVBK],a
