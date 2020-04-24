@@ -110,8 +110,8 @@ fade_update::
 
   ; If needed, calculate GBC fade level
   ld a, [initial_a]
-  cp $11
-  ret nz
+  rlca
+  ret nc
   ld a, 2
   ldh [rSVBK], a
   ld hl, gbcfade_palette
@@ -243,8 +243,8 @@ set_gbc_palette_hblank:
 
 gbc_ingame_push_palette::
   ld a, [initial_a]
-  cp $11
-  ret nz
+  rlca
+  ret nc
   ld a, 2
   ldh [rSVBK], a
 
@@ -347,15 +347,15 @@ gbcfade_combine_components:
 
 gbc_fade_init::
   ld a, [initial_a]
-  cp $11
-  ret nz
+  rlca
+  ret nc
   ld a, 2
   ld [rSVBK], a
   ld hl, gbc_ingame_palette
   ld bc, gbc_ingame_palette_end - gbc_ingame_palette
   ld de, gbcfade_palette
   call memcpy
-  xor a
+  ld a, 1
   ld [rSVBK], a
   ret
 

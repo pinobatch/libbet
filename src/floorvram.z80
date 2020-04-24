@@ -503,9 +503,9 @@ draw_whole_floor::
       jr nz,.tileloop
     call popslide_terminate_blit
     
-    ld a, [initial_a]
-    cp $11
-    jr nz, .notGBC
+    ld a, [hw_capability]
+    rlca
+    jr nc, .noGBCCellAttrs
       ld [rVBK], a
       xor a
       .attrloop:
@@ -520,7 +520,7 @@ draw_whole_floor::
       call popslide_terminate_blit
       xor a
       ld [rVBK], a
-    .notGBC:
+    .noGBCCellAttrs:
 
     ; And move to the next row
     ld a,[floor_height]
@@ -675,9 +675,9 @@ draw_floor_border::
 ; @param A tile ID
 .do_one_side_wall:
   push af
-  ld a, [initial_a]
-  cp $11
-  jr nz, .side_notGBC
+  ld a, [hw_capability]
+  rlca
+  jr nc, .side_notGBC
     ldh [rVBK], a
     push bc
     push hl
@@ -711,9 +711,9 @@ draw_floor_border::
   ld e,c
   add hl,de
 
-  ld a, [initial_a]
-  cp $11
-  jr nz, .toprow_notGBC
+  ld a, [hw_capability]
+  rlca
+  jr nc, .toprow_notGBC
     ldh [rVBK], a
     push hl
     ld a, [floor_width]

@@ -81,10 +81,9 @@ main::
 ; A+B+Select+Start lands here
 clear_vram_main:
   call lcd_off
-  ld a, [initial_a]
-  cp $11
-  jr nz, .not_gbc
-    ld a, 1
+  ld a, [hw_capability]
+  rlca
+  jr nc, .not_gbc
     ldh [rVBK], a
     call clear_all_vram
     xor a
@@ -187,9 +186,9 @@ another_floor:
 
   ; set up background if GBC
   ld h,$6F  ; background tile
-  ld a, [initial_a]
-  cp $11
-  jr nz, .backdrop_notGBC
+  ld a, [hw_capability]
+  rlca
+  jr nc, .backdrop_notGBC
     ldh [rVBK], a
     ld de,SCRN_BG
     ld bc,32*18
@@ -202,8 +201,10 @@ another_floor:
   ld de,SCRN_BG
   ld bc,32*16
   call memset
+
   ; uncomment the following if using popslide_test_data
   ; call popslide_test
+
   call draw_whole_floor
   call cursor_to_home
   call init_player_pos

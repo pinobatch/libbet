@@ -272,9 +272,9 @@ set_gbc_palette::
 ; @return A=0
 clear_gbc_attr::
   call lcd_off
-  ld a,[initial_a]
-  cp $11
-  jr nz,.not_gbc
+  ld a,[hw_capability]
+  and $80
+  ret z
   ldh [rVBK],a
   ld h,0
   ld de,_SCRN0
