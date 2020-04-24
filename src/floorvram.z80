@@ -531,6 +531,117 @@ draw_whole_floor::
     jr nz,.rowloop
   ret
 
+;;
+; Forms an attribute map for Super Game Boy in lineImgBuf
+sgb_form_floor_attr::
+  ; Clear the background to 0
+  ld hl, lineImgBuf
+  ld [hl], $07*8+6  ; ATTR_CHR, packet count
+  inc hl
+  xor a
+  ld [hl+], a        ; starting X: 0
+  ld [hl+], a        ; starting Y: 0
+  ld [hl], low(360)  ; number of 2-bit attributes
+  inc hl
+  ld [hl], high(360)
+  inc hl
+  ld [hl+], a        ; row major
+  ld d, a
+  push hl            ; Stack: address of top of attribute table
+  cpl                ; color 3 for out-of-bounds tiles
+  ld c, 90
+  call memset_tiny
+
+  ld a, [floor_top_row]
+  ld b, a
+  add a
+  add a
+  add b
+  ld e, a     ; DE: offset of first row within attribute table
+  pop hl
+  add hl, de  ; HL: offset of first nonborder row in attribute table
+  ld de, floor_map
+  ld a, [floor_height]
+  ld b, a
+
+  .rowloop:
+    ; Regmap now:
+    ; B: remaining floor rows
+    ; DE: pointer into floor_map
+    ; HL: destination
+    push bc
+    push de
+    push hl
+    ; Stack: destination row start, floor map row start, remaining floor row count
+    ld b, 1  ; B is a circular buffer to collect bits
+    call .writelrborder
+
+    ; Write attributes for floor cells
+    ld a, [floor_width]
+    ld c, a
+    .tileloop:
+      ld a, [de]
+      inc de
+      and $03
+
+      ; Calculate attribute: 1, 0, 2, 0
+      rra    ; 0 0 1 1
+      inc a  ; 1 1 2 2
+      jr nc, .notgray
+        xor a
+      .notgray:
+      call .write2bits
+      call .write2bits
+      dec c
+      jr nz, .tileloop
+    call .writelrborder
+  ld b, b
+
+    ; Duplicate the attribute row
+    pop de
+    ld c, 5
+    .cpy:
+      ld a, [de]
+      ld [hl+], a
+      inc de
+      dec c
+      jr nz, .cpy
+
+    ; move to next row of floor
+    pop de
+    ld a, e
+    or 7
+    ld e, a
+    inc de
+    pop bc
+    dec b
+    jr nz, .rowloop
+  ret
+
+.writelrborder:
+  ld a, [floor_width]
+  cpl
+  sub (255 - 10)
+  ld c, a
+  ld a, 3
+.write2bitstimesC:
+  call .write2bits
+  dec c
+  jr nz, .write2bitstimesC
+  ret
+.write2bits:
+  rrca   ; A: a:aXXXXXXb
+  rrca   ; A: b:baXXXXXX
+  rlca   ; A: b:aXXXXXXb
+  rl b
+  rlca   ; A: a:XXXXXXba
+  rl b
+  ret nc
+  ld [hl], b
+  inc hl
+  ld b, 1
+  ret
+
 draw_floor_border::
   ld a,[floor_height]
   cp 8
@@ -634,6 +745,8 @@ draw_floor_border::
   add 4
   ld [hl+],a
   ret
+
+; Exit indication ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 prepare_exit_door::
   ; Only maps not taller than 8 cells have an exit door.
