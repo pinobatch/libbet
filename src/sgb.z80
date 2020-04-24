@@ -1,0 +1,378 @@
+include "src/hardware.inc"
+
+section "sgbwram", WRAM0
+sgb_cmd_buf:: ds 16
+
+
+section "sgbcode", ROM0
+
+; Super Game Boy detection ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;
+; Sets hw_capability to 1 if the player number is 2 or 4.
+; rP1 must be $30 (key matrix released), such as after sgb_send or
+; read_pad.  When this happens, SGB returns 4 - player number in
+; bits 1-0, where 3 means player 1, 2 means player 2, etc.
+; Fully reading advances to the next player.
+capa_1_if_player_2:
+  ldh a, [rP1]
+  rra  ; players 1 or 3: carry set; players 2 or 4: carry clear
+  ret c
+  ld a, $01
+  ld [hw_capability],a
+  ret
+;;
+; Sets hw_capability to $01 if on a Super Game Boy.
+detect_sgb::
+  ; Try to set the SGB to 2-player mode
+  di
+  ld b, 1
+  call sgb_set_bplus1_players
+  call sgb_wait
+  call capa_1_if_player_2
+  call read_pad
+  call capa_1_if_player_2
+
+  ; Now turn off 2-player mode
+  ld b, 0
+  ; fall through
+
+;;
+; Set the number of controllers to read to B + 1, where B is
+; 0, 1, or 3 for 1, 2, or 4 (multitap only) players.
+sgb_set_bplus1_players::
+  ld a, ($11 << 3) + 1
+  ; fall through
+
+;;
+; Send a 1-packet SGB command whose first two bytes are A and B
+; and whose remainder is zero filled.
+sgb_send_ab::
+  ld c, 0
+  ; fall through
+
+;;
+; Send a 1-packet SGB command whose first three bytes are A, B, and C
+; and whose remainder is zero filled.
+sgb_send_abc::
+  ld hl, sgb_cmd_buf
+  push hl
+  ld [hl+], a
+  ld a, b
+  ld [hl+], a
+  ld a, c
+  ld [hl+], a
+  xor a
+  ld c, 13
+  call memset_tiny
+  pop hl
+  jr sgb_send
+
+SIZEOF_SGB_PACKET EQU 16
+CHAR_BIT EQU 8
+
+;;
+; Clears the Super Game Boy attribute table to 0.
+clear_sgb_attr::
+  ld hl, sgb_cmd_clear_attrs
+sgb_send_if_sgb::
+  ld a, [hw_capability]
+  rra
+  ret nc
+
+;;
+; Sends a Super Game Boy packet starting at HL.
+; Assumes no IRQ handler does any sort of controller autoreading.
+sgb_send::
+
+  ; B: Number of remaining bytes in this packet
+  ; C: Number of remaining packets
+  ; D: Remaining bit data
+  ld a,$07
+  and [hl]
+  ret z
+  ld c,a
+
+.packetloop:
+  ; Start transfer by asserting both halves of the key matrix
+  ; momentarily.  (This is like strobing an NES controller.)
+  xor a
+  ldh [rP1],a
+  ld a,$30
+  ldh [rP1],a
+  ld b,SIZEOF_SGB_PACKET
+.byteloop:
+  ld a,[hl+]  ; Read a byte from the packet
+
+  ; Put bit 0 in carry and the rest (and a 1) into D.  Once this 1
+  ; is shifted out of D, D is 0 and the byte is finished.
+  ; (PB16 and IUR use the same principle for loop control.)
+  scf      ; A = hgfedcba, CF = 1
+  rra      ; A = 1hgfedcb, CF = a
+  ld d,a
+.bitloop:
+  ; Send a 1 as $10 then $30, or a 0 as $20 then $30.
+  ; This is constant time thanks to ISSOtm, unlike SGB BIOS
+  ; which takes 1 mcycle longer to send a 0 then a 1.
+  ld a,$10
+  jr c, .bitIs1
+  add a,a ; ld a,$20
+.bitIs1:
+  ldh [rP1],a
+  ld a,$30
+  ldh [rP1],a
+
+  ldh a, [rIE]  ; Burn 3 cycles to retain original loops's speed
+
+  ; Advance D to next bit (this is like NES MMC1)
+  srl d
+  jr nz,.bitloop
+  dec b
+  jr nz,.byteloop
+
+  ; Send $20 $30 as end of packet
+  ld a,$20
+  ld [rP1],a
+  ld a,$30
+  ld [rP1],a
+
+  call sgb_wait
+  dec c
+  jr nz,.packetloop
+  ret
+
+;;
+; Waits about 4 frames for Super Game Boy to have processed a command
+; 4 frames is 4*154 = 616 scanlines or 4*154*114 = 70224 M-cycles.
+; Each iteration of the inner loop takes 4 cycles.
+; Thus we wait 4*154*114/4 = 17556 iterations
+sgb_wait:
+  ld de, 65536 - (114 * 154 * 4 / 4)
+.loop:
+  inc e
+  jr nz, .loop
+  inc d
+  jr nz, .loop
+  ret
+
+; SGB palette commands ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+sgb_freeze:
+  ; Freeze display while doing transfers
+  call busy_wait_vblank
+  ld a, $17*8+1
+  ld b, $01  ; Freeze current screen
+  jp sgb_send_ab
+
+;;
+; Turns off the LCD, sets scroll to 0, sets BGP to identity ($E4),
+; and sets up an identity tilemap in _SCRN0 for Super Game Boy
+; *_TRN commands.  (Clobbers $9A00.)
+sgb_load_trn_tilemap:
+  call lcd_off
+  ld a, %11100100
+  ldh [rBGP], a
+
+  ld hl, $9A00
+  push hl
+  xor a
+  ld c, a
+  ldh [rSCX], a
+  ldh [rSCY], a
+  call memset_inc
+  pop hl
+  ld de, _SCRN0
+  jp load_full_nam
+
+sgb_send_pal_trn:
+  ; Do the transfer
+  ld a, $0B*8+1
+  ld b, 0
+
+;;
+; Turns on rendering, sends a *_TRN packet with first two bytes
+; A and B, and turns rendering back off.
+sgb_send_trn_ab:
+  ld l, a
+  ld a,LCDCF_ON|LCDCF_BGON|LCDCF_BG8000|LCDCF_BG9800
+  ldh [rLCDC],a
+  ld a, l
+  call sgb_send_ab
+  jp lcd_off
+
+;;
+; Sets Super Game Boy palettes and unfreezes the display.
+; Four consecutive palettes are chosen: B, B+1, B+2, B+3.
+; Does nothing on non-SGB.
+; @param B index into last PAL_TRN for subpalette 0
+sgb_set_palettes_from_b::
+  ld c, b
+  inc c
+  ld d, c
+  inc d
+  ld e, d
+  inc e
+  jr sgb_set_palettes_bcde
+
+sgb_set_palette_gray::
+  ld b, 32
+  ; fall through
+
+;;
+; Sets Super Game Boy palettes and unfreezes the display.
+; Does nothing on non-SGB.
+; @param B index into last PAL_TRN for all four subpalettes
+sgb_set_palette_b::
+  ld c, b
+  ld d, b
+  ld e, b
+  ; fall through
+
+;;
+; Sets Super Game Boy palettes and unfreezes the display.
+; Does nothing on non-SGB.
+; @param B index into last PAL_TRN for subpalette 0
+; @param C index into last PAL_TRN for subpalette 1
+; @param D index into last PAL_TRN for subpalette 2
+; @param E index into last PAL_TRN for subpalette 3
+sgb_set_palettes_bcde::
+  ld a, [hw_capability]
+  rra
+  ret nc
+  ld a, $40
+  ; fall through
+
+;;
+; Sets Super Game Boy palettes defined through PAL_TRN
+; and optionally loads an attribute table defined through ATTR_TRN.
+; @param B index into last PAL_TRN for subpalette 0
+; @param C index into last PAL_TRN for subpalette 1
+; @param D index into last PAL_TRN for subpalette 2
+; @param E index into last PAL_TRN for subpalette 3
+; @param A bit 7: load attribute table whose index is in bits 0-5;
+;   bit 6: unfreeze display
+sgb_set_palettes_bcde_attr_a::
+  ld hl, sgb_cmd_buf
+  push hl
+  push af
+  push bc
+
+  ; Clear unused bytes of packet
+  push hl
+  xor a
+  ld c, 16
+  call memset_tiny
+  pop hl
+
+  ; Populate packet
+  ld a, $0A*8+1  ; PAL_SET
+  ld [hl+], a
+  pop bc
+  ld a, b
+  ld [hl+], a
+  inc hl
+  ld a, c
+  ld [hl+], a
+  inc hl
+  ld a, d
+  ld [hl+], a
+  inc hl
+  ld a, e
+  ld [hl+], a
+  inc hl
+  pop af  ; A = unfreeze and predefuattribute table command
+  ld [hl+], a
+
+  ; And send it to the SGB
+  pop hl
+  jp sgb_send
+
+; Calculating palette fade sequences ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+sgbfade_calc_palettes::
+  ; Prepare VRAM for a data transfer
+  call sgb_freeze
+  call sgb_load_trn_tilemap
+
+  ; Palettes 0-3 are fade level 4, 4-7 fade level 8, ...,
+  ; 28-31 are fade level 32
+  ld a, 4
+
+  .steploop:
+    ld [fade_level], a
+    ld hl, sgb_ingame_palette
+    ld de, $9000
+    ld b, sgb_ingame_palette_end - sgb_ingame_palette
+    call gbcfade_calc_white
+    ld hl, $9000
+    ld de, $9100
+    ld b, (sgb_ingame_palette_end - sgb_ingame_palette)/3
+    call gbcfade_combine_components
+
+    ; Calc destination address
+    ld a, [fade_level]  ; 4-32
+    sub 4             ; 0-28
+    add a
+    add a
+    add a             ; 0-224
+    ld e, a
+    ld d, $80  ; DE: start of destination
+    .igcopyloop:
+      ld hl, $9100
+      call .copy1color
+      call .copy1color
+      ld a, e  ; $04, $0C, $14, $1C plus 32*step
+      and $18
+      rra
+      rra
+      or $08
+      ld l, a
+      call .copy1color
+      ld l, $06
+      call .copy1color
+      ld a, e
+      and $1F
+      jr nz, .igcopyloop
+    ld a, [fade_level]
+    add 4
+    cp 36
+    jr c, .steploop
+  ld de, $8100  ; palette 32: b&w
+  ld hl, gbmonopalette
+  ld bc, 8
+  call memcpy
+  call sgb_send_pal_trn
+  ld b, 28
+  jp sgb_set_palettes_from_b
+
+.copy1color:
+  ld a, [hl+]
+  ld [de], a
+  inc de
+  ld a, [hl+]
+  ld [de], a
+  inc de
+  ret
+
+section "sgb_palettes", ROM0
+
+sgb_cmd_clear_attrs::
+  db $04*8+1  ; 1 packet holds up to 2 rectangles
+  db 1        ; number of rectangles
+
+  db %00000111  ; bit 0: inside, 1: border, 2: outside
+  db %00000000  ; inside and border to palette 0, outside to palette 0
+  db 0, 0, 19, 17
+
+  db 0, 0, 0, 0, 0, 0, 0, 0
+
+sgb_ingame_palette:
+  db 31,31,11
+  db 31,23,21
+  db 31, 0,31
+  db  7, 4, 0
+  db 21,21,21  ; dark gray and white tiles
+  db  4, 4,20  ; blue
+  db 12,27,12  ; green
+  db 27,18, 0  ; walls
+sgb_ingame_palette_end:

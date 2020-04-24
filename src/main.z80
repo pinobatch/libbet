@@ -63,14 +63,17 @@ main::
   rra
   jr nc, no_clear_vram_main
 
-  ; This is where we'd send all the SGB enhancements, such as border
-  ; and palette.  Currently there are none, but the SGB BIOS still
-  ; ignores the first roughly 40 frames after the GB-side boot ROM
-  ; jumps to $0100.  So for now, set the screen white, wait a bit,
-  ; and continue with VRAM cleared.  This means only DMG/MGB get to
-  ; see the (R) fly off.
+  ; Send all the SGB enhancements, such as border and palette,
+  ; then wait for the SGB to finish the last 30=40 frames of its
+  ; boot animation.
+  ; Only DMG/MGB get to see the (R) fly off.
+  call wait_not_vblank  ; Hide the "Nintendo(R)" for a frame
   xor a
-  call set_bgp
+  ldh [rBGP], a
+  call sgbfade_calc_palettes
+
+  ld a, LCDCF_ON
+  ldh [rLCDC], a
   ld c, 40
   .sgbcountdown:
     call wait_not_vblank
@@ -101,6 +104,14 @@ no_clear_vram_main:
   ei
 
   call audio_init
+
+  if 0
+    call fade_in
+    ld a, $80
+    ld [vblank_lcdc_value], a
+    jr straight_to_attract
+  endc
+
   call show_intro  ; Roll over the Nintendo logo
 skip_intro:
   call do_instructions  ; Title screen
@@ -109,10 +120,14 @@ skip_intro:
   ; to close the instructions
   ld a,[new_keys]
   and PADF_SELECT
+straight_to_attract:
   ld [attract_mode],a
 
   ; Set up VRAM for the new game
   call lcd_off
+
+;  call sgbfade_calc_palettes
+
   call load_floor_chr
   call load_statusbar_chr
   ld hl,CHRRAM0
@@ -184,7 +199,16 @@ another_floor:
   call lcd_off
   call popslide_init
 
-  ; set up background if GBC
+  ; Load attributes if SGB
+  ld a, [hw_capability]
+  rra
+  jr nc, .not_send_sgb_attr
+    call sgb_form_floor_attr
+    ld hl, lineImgBuf
+    call sgb_send
+  .not_send_sgb_attr:
+
+  ; Load backdrop attribute if GBC
   ld h,$6F  ; background tile
   ld a, [hw_capability]
   rlca

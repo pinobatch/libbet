@@ -112,6 +112,7 @@ fade_update::
   ld a, [hw_capability]
   rlca
   ret nc
+
   ld a, 2
   ldh [rSVBK], a
   ld hl, gbcfade_palette
@@ -268,7 +269,7 @@ gbc_ingame_push_palette::
 ; @param HL palette source
 ; @param DE palette destination
 ; @param B  ; number of components
-gbcfade_calc_white:
+gbcfade_calc_white::
   ld a, [fade_level]  ; value from 0 to 32
   add 2
   cp FADE_MAX
@@ -304,6 +305,7 @@ gbcfade_calc_white:
       add [hl]
     .noadd1:
     rra
+    and $1F
     ld [de], a
     inc de
     inc hl
@@ -315,7 +317,7 @@ gbcfade_calc_white:
 ; UNTESTED
 ; Combine red, green, and blue components of colors into RGB555 words
 ; 35 cycles per color; for 64 colors that's 2240 cycles or 20 lines
-gbcfade_combine_components:
+gbcfade_combine_components::
   ; first byte: 15 cycles
   ld a, [hl+]  ; red, 0-31
   ld c, a
