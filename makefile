@@ -16,11 +16,12 @@ version:=0.06wip
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
 objlist := header init \
-  main floorvram floormodel \
-  statusbar rolling prevcombo \
+  main floormodel \
+  rolling prevcombo \
   instructions debrief achievements intro \
-  fade audio pitchtable \
-  ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 popslide sgb
+  statusbar floorvram fade audio pitchtable \
+  ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 \
+  popslide sgb
 
 ifdef COMSPEC
   ifndef GBEMU
@@ -97,6 +98,8 @@ obj/gb/metasprite.o: \
   obj/gb/Libbet.z80
 obj/gb/main.o: \
   obj/gb/Libbet.chrgb.pb16
+obj/gb/sgb.o: \
+  obj/gb/sgbborder.border
 
 # Graphics conversion
 
@@ -131,3 +134,7 @@ obj/gb/Libbet.z80: obj/gb/Libbet.chrgb
 
 obj/gb/pitchtable.z80: tools/pitchtable.py
 	$(PY) $< > $@
+
+obj/gb/%.border: tools/makeborder.py tilesets/%.png
+	$(PY) $^ $@
+

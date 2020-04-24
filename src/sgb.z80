@@ -1,4 +1,5 @@
 include "src/hardware.inc"
+include "src/global.inc"
 
 section "sgbwram", WRAM0
 sgb_cmd_buf:: ds 16
@@ -94,6 +95,30 @@ sgb_send::
   ld c,a
 
 .packetloop:
+  call sgb_send_immediate
+  call sgb_wait
+  dec c
+  jr nz,.packetloop
+  ret
+
+;;
+; Waits about 4 frames for Super Game Boy to have processed a command
+; 4 frames is 4*154 = 616 scanlines or 4*154*114 = 70224 M-cycles.
+; Each iteration of the inner loop takes 4 cycles.
+; Thus we wait 4*154*114/4 = 17556 iterations
+sgb_wait:
+  ld de, 65536 - (114 * 154 * 4 / 4)
+.loop:
+  inc e
+  jr nz, .loop
+  inc d
+  jr nz, .loop
+  ret
+
+;;
+; Immediately sends a single 16-byte packet to the SGB ICD2.
+; Useful in fade commands
+sgb_send_immediate::
   ; Start transfer by asserting both halves of the key matrix
   ; momentarily.  (This is like strobing an NES controller.)
   xor a
@@ -135,24 +160,6 @@ sgb_send::
   ld [rP1],a
   ld a,$30
   ld [rP1],a
-
-  call sgb_wait
-  dec c
-  jr nz,.packetloop
-  ret
-
-;;
-; Waits about 4 frames for Super Game Boy to have processed a command
-; 4 frames is 4*154 = 616 scanlines or 4*154*114 = 70224 M-cycles.
-; Each iteration of the inner loop takes 4 cycles.
-; Thus we wait 4*154*114/4 = 17556 iterations
-sgb_wait:
-  ld de, 65536 - (114 * 154 * 4 / 4)
-.loop:
-  inc e
-  jr nz, .loop
-  inc d
-  jr nz, .loop
   ret
 
 ; SGB palette commands ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -287,6 +294,67 @@ sgb_set_palettes_bcde_attr_a::
   pop hl
   jp sgb_send
 
+; Border ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The border consists
+; Up to 64 tiles in Super NES format, compressed with PB16
+; 28 rows of tilemap data, compressed with PB16
+; 32 bytes: palette
+
+sgb_load_border::
+  call sgb_freeze
+  call sgb_load_trn_tilemap
+
+  ; Load tiles
+  ld de, sgbborder
+  ld a, [de]
+  inc de
+  ld b, a
+  ld hl, CHRRAM0
+  call pb16_unpack_block
+  ; ld b, 0  ; guaranteed by pb16_unpack_block
+  push de
+  ld a, $13<<3|1
+  call sgb_send_trn_ab
+  pop de
+
+  ; Load map data
+  ld b, 32*28/16
+  ld hl, CHRRAM1
+  call pb16_unpack_block
+  push de
+
+  ld bc, -32*28
+  ld hl, CHRRAM1
+  ld de, CHRRAM0
+  .tilemaploop:
+    ; Expand each tilemap byte on this row to a tile number and
+    ; a flip attribute
+    ld a, [hl]
+    and $3F
+    ld [de], a  ; tile number
+    inc de
+    xor [hl]
+    inc hl
+    or $10
+    ld [de], a  ; attributes: VH001PP0
+    inc de
+    inc c
+    jr nz, .tilemaploop
+    inc b
+    jr nz, .tilemaploop
+
+  pop hl
+  ; And last: the palette
+  ld bc, 32
+  ld de, CHRRAM1
+  call memcpy
+  ; ld b, 0  ; guaranteed by memcpy
+
+  ; Push tilemap and palette to the SGB
+  ld a, $14<<3|1
+  jp sgb_send_trn_ab
+
 ; Calculating palette fade sequences ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 sgbfade_calc_palettes::
@@ -376,3 +444,5 @@ sgb_ingame_palette:
   db 12,27,12  ; green
   db 27,18, 0  ; walls
 sgb_ingame_palette_end:
+
+sgbborder: incbin "obj/gb/sgbborder.border"

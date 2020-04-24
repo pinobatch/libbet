@@ -595,7 +595,6 @@ sgb_form_floor_attr::
       dec c
       jr nz, .tileloop
     call .writelrborder
-  ld b, b
 
     ; Duplicate the attribute row
     pop de

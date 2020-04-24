@@ -67,9 +67,13 @@ main::
   ; then wait for the SGB to finish the last 30=40 frames of its
   ; boot animation.
   ; Only DMG/MGB get to see the (R) fly off.
-  call wait_not_vblank  ; Hide the "Nintendo(R)" for a frame
   xor a
   ldh [rBGP], a
+  call wait_not_vblank  ; Hide the "Nintendo(R)" for a frame
+  call busy_wait_vblank
+  call wait_not_vblank
+  
+  call sgb_load_border
   call sgbfade_calc_palettes
 
   ld a, LCDCF_ON
