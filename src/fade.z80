@@ -37,17 +37,15 @@ fade_in::
   ld [hl+], a
   ld [hl], 1   ; fade rate: 32 frames to full
 
-  ld a, [hw_capability]
-  or a
-  jr z, .is_dmg  ; SGB and GBC don't use density but still need BGP values
-  ld a, %00011011
+  ; SGB fails "The first frame is always white", so force white DMG palette
   ld [fade_bgp], a
-  ld a, %00011111
   ld [fade_obp0], a
   ld [fade_obp1], a
-  ret
 
-.is_dmg:
+  ld a, [hw_capability]
+  or a
+  ret nz  ; SGB and GBC don't use fade_density mechanism
+
   ; initialize other fade related things
   ld hl, initial_fade_density
   ld de, fade_density
@@ -136,19 +134,27 @@ fade_update::
   ret
 
 .is_sgb:
-  cp e
-  ret z  ; if unchanged
 
-  ; HL still points at fade level
-  ld a, $03
-  and [hl]
-  ret nz  ; Only on multiples of 4 do we update SGB
+  ; If not changed, don't upload
+  ld a, [hl]
+  cp e
+  ret z
+
+  and $03
+  ret nz  ; Only on multiples of 4 do we update SGB palettes
   ld a, [hl]
   sub 4
   ret c  ; Don't update when completely white either
+  ld b, a
+
+  ; Pull out of actual whiteness
+  ld a, %00011011
+  ld [fade_bgp], a
+  ld a, %00011111
+  ld [fade_obp0], a
+  ld [fade_obp1], a
 
   ; Populate packet
-  ld b, a
   ld hl, sgb_cmd_buf
   ld a, $0A*8+1  ; PAL_SET
   ld [hl+], a

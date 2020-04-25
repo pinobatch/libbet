@@ -32,17 +32,16 @@ section "instructions", ROM0
 ; Sets up a 128-pixel-wide VWF window on rows 1 to B and B+2 to 17
 ; @param B number of rows before first blank row
 vwf_page_init::
-  xor a
-  ldh [rSCX],a
-  ld a,4
-  ldh [rSCY],a
-
   ld a,16  ; calculate num
   sub b
   ld c,a
   push bc
 
   call lcd_off
+  xor a
+  ldh [rSCX],a
+  ld a,4
+  ldh [rSCY],a
   ld a,%00001100
   call set_bgp
 
@@ -179,7 +178,7 @@ pages_end:
 page1txt:
  db LF
  db "Libbet and the Magic Floor",LF
- db "v0.05 (2019-11-13)",LF
+ db "v0.06wip (2020-04-24)",LF
  ; Row skipped because B=3
  ; Can't cut 1 line here because "rearranging" and "passage" are so long
  db "One day, Libbet was",LF
