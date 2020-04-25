@@ -37,21 +37,22 @@ fade_in::
   ld [hl+], a
   ld [hl], 1   ; fade rate: 32 frames to full
 
+  ld a, [hw_capability]
+  or a
+  jr z, .is_dmg  ; SGB and GBC don't use density but still need BGP values
+  ld a, %00011011
+  ld [fade_bgp], a
+  ld a, %00011111
+  ld [fade_obp0], a
+  ld [fade_obp1], a
+  ret
+
+.is_dmg:
   ; initialize other fade related things
   ld hl, initial_fade_density
   ld de, fade_density
   ld bc, 10
   call memcpy
-
-  ; SGB: want to make solid light gray, not a mix of light gray
-  ; and white
-  ld a, [hw_capability]
-  rra
-  jr nc, .no_sgb_fixes
-    ld hl, fade_density+5
-    inc [hl]
-  .no_sgb_fixes:
-
 
   ; at this point de = fade_residue, so clear it
   ld h, d
@@ -76,6 +77,8 @@ section "fade", ROM0
 fade_update::
   ld hl, fade_level
   ld a, [hl+]
+  ld e, a   ; E = previous fade level
+
   add [hl]  ; A = new fade level
   cp 128
   jr c, .new_fade_level_not_negative
@@ -96,6 +99,11 @@ fade_update::
   .have_new_fade_level:
   ld [hl], a
 
+  ld a, [hw_capability]
+  add a
+  jr c, .is_gbc
+  jr nz, .is_sgb
+
   ; Calculate values for BGP, OBP0, and OBP1
   ld hl, fade_density+0
   ld c, $80
@@ -107,11 +115,11 @@ fade_update::
   ld c, $20
   call calc_dmg_palette_byte
   ld [fade_obp1], a
+  ret
 
-  ; If needed, calculate GBC fade level
-  ld a, [hw_capability]
-  rlca
-  ret nc
+.is_gbc:
+  cp e
+  ret z  ; if unchanged
 
   ld a, 2
   ldh [rSVBK], a
@@ -127,6 +135,46 @@ fade_update::
   ldh [rSVBK], a
   ret
 
+.is_sgb:
+  cp e
+  ret z  ; if unchanged
+
+  ; HL still points at fade level
+  ld a, $03
+  and [hl]
+  ret nz  ; Only on multiples of 4 do we update SGB
+  ld a, [hl]
+  sub 4
+  ret c  ; Don't update when completely white either
+
+  ; Populate packet
+  ld b, a
+  ld hl, sgb_cmd_buf
+  ld a, $0A*8+1  ; PAL_SET
+  ld [hl+], a
+  xor a
+  ld [hl], b
+  inc hl
+  inc b
+  ld [hl+], a
+  ld [hl], b
+  inc hl
+  inc b
+  ld [hl+], a
+  ld [hl], b
+  inc hl
+  inc b
+  ld [hl+], a
+  ld [hl], b
+  inc hl
+  ld [hl+], a
+  ld [hl], $40
+  inc hl
+  ld c, 6
+  call memset_tiny
+  ld hl, sgb_cmd_buf
+  jp sgb_send_immediate
+  
 
 ;;
 ; @param HL fade_density to start

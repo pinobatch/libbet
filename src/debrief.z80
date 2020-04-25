@@ -29,6 +29,8 @@ txtbuffer:
 
 section "debrief", ROM0
 debrief::
+  ld b, 28
+  call sgb_set_palette_b
   ld b,1
   call vwf_page_init
   call audio_update

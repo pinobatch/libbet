@@ -440,9 +440,9 @@ sgb_ingame_palette:
   db 31, 0,31
   db  7, 4, 0
   db 21,21,21  ; dark gray and white tiles
-  db  4, 4,20  ; blue
+  db  4, 4,27  ; blue
   db 12,27,12  ; green
-  db 27,18, 0  ; walls
+  db 18,12, 0  ; walls
 sgb_ingame_palette_end:
 
 sgbborder: incbin "obj/gb/sgbborder.border"

@@ -75,10 +75,13 @@ vwf_page_init::
     add hl,de
     dec b
     jr nz,.filltilemaploop
+
   ret
 
 do_instructions::
-  ld b,3
+  ld b, 28
+  call sgb_set_palette_b
+  ld b, 3
   call vwf_page_init
   xor a
   ld [cursor_x],a
