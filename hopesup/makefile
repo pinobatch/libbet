@@ -4,7 +4,8 @@
 title:=hopesup
 version:=wip
 objlist:= \
-  init main ppuclear pads vwfdraw vwf7_cp144p
+  init main statusbar floorvram floormodel \
+  bcd ppuclear pads vwfdraw vwf7_cp144p
 
 objdir:=obj/something
 srcdir:=src
@@ -80,8 +81,8 @@ $(objdir)/%-gg.o: $(objdir)/%.asm $(srcdir)/sms.inc
 
 # Additional deps (.include/.incbin)
 
-$(objdir)/bg.o $(objdir)/bg-gg.o: \
-  $(objdir)/title.iu
+$(objdir)/statusbar.o: \
+  $(objdir)/16x16digits1616.2b
 
 # Linking
 

@@ -1,0 +1,23 @@
+Hope is confidence in a positive outcome.
+
+1. load in-game palette
+2. 
+3. CHR for floor
+4. nametable for predefined floor
+5. CHR for walls
+6. nametable for walls
+7. CHR for sprite
+8. sprite moves
+9. valid movement only
+10. floor generation
+11. count score
+12. exit door
+13. animate rolling
+14. fall
+15. instruction screen
+16. fades
+17. attract mode
+18. 
+19. audio
+20. count combo
+

@@ -23,6 +23,11 @@ sat_xn ds NUM_SPRITES*2
 ; consoles that use NMI for vertical blank.
 nmis db
 pause_pressed db
+debughex0 db
+debughex1 db
+cur_score db
+max_score db
+cur_combo db
 .ends
 
 .bank 0 slot 0
@@ -151,11 +156,15 @@ draw_bg:
   ld hl, lineImgBuf
   ld d, 1
   call load_1bpp_font
+  
+  call load_status_chr
+  call init_status_bar
+;  call draw_debughex
 
   ret
 
 PaletteData:
-  drgb $AAAAAA, $000000
+  drgb $000000,$555555,$AAAAAA,$FFFFFF
 PaletteDataEnd:
 hello_msg:
   .db "Nothing to see; move along", 0
