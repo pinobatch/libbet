@@ -50,7 +50,7 @@ harder to earn than others.
 Legal
 -----
 Copyright 2002, 2012 Martin Korth  
-Copyright 2018, 2019 Damian Yerrick
+Copyright 2018, 2020 Damian Yerrick
 
 This program is free software.  Permission is granted to use it
 subject to the terms of the zlib License.  See the file `LICENSE`.

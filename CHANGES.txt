@@ -1,3 +1,10 @@
+0.06 (COVID-19)
+* Widen squash in landing cel
+* Super Game Boy and Game Boy Color enhancement
+* Scroll to center between debrief and copyright notice
+* Code size optimizations
+* Sketch Master System floor
+
 0.05 (2019-11-13)
 * Fix first word of attract text after achievements and combo
 * Improve arm position in many cels

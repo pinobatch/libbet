@@ -13,3 +13,5 @@ __pycache__
 *.o
 *.chr
 
+/hopesup/*.sms
+/hopesup/*.sym

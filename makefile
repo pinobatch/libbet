@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 #
 # Makefile for Libbet and the Magic Floor
-# Copyright 2014-2018 Damian Yerrick
+# Copyright 2014-2020 Damian Yerrick
 #
 # Copying and distribution of this file, with or without
 # modification, are permitted in any medium without royalty
