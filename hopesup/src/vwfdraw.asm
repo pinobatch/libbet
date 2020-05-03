@@ -79,7 +79,7 @@ vwfPutTile_rowloop:
 
 ;;
 ; Draws the tile for glyph A at horizontal position B
-vwfPutTile::
+vwfPutTile:
 
   ; Calculate address of glyph
   ld h,0
@@ -123,11 +123,11 @@ vwfPutTile::
 ; Write glyphs for the 8-bit-encoded characters string at (hl) to
 ; X position B in the VWF buffer
 ; @return HL pointer to the first character not drawn
-vwfPuts::
+vwfPuts:
 @chloop:
   ; Load character, stopping at control character
   ld a,[hl]
-  inc a
+  inc hl
   cp 32
   jr c,@decret
 
@@ -162,5 +162,17 @@ vwfPuts::
   dec hl
   ret
 
+;;
+; Clears the line image.
+; @return B = 0; HL = lineImgBuf + lineImgBufLen
+vwfClearBuf:
+  ld hl,lineImgBuf
+  ld b,lineImgBufLen
+  xor a
+.loop:
+  ld [hl],a
+  inc l
+  djnz .loop
+  ret
 
 .ends

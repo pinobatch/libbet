@@ -124,39 +124,39 @@ draw_bg:
   ; Clear the pattern table
   vdp_seek_tile 0
   ld a, $55
-  ld d, 32/32
+  ld d, 40/8
   call vmemset_256d
 
   ; Clear nametable and SAT
   call vdp_clear_nt
-  
-  vdp_seek_xy 15, 11
-  ld a, 16
-  out [VDPDATA], a
-  ld a, 0
-  out [VDPDATA], a
-  ld a, 17
-  out [VDPDATA], a
-  ld a, 0
-  out [VDPDATA], a
+
+  ; load vwfcanvas
+  vdp_seek_xy 8, 11
+  ld c, 16
+  ld b, c
+  @loop:
+    ld a, c
+    inc c
+    out [VDPDATA], a
+    xor a
+    out [VDPDATA], a
+    djnz @loop
+
+  call vwfClearBuf
+  ld hl, hello_msg
+  ld b, 4
+  call vwfPuts  
+
   vdp_seek_tile 16
-  ld a, $20
-  out [VDPDATA], a
-  xor a
-  out [VDPDATA], a
-  out [VDPDATA], a
-  out [VDPDATA], a
-  ld a, $10
-  out [VDPDATA], a
-  xor a
-  out [VDPDATA], a
-  out [VDPDATA], a
-  out [VDPDATA], a
-  
+  ld hl, lineImgBuf
+  ld d, 1
+  call load_1bpp_font
+
   ret
 
 PaletteData:
-  drgb $FF0000, $555555, $AAAAAA, $FFFFFF
+  drgb $AAAAAA, $000000
 PaletteDataEnd:
-
+hello_msg:
+  .db "Nothing to see; move along", 0
 .ends

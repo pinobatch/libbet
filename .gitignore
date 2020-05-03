@@ -13,5 +13,7 @@ __pycache__
 *.o
 *.chr
 
+# Don't get your hopes up
 /hopesup/*.sms
 /hopesup/*.sym
+/hopesup/obj/something/

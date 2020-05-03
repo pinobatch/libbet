@@ -4,7 +4,7 @@
 title:=hopesup
 version:=wip
 objlist:= \
-  init main ppuclear pads vwfdraw
+  init main ppuclear pads vwfdraw vwf7_cp144p
 
 objdir:=obj/something
 srcdir:=src
@@ -58,6 +58,8 @@ $(objdir)/%.1b: $(PNGTO) $(imgdir)/%.png
 $(objdir)/%.pb16: tools/pb16.py $(objdir)/%
 	$(PY) $^ $@
 $(objdir)/%.iu: tools/incruniq.py $(objdir)/%.2b
+	$(PY) $^ $@
+$(objdir)/vwf7_cp144p.asm: tools/vwfbuild.py ../tilesets/vwf7_cp144p.png
 	$(PY) $^ $@
 
 # LUT generation
