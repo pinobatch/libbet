@@ -120,7 +120,7 @@ popslide_next_packet:
   
 .is_run_h:
   ; $40-$7F: C-63 bytes of value B written horizontally
-  ld a,low(run_h_base) + 191 - HORIZONTAL_MAX
+  ld a,low(run_h_base + 191 - HORIZONTAL_MAX)
   sub c
   ld c,a
   ld a,b
