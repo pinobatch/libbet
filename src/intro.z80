@@ -220,6 +220,8 @@ show_intro::
   xor a
   ld [cursor_y], a
   ld [cursor_x], a
+  ldh [rSCY], a  ; clear the scroll position in case debrief set it
+  ldh [rSCX], a
   ; Move the (R) from tilemap to sprite
   ld [_SCRN0+8*32+16], a
   ld [oam_used], a
