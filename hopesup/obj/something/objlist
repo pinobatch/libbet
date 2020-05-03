@@ -1,0 +1,6 @@
+[objects]
+obj/something/init.o
+obj/something/main.o
+obj/something/ppuclear.o
+obj/something/pads.o
+obj/something/vwfdraw.o
