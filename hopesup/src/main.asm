@@ -95,6 +95,7 @@ main:
     ld hl, sat_used
     ld [hl], $40
 
+    call wait_vblank_irq
     call vdp_push_sat
 
     ld a, [new_keys]
@@ -120,9 +121,37 @@ draw_bg:
   ld bc,(PaletteDataEnd-PaletteData)*256+VDPDATA
   otir
 
-  ; Write 2 KiB of zeroes to $7800, which covers the nametable
-  ; and the SAT.
+  ; Clear the pattern table
+  vdp_seek_tile 0
+  ld a, $55
+  ld d, 32/32
+  call vmemset_256d
+
+  ; Clear nametable and SAT
   call vdp_clear_nt
+  
+  vdp_seek_xy 15, 11
+  ld a, 16
+  out [VDPDATA], a
+  ld a, 0
+  out [VDPDATA], a
+  ld a, 17
+  out [VDPDATA], a
+  ld a, 0
+  out [VDPDATA], a
+  vdp_seek_tile 16
+  ld a, $20
+  out [VDPDATA], a
+  xor a
+  out [VDPDATA], a
+  out [VDPDATA], a
+  out [VDPDATA], a
+  ld a, $10
+  out [VDPDATA], a
+  xor a
+  out [VDPDATA], a
+  out [VDPDATA], a
+  out [VDPDATA], a
   
   ret
 
