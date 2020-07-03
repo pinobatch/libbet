@@ -1,9 +1,10 @@
-0.06 (COVID-19)
+0.06 (2020-07-03)
 * Widen squash in landing cel
 * Super Game Boy and Game Boy Color enhancement
 * Scroll to center between debrief and copyright notice
 * Code size optimizations
-* Sketch Master System floor
+* Sketch Master System and Apple II floors
+* Document closest NES noise frequency to each GB frequency
 
 0.05 (2019-11-13)
 * Fix first word of attract text after achievements and combo
