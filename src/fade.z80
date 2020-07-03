@@ -30,7 +30,7 @@ fade_obp1:: ds 1
 fade_density:: ds 10
 fade_residue: ds 10
 
-section "fadecmds",ROM0
+section "fade", ROM0
 fade_in::
   ld hl,fade_level
   xor a
@@ -42,9 +42,11 @@ fade_in::
   ld [fade_obp0], a
   ld [fade_obp1], a
 
+  ; SGB and GBC don't use fade_density mechanism, but GBC does
+  ; need VRAM variables to be initialized
   ld a, [hw_capability]
   or a
-  ret nz  ; SGB and GBC don't use fade_density mechanism
+  jp nz, fade_update_same
 
   ; initialize other fade related things
   ld hl, initial_fade_density
@@ -71,7 +73,8 @@ fade_out::
   ld [hl],-1
   ret
 
-section "fade", ROM0
+;;
+; Advances the fade by one step and recalculates color values.
 fade_update::
   ld hl, fade_level
   ld a, [hl+]
@@ -96,7 +99,11 @@ fade_update::
     ld a, FADE_MAX
   .have_new_fade_level:
   ld [hl], a
+  ; Fall through to fade_update_same
 
+;;
+; Calculates color values for the current fade step.
+fade_update_same:
   ld a, [hw_capability]
   add a
   jr c, .is_gbc
