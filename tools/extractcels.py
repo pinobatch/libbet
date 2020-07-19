@@ -2,12 +2,28 @@
 """
 Extract sprite cels from an image
 
-# Leading and trailing whitespace are ignored
+The .ec file is a source code file that describes where the cels
+are located on a .png sprite sheet and where the non-transparent
+rectangles of sprite tiles are located within each cel.
+
+
+# BEGIN .ec DOCS
+#
+# Leading and trailing whitespace are ignored.
 # A line beginning with zero or more whitespace followed by a # sign
 # is a comment and ignored.
-# The file begins with file-wide things like palette declarations
+# The file begins with file-wide things like palette declarations:
 
+backdrop <#rrggbb>
+palette <palid> <#rrggbb> <#rrggbb> <#rrggbb>
 
+# backdrop tells what color is used for pixels that are always
+# transparent, and palette tells what colors are associated with
+# pixels in a given palette.
+# (The distinction between DMG palettes and CGB palettes is not yet
+# clear, as this tool was originally made to target the NES.)
+# An <#rrggbb> specifies an RGB color using 3- or 6-digit
+# hexadecimal: #fa9 or #ffaa99
 
 # Then for each frame:
 
@@ -16,6 +32,22 @@ strip <palette> <cliprect>?
 strip <palette> <cliprect> at <dstpoint>
 hotspot <loc>
 
+# Each frame means one cel, and each strip marks a rectangle of
+# nontransparent pixels within that cel using one palette.
+# A cliprect is four integers of the form left top width height
+# If the frame does not specify a cliprect, it will be the union of
+# all strips.  If the strip does not specify a cliprect, it uses
+# that of the frame.
+# A strip may specify a position in order to place the pixels taken
+# from its cliprect at a different position.  Useful for advanced
+# tile reuse scenarios.
+# palette tells what palette to use for this strip, as a cel may
+# have multiple adjacent or overlaid strips with different palettes.
+# hotspot gives the starting position used to calculate the offset
+# of each rectangle when the cel is drawn.  It defaults to the
+# bottom center of the frame's cliprect.
+#
+# END .ec DOCS
 """
 from PIL import Image, ImageDraw
 import sys
