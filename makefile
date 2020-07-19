@@ -11,7 +11,7 @@
 
 # Used in the title of the zipfile and .gb executable
 title:=libbet
-version:=0.06
+version:=0.07wip
 
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
@@ -53,14 +53,14 @@ zip: $(title)-$(version).zip
 
 # The zipfile depends on every file in zip.in, but as a shortcut,
 # mention only files on which the ROM doesn't itself depend.
-$(title)-$(version).zip: zip.in $(title).gb \
+$(title)-$(version).zip: zip.in makefile $(title).gb \
   README.md CHANGES.txt obj/gb/index.txt
 	$(PY) tools/zipup.py $< $(title)-$(version) -o $@
 	-advzip -z3 $@
 
 # Build zip.in from the list of files in the Git tree
 zip.in: makefile
-	git ls-files | grep -e "^[^.0]" > $@
+	git ls-files | grep -e "^[^.0]" | grep -v "^hopesup" > $@
 	echo 05-burndown/note_from_nocash.md >> $@
 	echo $(title).gb >> $@
 	echo zip.in >> $@
