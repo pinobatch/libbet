@@ -1,4 +1,11 @@
-How to set a fairly realistic palette:
+Video encoding notes
+====================
+
+When promoting a release of a retro console game, it is often
+desirable to encode gameplay as a video file.
+
+How to set a fairly realistic palette
+-------------------------------------
 
 The default palette that bgb uses for monochrome games doesn't look
 much like a Game Boy.  Its white, in particular, looks a lot more
@@ -14,13 +21,18 @@ In Options, open GB Colors.  Select the first of the four colors to
 the left of "Interpolate", then enter the numbers after `rgb` in the
 fields.  Repeat for the last color, then click "Interpolate".
 
-How to make AVIs in bgb:
+How to make AVIs in bgb
+-----------------------
 
 In Options, open "Sound" and enable "WAV file writer" and "record
 AVI", output, then Apply.  Play the demo, then disable them and hit
 Apply when the demo ends.
 
-How to encode:
+How to encode
+-------------
+
+Using FFmpeg, with the appropriate codecs installed, on a VPS in the
+appropriate country:
 
     ffmpeg -y -i bgb-1567896789.avi -i bgb-1567896789.wav \
       -vf 'tblend=all_mode=average, framestep=2, scale=320:288:sws_flags=neighbor' \
@@ -53,5 +65,11 @@ Boy, run two `scale` filters in a row.
 
 This uses the `-r` option to reduce frame rate the simple way.
 
-If your recording has an SGB border, change the sizes in the `scale`
+If your recording has an SGB border, or it is of an NES or Super NES
+game captured at 256x224 pixels, change the sizes in the `scale`
 commands to `512:448` and `584:448`.
+
+Further reading
+---------------
+
+* ["Editing videos with FFmpeg"](https://plutiedev.com/ffmpeg) on Plutiedev
