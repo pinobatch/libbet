@@ -1,7 +1,7 @@
 # hello
 
 backdrop #99F
-palette 0 #000 #F69 #FF6
+palette 0 #000 #F69 #FF6 #AA3=3
 
 frame Libbet_standS  32  36 12 12
 strip 0 34 35 8 8
