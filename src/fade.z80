@@ -436,13 +436,13 @@ gbc_ingame_palette:
   db  4,18, 4
   db 12,27,12
   db 31,31,31
-  db  0, 0, 0  ; BC3: walls
+  db  6, 2, 0  ; BC3: walls
   db 18, 4, 4
   db 27,18, 0
   db 27,22,18
   db  0, 0, 0  ; BC4: status and border
   db 18, 8, 0
-  db 27,27,27
+  db 20,20,20
   db 31,31,31
   db 31, 0,31  ; OC0: Libbet
   db  7, 4, 0
