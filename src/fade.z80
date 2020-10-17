@@ -62,7 +62,7 @@ fade_in::
   jp memset_tiny
 
 initial_fade_density:
-  db 6, 4, 2, 0, 6, 1, 0, 6, 3, 0
+  db 6, 4, 2, 0, 6, 1, 0, 6, 4, 0
 
 FADE_MAX = 32
 
@@ -311,10 +311,10 @@ gbc_ingame_push_palette::
   ldh [rSVBK], a
 
   ld hl, gbcfade_dest
-  ld bc, 5 * 256 + low(rBCPS)
+  ld bc, (gbc_ingame_bg_palette_end - gbc_ingame_palette) / 12 * 256 + low(rBCPS)
   ld a, $80
   call set_gbc_palette_hblank
-  ld bc, 1 * 256 + low(rOCPS)
+  ld bc, (gbc_ingame_palette_end - gbc_ingame_bg_palette_end) / 12 * 256 + low(rOCPS)
   ld a, $80
   call set_gbc_palette_hblank
 
@@ -444,8 +444,13 @@ gbc_ingame_palette:
   db 18, 8, 0
   db 20,20,20
   db 31,31,31
-  db 31, 0,31  ; OC0: Libbet
+gbc_ingame_bg_palette_end:
+  db 31, 0,31  ; OC0: Libbet face
   db  7, 4, 0
   db 31,15,11
+  db 31,31,11
+  db 31, 0,31  ; OC1: Libbet body
+  db  7, 4, 0
+  db 20,19, 5
   db 31,31,11
 gbc_ingame_palette_end:

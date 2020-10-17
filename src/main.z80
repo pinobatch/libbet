@@ -23,7 +23,7 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-LIBBET_NUM_TILES = 42
+LIBBET_NUM_TILES = 48
 
 section "floorsizes", ROM0
 floor_sizes:

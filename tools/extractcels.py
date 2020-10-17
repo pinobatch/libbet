@@ -20,8 +20,8 @@ palette <palid> <#rrggbb> <#rrggbb> <#rrggbb>
 # backdrop tells what color is used for pixels that are always
 # transparent, and palette tells what colors are associated with
 # pixels in a given palette.
-# (The distinction between DMG palettes and CGB palettes is not yet
-# clear, as this tool was originally made to target the NES.)
+# Bit 4 of the palette ID specifies a DMG palette (0 for OBP0
+# or 16 for OBP1), and bits 2-0 specify a GBC palette ID (0 to 7).
 # An <#rrggbb> specifies an RGB color using 3- or 6-digit
 # hexadecimal: #fa9 or #ffaa99
 
@@ -57,6 +57,18 @@ from collections import OrderedDict
 import pilbmp2nes
 
 # Parsing the strips file
+
+def parseint(s):
+    if s.startswith("$"): return int(s[1:], 16)
+    if s.startswith("0x"): return int(s[2:], 16)
+    return int(s)
+
+def isint(s):
+    try:
+        parseint(s)
+    except ValueError:
+        return False
+    return True
 
 class InputFrame(object):
     def __init__(self, parent, cliprect=None):
@@ -177,7 +189,7 @@ class InputParser(object):
             raise ValueError("%d: %s" % (self.linecount, e))
 
     def add_frame(self, words):
-        isdig = [x.isdigit() for x in words]
+        isdig = [isint(x) for x in words]
         name, cliprect = words[0], None
         if name in self.frames:
             raise ValueError("duplicate definition of frame "+name)
@@ -190,14 +202,14 @@ class InputParser(object):
         self.cur_frame = name
 
     def add_strip(self, words):
-        isdig = [x.isdigit() for x in words]
+        isdig = [isint(x) for x in words]
         frame = self.frames[self.cur_frame]
-        palette, rect, dstpos = int(words[0]), frame.cliprect, None
+        palette, rect, dstpos = parseint(words[0]), frame.cliprect, None
         if len(words) in (5, 8) and all(isdig[1:5]):
-            rect = tuple(int(x) for x in words[1:5])
+            rect = tuple(parseint(x) for x in words[1:5])
             if len(words) == 8:
                 if words[5] == 'at' and all(isdig[6:8]):
-                    dstpos = tuple(int(x) for x in words[6:8])
+                    dstpos = tuple(parseint(x) for x in words[6:8])
                 else:
                     raise ValueError("unrecognized destination in strip "
                                      + " ".join(words))
@@ -210,7 +222,7 @@ class InputParser(object):
         if len(words) != 2:
             raise ValueError("unrecognized arguments to hotspot "
                              + " ".join(words))
-        xy = tuple(int(x) for x in words)
+        xy = tuple(parseint(x) for x in words)
         self.frames[self.cur_frame].add_hotspot(xy)
 
     def add_backdrop(self, words):
@@ -219,7 +231,7 @@ class InputParser(object):
         self.backdrop = parse_color(words[0])
 
     def add_palette(self, words):
-        paletteid = int(words[0])
+        paletteid = parseint(words[0])
         colors = parse_subpalette(words[1:])
         self.palettes[paletteid] = colors
 
