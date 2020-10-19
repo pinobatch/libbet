@@ -442,7 +442,7 @@ gbc_ingame_palette:
   db 27,22,18
   db  0, 0, 0  ; BC4: status and border
   db 18, 8, 0
-  db 20,20,20
+  db 15,15,15
   db 31,31,31
 gbc_ingame_bg_palette_end:
   db 31, 0,31  ; OC0: Libbet face

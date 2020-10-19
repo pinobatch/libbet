@@ -461,9 +461,9 @@ sgb_ingame_palette:
   db 31,23,21
   db 31, 0,31
   db  7, 4, 0
-  db 21,21,21  ; dark gray and white tiles
-  db  4, 4,27  ; blue
-  db 12,27,12  ; green
+  db 18,18,18  ; dark gray and white tiles
+  db  4, 4,27  ; blue (with black)
+  db 12,27,12  ; green (with white)
   db 18,12, 0  ; walls
 sgb_ingame_palette_end:
 
