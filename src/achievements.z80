@@ -57,12 +57,16 @@ achievements_new_game::
   ret
 
 achievements_new_floor::
+  ret
+
+  if 0
   ld a,[attract_mode]
   or a
   ret nz
   ; A is 0, so set the achievements display state to 0 (idle)
   ld [ach_display_step],a
   ret
+  endc
 
 achievements_frame::
   ld a,[attract_mode]
