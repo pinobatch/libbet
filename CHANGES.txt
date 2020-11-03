@@ -1,3 +1,21 @@
+Next
+* Achievements: Don't get stuck if player earns "No scope" just
+  before reaching the exit
+* Wall facelift: Add volume and top-to-bottom gradient to wall
+  (suggested by Daid); remove shear on side walls (suggested by
+  DragonDePlatino); define door frame (suggested by M-Tee);
+  darken area outside floor on GBC
+* Add a shade to Libbet's body
+* Floor: Larger dots on black tile (suggested by DragonDePlatino);
+  larger flat areas on dark gray vent/grating tile moving detail to
+  corners; square off corners (suggested by IRCWIP)
+* Compute entire palette before copying it first frame (reported by
+  toxa)
+* Speed up randomizer
+* Document sprite sheet rectangle list syntax (requested by ISSOtm)
+* Switch from dedenter to RGBDS 0.4.0 indented local labels
+* Sketches: Widen character's shoulder straps; add 24x24
+
 0.06 (2020-07-03)
 * Widen squash in landing cel
 * Super Game Boy and Game Boy Color enhancement
