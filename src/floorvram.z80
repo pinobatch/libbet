@@ -28,10 +28,11 @@ floor_top_row:: ds 1
 
 section "load_floor_chr",ROM0
 
-decomppos equ $9800-12*16
-harrow_chr equ decomppos+8*16
-varrow_chr equ decomppos+9*16
-deadend_chr equ decomppos+10*16
+; Use tilemap as scratch space for unpacking 
+decomppos equ $8800
+harrow_chr equ decomppos+16*16
+varrow_chr equ decomppos+20*16
+deadend_chr equ decomppos+24*16
 
 ;;
 ; Convert all pixels with color 2 to color 1, in place
@@ -57,130 +58,141 @@ color2to1:
   ret
 
 ;;
-; Load the CHR 
+; Copies C bytes from HL to DE with bit reversal
+memcpy_bitreverse:
+  ld a,[hl+]
+  ld b,a
+  rlca          ; 6 5 4 3 2 1 0 7
+  rlca          ; 5 4 3 2 1 0 7 6
+  xor b         ; 7564534231201706
+  and $55       ; __64__42__20__06
+  xor b         ; 7 4 5 2 3 0 1 6
+  ld b,a
+  swap a        ; 3 0 1 6 7 4 5 2
+  xor b         ; 7340512637041562
+  and $66       ; __0415____0415__
+  xor b         ; 7 0 1 2 3 4 5 6
+  rlca          ; 0 1 2 3 4 5 6 7
+  ld [de], a
+  inc de
+  dec c
+  jr nz,memcpy_bitreverse
+  ret
+
+;;
+; Overlay C slivers at HL onto DE (modified in place)
+; Color 0, 2, 3 unchanged; color 1 transparent
+overlay_hl_onto_de:
+  ; Bit plane 0 is clear for colors 0 and 2 (definitely opaque)
+  ; and set for colors 1 and 3 (possibly transparent)
+  ld a, [hl+]
+  cpl     ; A=1 are possibly transparent
+  ; Bit plane 1 is set for colors 2 and 3 (definitely opaque)
+  ; and clear for colors 0 and 1 (possibly transparent)
+  or [hl]
+  cpl     ; A=0 for opaque, 1 for transparent
+  dec hl
+  ld b, a
+
+  ; do plane 0
+  ld a, [de]
+  xor [hl]
+  and b     ; clear out the opaque bits
+  xor [hl]  ; so that they can become the new bits
+  ld [de], a
+  inc de
+  inc hl
+
+  ; do plane 1  
+  ld a, [de]
+  xor [hl]
+  and b
+  xor [hl]
+  ld [de], a
+  inc de
+  inc hl
+  dec c
+  jr nz, overlay_hl_onto_de
+  ret
+
+overlay4:
+  ld bc, $0420
+  .loop:
+    push bc
+    push hl
+    call overlay_hl_onto_de
+    pop hl
+    pop bc
+    dec b
+    jr nz, .loop
+  ret
+
+;;
+; Load the CHR
 load_floor_chr::
   ; Stage 1: Unpack
   ld de,floortiles_pb16
-  ld hl,decomppos
-  ld b,12
+  ld hl,$9400  ; decompress here first; will be overwritten later
+  push hl
+  ld b,14
   call pb16_unpack_block
 
-  ; If SGB, convert color 2 to color 1 in this tile
-  ld hl, decomppos
-  ld b, 16*3
+  ; Generate right halves of symmetric tiles
+  pop hl
+  ld de, CHRRAM1
+  ld bc, $0720  ; B: count; C: length of tile in bytes
+  .righthalfloop:
+    push bc
+    push hl
+    ld b, 0
+    call memcpy
+    
+    pop hl
+    ld c, $20
+    call memcpy_bitreverse
+    pop bc
+    dec b
+    jr nz,.righthalfloop
+
+  ; If SGB, convert color 2 to color 1 in darkest, dark, light tiles
+  ld hl, CHRRAM1
+  ld b, 32*3
   call color2to1_if_sgb
 
-  ; Produce versions with horizontal arrow overlaid
-  ld hl,decomppos
-  ld de,CHRRAM2
-  ld bc,$0004
-  .colorloop:
-    ; $9000-$90FF: Normal tile
-    push bc
-    push de  ; stack: start of this color in VRAM, colors left
-    ld bc,32
-    call memcpy
-    pop de
-    push hl  ; stack: next color src data, colors left
-    ld h,d
-    ld l,e
-    inc d
+  ; Now we have normal copies at tiles 128-143 ($8800-$88FF)
+  ; and overlays at tiles 144-171 ($8900-$89BF).
+  ; Produce these versions:
+  ; Normal ($9000-$900F)
+  ; Horizontal arrow overlaid ($9100-$91FF)
+  ; Vertical arrow overlaid ($9200-$93FF)
+  ; Hole overlaid ($9400-$94FF)
+  ; Because the overlay operates in place due to register pressure),
+  ; copy the normal tile into $9000, $9100, and $9400 in advance.
+  ld hl, CHRRAM1
+  ld de, CHRRAM2
+  ld bc, 256
+  call memcpy
+  dec h  ; ld h, high(CHRRAM2)
+  inc b  ; ld b, high(256)
+  call memcpy
+  dec h  ; ld h, high(CHRRAM2)
+  ld d, high(CHRRAM2 + $400)
+  inc b  ; ld b, high(256)
+  call memcpy
 
-    ; $9100-$91FF: Add horizontal arrows
-    call add1harrow
-
-    ; $9200-$92FF: Add vertical arrows
-    ld bc,varrow_chr
-    call add1arrow
-
-    ; $9300-$93FF: Add vertical arrows to horizontal arrows
-    ld h,d
-    ld l,e
-    dec h
-    call add1harrow
-    
-    ; $9400-$94FF: Add holes
-    ld h,$90
-    push de
-    ld bc,32
-    call memcpy
-    pop de
-    ld hl,deadend_chr
-
-    .addholeloop:
-      ; load mask
-      ld a,[hl+]  ; load andmask
-      ld c,a
-      ld a,[hl+]  ; load ormask
-      ld b,a
-
-      ; apply andmask to sliver 0
-      ld a,[de]
-      and c
-      ld [de],a
-      inc e
-
-      ; apply andmask and ormask to sliver 1
-      ld a,[de]
-      and c
-      or b
-      ld [de],a
-      inc de
-
-      ld a,$1F
-      and e
-      jr nz,.addholeloop
-
-    ; If SGB, convert the hole to color 1
-    ld h, d
-    ld l, e
-    res 5, l
-    ld b, 16
-    call color2to1_if_sgb
-    
-    ; Move to next color
-    ld hl,$9040-$9420
-    add hl,de
-    ld d,h
-    ld e,l
-    pop hl
-    pop bc
-    dec c
-    jr nz,.colorloop
-
-  ; Now generate the flipped tiles
-  ld de,CHRRAM2
-  ld hl,CHRRAM2+2*16
-  ld c,$20
-  .fliploop:
-    .flipbyteloop:
-      ld a,[de]
-      inc de
-
-      ; bitreverse
-      ld b,a
-      rlca          ; 6 5 4 3 2 1 0 7
-      rlca          ; 5 4 3 2 1 0 7 6
-      xor b         ; 7564534231201706
-      and $55       ; __64__42__20__06
-      xor b         ; 7 4 5 2 3 0 1 6
-      ld b,a
-      swap a        ; 3 0 1 6 7 4 5 2
-      xor b         ; 7340512637041562
-      and $66       ; __0415____0415__
-      xor b         ; 7 0 1 2 3 4 5 6
-      rlca          ; 0 1 2 3 4 5 6 7
-
-      ld [hl+],a
-      dec c
-      jr nz,.flipbyteloop
-    ld bc,$20
-    ld d,h
-    ld e,l
-    add hl,bc
-    ld a,h
-    cp $95
-    jr c,.fliploop
+  ld de, CHRRAM2+$0100
+  ld hl, harrow_chr
+  call overlay4
+  push de
+  ld hl, CHRRAM2
+  ld bc, 512
+  call memcpy
+  pop de
+  ld hl, varrow_chr
+  call overlay4
+  call overlay4
+  ld hl, deadend_chr
+  call overlay4
 
   ; Finish by loading the border tiles into the area where
   ; decompression was performed
@@ -194,83 +206,6 @@ load_floor_chr::
   ld hl,CHRRAM2+$6C*16
   ld b,20
   jp pb16_unpack_block
-
-add1harrow:
-  ld bc,harrow_chr
-;;
-; Overlays 1 arrow at BC and its vertical flip onto the data at HL
-; forming 32 bytes at (16-byte aligned) DE.
-; Advances DE by $0100 and leaves HL unchanged.
-add1arrow:
-  push hl
-  push bc
-  push de
-  ld bc,32
-  call memcpy
-  pop de
-  pop hl
-
-  .downloop:
-    ; load mask
-    ld a,[hl+]  ; load andmask
-    ld c,a
-    ld a,[hl+]  ; load ormask
-    ld b,a
-
-    ; apply to sliver 0
-    ld a,[de]
-    and c
-    or b
-    ld [de],a
-    inc e
-
-    ; apply to sliver 1
-    ld a,[de]
-    and c
-    or b
-    ld [de],a
-    inc de
-
-    ld a,$0F
-    and e
-    jr nz,.downloop
-
-  dec hl
-  .uploop:  
-
-    ; load mask
-    ld a,[hl-]  ; load ormask
-    ld b,a
-    ld a,[hl-]  ; load andmask
-    ld c,a
-
-    ; apply andmask to sliver 0
-    ld a,[de]
-    and c
-    or b
-    ld [de],a
-    inc e
-
-    ; apply andmask and ormask to sliver 1
-    ld a,[de]
-    and c
-    or b
-    ld [de],a
-    inc de
-
-    ld a,$0F
-    and e
-    jr nz,.uploop
-
-  ; Move destination to next arrow type
-  ld a,224
-  add e
-  ld e,a
-  jr nc,.noewrap
-    inc d
-  .noewrap:
-  pop hl
-  ret
 
 section "floor_chr", ROM0
 floortiles_pb16: incbin "obj/gb/floorpieces-h.chrgb.pb16"
