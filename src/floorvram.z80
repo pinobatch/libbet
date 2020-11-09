@@ -142,10 +142,8 @@ load_floor_chr::
   ; I tried generating bottom halves as well but vertical flipping
   ; saved less than just repeating the (compressed) tiles in ROM.
   ld de, CHRRAM1
-  ; HL: source tiles
-  ; DE: reflected tiles
   ld bc, floormirrortypes
-  ld b, b
+  ; HL: source tiles; DE: reflected tiles; BC: mirroring instructions
   .mirroringloop:
     ld a, [bc]
     or a
@@ -206,8 +204,14 @@ load_floor_chr::
   ld hl, varrow_chr
   call overlay4
   call overlay4
+  push de
   ld hl, deadend_chr
   call overlay4
+  pop hl
+
+  ; Convert color 2 to color 1 in all hole tiles if on SGB
+  ld b, $80
+  call color2to1_if_sgb
 
   ; Finish by loading the border tiles into the area where
   ; decompression was performed
