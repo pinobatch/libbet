@@ -134,25 +134,40 @@ load_floor_chr::
   ld de,floortiles_pb16
   ld hl,$9400  ; decompress here first; will be overwritten later
   push hl
-  ld b,14
+  ld b, 16
   call pb16_unpack_block
-
-  ; Generate right halves of symmetric tiles
   pop hl
+
+  ; Generate right halves of symmetric tiles.
+  ; I tried generating bottom halves as well but vertical flipping
+  ; saved less than just repeating the (compressed) tiles in ROM.
   ld de, CHRRAM1
-  ld bc, $0720  ; B: count; C: length of tile in bytes
-  .righthalfloop:
+  ; HL: source tiles
+  ; DE: reflected tiles
+  ld bc, floormirrortypes
+  ld b, b
+  .mirroringloop:
+    ld a, [bc]
+    or a
+    jr z, .mirroringdone
     push bc
-    push hl
-    ld b, 0
-    call memcpy
-    
-    pop hl
-    ld c, $20
-    call memcpy_bitreverse
+    ld bc, $40
+    dec a
+    jr nz, .mirrornotnone
+      call memcpy
+      jr .mirrornexttile
+    .mirrornotnone:
+      push hl
+      ld c, $20
+      call memcpy
+      pop hl
+      ld c, $20
+      call memcpy_bitreverse
+    .mirrornexttile:
     pop bc
-    dec b
-    jr nz,.righthalfloop
+    inc bc
+    jr .mirroringloop
+  .mirroringdone:
 
   ; If SGB, convert color 2 to color 1 in darkest, dark, light tiles
   ld hl, CHRRAM1
@@ -211,6 +226,13 @@ section "floor_chr", ROM0
 floortiles_pb16: incbin "obj/gb/floorpieces-h.chrgb.pb16"
 floorborder_pb16: incbin "obj/gb/floorborder-h.chrgb.pb16"
 floorborder_sgb_pb16: incbin "obj/gb/floorborder-sgb-h.chrgb.pb16"
+floormirrortypes:
+MIRRNO equ 1
+MIRRH equ 2
+MIRRHV equ 3
+  db MIRRNO, MIRRH, MIRRH, MIRRH
+  db MIRRH, MIRRH, MIRRH
+  db 0
 
 ; Drawing cells to tile map ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
