@@ -43,7 +43,7 @@ init_status_bar:
     djnz @clrloop
 
   ; Write "Combo"
-  vdp_seek_xy 6, 23
+  vdp_seek_xy 7, 23
   ld a, $C0
   call put2digsm
   ld a, STATUS_M_TILE
@@ -52,7 +52,7 @@ init_status_bar:
   call put2digsm
 
   ; Percent sign
-  ld l, <(18 * 2 + 22 * 64)
+  ld l, <(20 * 2 + 22 * 64)
   ld a, 10
   call put1digbig
   
@@ -64,7 +64,7 @@ init_status_bar:
   ld [cur_score], a
 
   ; Write level maximum score
-  vdp_seek_xy 27, 23
+  vdp_seek_xy 26, 23
   ld a, STATUS_SLASH_TILE
   call put1tileid
   ld a, [max_score]
@@ -73,12 +73,13 @@ init_status_bar:
 
 update_status_bar:
 
+  ; Draw percentage
   ld a, [max_score]
   ld c, a
   ld a, [cur_score]
   cp c
   jr c, @not_100pct
-    ld l, <(12 * 2 + 22 * 64)
+    ld l, <(14 * 2 + 22 * 64)
     ld a, $10
     call put2digbig
     xor a
@@ -86,7 +87,7 @@ update_status_bar:
   @not_100pct:
     ld b, a
     call pctdigit
-    ld l, <(14 * 2 + 22 * 64)
+    ld l, <(16 * 2 + 22 * 64)
     or a
     jr nz, @atleast10pct
       ld a, 11
@@ -96,11 +97,25 @@ update_status_bar:
   @have_last_pctdigit:
   call put1digbig
 
+  ; Draw raw score
+  vdp_seek_xy 24, 23
+  ld a, [cur_score]
+  cp 10
+  jr nc, @rawscore_tenormore
+    push af
+    ld a, STATUS_BLANK_TILE
+    call put1tileid
+    pop af
+    call put1dig
+    jr @rawscore_done
+  @rawscore_tenormore:
+    call bcd8bit_baa
+    call put2digsm
+  @rawscore_done:
+
+  ; Draw combo
   ld l, <(2 * 2 + 22 * 64)
   ld a, 5
-  call put2decdigbig
-  ld l, <(23 * 2 + 22 * 64)
-  ld a, 15
 put2decdigbig:
   call bcd8bit_baa
 put2digbig:
