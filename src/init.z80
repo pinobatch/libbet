@@ -100,9 +100,9 @@ reset_handler::
   ld [r_symbol_kick_dist], a  ; kick only on boot, not A+B+Select+Start
 
   ; Copy the sprite DMA routine to HRAM
-  ld hl,run_dma_master
+  ld hl,hramcode_start
   ld de,run_dma
-  ld bc,run_dma_end-run_dma_master
+  ld bc,hramcode_end-hramcode_start
   call memcpy
 
   ; Not fading the logo this time because a different effect
@@ -167,8 +167,8 @@ memcpy::
 ; But unlike on the NES, the CPU continues to fetch and execute
 ; instructions.  So a program needs to run 160 mcycles' worth of
 ; code from HRAM until this finishes.  Thus to present a display
-; list, the program will call run_dma, not run_dma_master.
-run_dma_master:
+; list, the program will call run_dma, not hramcode_start.
+hramcode_start:
   ld a,SOAM >> 8
   ldh [rDMA],a
   ld a,40
@@ -176,7 +176,7 @@ run_dma_master:
   dec a
   jr nz,.loop
   ret
-run_dma_end:
+hramcode_end:
 
 ; If we stuff these in their own sections, RGBLINK might be able to
 ; pack them between the unused IRQ/RST vectors, at least until we
