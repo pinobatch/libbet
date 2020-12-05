@@ -470,7 +470,7 @@ def emit_frames(framestrips, nt, framenames):
         )
 
     out.extend("FRAME_%s equ %d" % (n, i) for i, n in enumerate(framenames))
-    out.extend(" global FRAME_%s" % (n,) for n in framenames)
+    out.extend(" export FRAME_%s" % (n,) for n in framenames)
     return "\n".join(out)
 
 # CLI front end

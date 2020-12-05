@@ -22,10 +22,10 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-TMARGIN = 16
-LMARGIN = 8
-SPRITEHT = 8  ; or 16?
-SPRITEWID = 8
+TMARGIN equ 16
+LMARGIN equ 8
+SPRITEHT equ 8  ; or 16?
+SPRITEWID equ 8
 
 ; args
   rsset hLocals
@@ -37,8 +37,8 @@ hmsprAttr rb 1
 hmsprSheetID rb 1
 hmsprFrame rb 1
 hmsprBaseTile rb 1
-global hmsprYLo, hmsprYHi, hmsprXLo, hmsprXHi
-global hmsprAttr, hmsprSheetID, hmsprFrame, hmsprBaseTile
+export hmsprYLo, hmsprYHi, hmsprXLo, hmsprXHi
+export hmsprAttr, hmsprSheetID, hmsprFrame, hmsprBaseTile
 
 
 ; internal

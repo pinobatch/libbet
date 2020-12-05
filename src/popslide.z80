@@ -21,6 +21,7 @@
 ;
 
 include "src/hardware.inc"
+include "src/global.inc"
 
 ; Each packet starts with a 4-byte header:
 ; dst low, dst high, count/flags, first byte

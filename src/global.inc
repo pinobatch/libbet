@@ -64,6 +64,19 @@ MOVEB_JUMP      equ 2
 MOVEF_JUMP      equ %00000100
 MOVEF_DIRECTION equ %00000011
 
+; It is not strictly necessary to completely clear the display list,
+; as lcd_clear_oam writes a "hide this sprite" value to all unused
+; sprites.  But when Options > Exceptions > Unitialized RAM >
+; break on read (reset) is on, BGB complains about copying
+; uninitialized data to OAM even if said data is provably unused.
+; So put "shut BGB up" commands behind a conditional.
+bgbcompat equ 1
+
+; In `di halt` scenarios, VisualBoyAdvance 1.7.2 can call the
+; interrupt handler anyway.  When this is turned on, include a
+; do-nothing STAT handler.
+vbacompat equ 1
+
 ; 1: show dead ends when map starts
 ; 0: hide dead ends until entered (release)
 SHOW_UNENTERED_DEADENDS equ 0
