@@ -30,6 +30,11 @@ include "src/global.inc"
 ; So put "shut BGB up" commands behind a conditional.
 bgbcompat equ 1
 
+; In `di halt` scenarios, VisualBoyAdvance 1.7.2 can call the
+; interrupt handler anyway.  When this is turned on, include a
+; do-nothing STAT handler.
+vbacompat equ 1
+
 ; Like the NES and Super NES, DMA on the Game Boy takes access to RAM
 ; and ROM away from the CPU.  But unlike those two, the CPU continues
 ; to run.  So store a tiny subroutine in HRAM (tightly coupled

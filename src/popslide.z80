@@ -47,6 +47,12 @@ else
 LOG2_VERTICAL_MAX = 6
 endc
 
+; Make `di halt` safe on VisualBoyAdvance 1.7.2
+  if vbacompat
+section "stat_handler", ROM0[$48]
+  reti
+  endc
+
 section "popslide_buf",WRAM0,align[8]
 popslide_headroom: ds 8
 popslide_buf:: ds 192
