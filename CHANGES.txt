@@ -1,17 +1,18 @@
-Next
+0.07 (2021-01-18)
 * Achievements: Don't get stuck if player earns "No scope" just
   before reaching the exit
 * Wall facelift: Add volume and top-to-bottom gradient to wall
   (suggested by Daid); remove shear on side walls (suggested by
   DragonDePlatino); define door frame (suggested by M-Tee);
   darken area outside floor on GBC
-* Add a shade to Libbet's body
+* Add a shade to the underside of Libbet's body
 * Floor: Larger dots on black tile (suggested by DragonDePlatino);
   larger flat areas on dark gray vent/grating tile moving detail to
   corners; square off corners (suggested by IRCWIP)
-* Compute entire palette before copying it first frame (reported by
-  toxa)
-* Speed up randomizer
+* Compute entire GBC palette before copying it first frame (reported
+  by toxa)
+* Switch to slightly faster random number generator
+* Work around crash on boot related to STAT IRQ in VisualBoyAdvance
 * Document sprite sheet rectangle list syntax (requested by ISSOtm)
 * Switch from dedenter to RGBDS 0.4.0 indented local labels
 * Sketches: Widen character's shoulder straps; add 24x24
