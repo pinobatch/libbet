@@ -374,7 +374,7 @@ COPR equ $7F
 coprNotice:
  db "",LF
  db COPR," 2002, 2012 Martin Korth",LF
- db COPR," 2018, 2020 Damian Yerrick",LF
+ db COPR," 2018, 2021 Damian Yerrick",LF
  db "",0
 
 intro_obj_palette:

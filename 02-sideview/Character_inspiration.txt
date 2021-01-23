@@ -1,0 +1,23 @@
+Libbet's name is intended to be Yet Another Form of [Elisheva]™.
+Age-wise, she's an adolescent: old enough to get a below-ground room
+to herself but not quite fully grown.
+
+Her kind isn't quite the same as the polis that appear in
+_RHDE: Furniture Fight_ and my 240p Test Suite ports.  In particular,
+a boulder person's pelvis extends a bit more forward and up to allow
+curling up into a ball, locking the head into the chest, and rolling.
+The chest tends to be somewhat flat with the breasts farther apart
+to allow space for the head.
+
+I must have had something like armadillos, pangolins, [de Blob],
+[Guardbot], [nevalyashka dolls], and/or [Terra-Firmians] on my mind
+when coming up with the design for a boulder person.  Libbet is
+female in part because of a [forum post by DRW] lamenting the lack of
+original solo woman characters in games for 8-bit Nintendo systems.
+
+[de Blob]: https://www.youtube.com/watch?v=rTfzDKNe6uI
+[Guardbot]: https://twitter.com/techinsider/status/1292671037201698822
+[nevalyashka dolls]: https://travelleronamission.wordpress.com/2015/07/18/travel-theme-nevalyashka-dolls-the-toys-from-the-soviet-times/
+[Terra-Firmians]: https://scrooge-mcduck.fandom.com/wiki/Terra-Firmians
+[forum post by DRW]: https://forums.nesdev.com/viewtopic.php?f=5&t=12966
+[Elisheva]: https://www.behindthename.com/name/elisheva
