@@ -504,6 +504,7 @@ try_move:
     jp fade_out
   .have_valid_move:
 
+  ; Regmap
   ; A: 1 for color change (possibly scoring); 0 for not
   ; C: move attempted (0-7); E[5:3]: new Y; E[2:0]: new X;
   ; HL: pointer to destination cell
@@ -534,7 +535,7 @@ try_move:
   pop de
   pop hl
   pop af
-  ; restore previous regmap
+  ; restore previous regmap as of .have_valid_move
 
   or a
   jr z,.move_to_cell_e

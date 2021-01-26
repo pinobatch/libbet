@@ -365,7 +365,7 @@ ach_show:
   ld a,[hl]
   ; At this point:
   ; HL = pointer to Y coordinate, A = Y coordinate
-  ; Cy = 1 if scrolling in, 0 if scrolling out
+  ; CF = 1 if scrolling in, 0 if scrolling out
   jr nc,.scroll_out
     dec a
     cp 126 ; 2 pixels above the status bar top

@@ -327,8 +327,9 @@ audio_update_ch_a:
   inc l
   ld d,[hl]
   ; Regmap:
-  ; qparam and flags in b, dparam is valid in c if BIT 5, B
-  ; pitch in d, which changed if BIT 4, B
+  ; B: quick parameter and flags
+  ; C: deep parameter valid if BIT 5, B
+  ; D: pitch, which changed if BIT 4, B
 
 .call_updater:
   ; Seek to the appropriate audio channel's updater

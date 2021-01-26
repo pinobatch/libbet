@@ -279,8 +279,9 @@ is_valid_move::
   ld e,a  ; E: index of source cell
   ld d,0
 
-  ; Regmap here: C: index of destination cell; D: 0;
-  ; E: index of source cell.  Fetch both cells
+  ; Regmap here
+  ; C: index of destination cell; D: 0; E: index of source cell
+  ; Fetch both cells
   ld hl,floor_map
   add hl,de
   ld b,[hl]  ; B: value of source cell
