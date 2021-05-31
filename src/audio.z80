@@ -70,8 +70,11 @@ sfx_table:
   db 3, 0
   dw fx_lowcombo_bonk
 
-  db 2, 0
-  dw fx_wavetest
+;  db 2, 0
+;  dw fx_wavetest
+
+sgb_sfx_table:
+  ; To be filled in later
 
 fx_roll:
   db ENVF_DPAR|ENVF_PITCH|1, $10, $6E

@@ -49,6 +49,12 @@ capa_1_if_player_2:
 detect_sgb::
   ; Try to set the SGB to 2-player mode
   di
+  ld b, 30  ; Takes the SGB a few frames to warm up
+  .sgbwarmupwait:
+    call wait_not_vblank
+    call busy_wait_vblank
+    dec b
+    jr nz, .sgbwarmupwait
   ld b, 1
   call sgb_set_bplus1_players
   call sgb_wait

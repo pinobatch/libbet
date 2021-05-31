@@ -78,12 +78,6 @@ main::
 
   ld a, LCDCF_ON
   ldh [rLCDC], a
-  ld c, 40
-  .sgbcountdown:
-    call wait_not_vblank
-    call busy_wait_vblank
-    dec c
-    jr nz, .sgbcountdown
 
 ; A+B+Select+Start lands here
 clear_vram_main:
