@@ -31,11 +31,11 @@ Apply when the demo ends.
 How to encode
 -------------
 
-Using FFmpeg, with the appropriate codecs installed, on a VPS in the
-appropriate country:
+Using FFmpeg, with the appropriate codecs installed, on a computer
+in the appropriate country:
 
     ffmpeg -y -i bgb-1567896789.avi -i bgb-1567896789.wav \
-      -vf 'tblend=all_mode=average, framestep=2, scale=320:288:sws_flags=neighbor' \
+      -vf "tblend=all_mode=average, framestep=2, scale=320:288:sws_flags=neighbor" \
       -pix_fmt yuv420p -ab 64000 -movflags +faststart out.mp4
 
 What does this mean?
@@ -55,6 +55,11 @@ What does this mean?
 * `-ab`: Set AAC audio bitrate
 * `-movflags +faststart`: Add an index to allow playback before the
   entire video downloads
+
+The `\` means that the command continues on the next line.  This is a
+feature of shells used on UNIX and Linux.  If using Windows Command
+Prompt, delete the `\` at the end of each line and put the entire
+command, from `ffmpeg` to `out.mp4`, on one line.
 
 To change the pixel aspect ratio to the 8:7 of an NTSC Super Game
 Boy, run two `scale` filters in a row.
