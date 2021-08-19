@@ -2,8 +2,9 @@
 
 # 0 is face; 1 is body
 backdrop #99F
-palette 0 #000 #F69 #FF6
-palette 0x11 #000 #AA3 #FF6
+palette 0 #530 #F69 #FF6
+palette 0x11 #530 #AA3 #FF6
+palette 0x12 #000 #AA3 #FF6
 
 frame Libbet_standS  32  36 12 12
 strip 0 34 35 8 8
@@ -169,8 +170,8 @@ hotspot 98 143
 frame Libbet_jumpN5 104 132 12 12
 strip 0x11 102 136 16 8
 
-frame Libbet_shadow 142 127  8  1
-strip 0x11
+frame Libbet_shadow 142 126  8  2
+strip 0x12
 
 frame Libbet_holecover 142 136  8  8
-strip 0x11
+strip 0x12

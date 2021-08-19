@@ -458,6 +458,13 @@ draw_player::
   sub 8
   cp 80
   jr nc,.no_shadow
+    ; horizontally flip shadow every other frame
+    ld a, [nmis]
+    rra    ; bit 0 into carry
+    sbc a  ; and then into all other bits
+    and OAMF_XFLIP
+    ldh [hmsprAttr], a
+
     ld a,FRAME_Libbet_shadow
     ldh [hmsprFrame],a
     ld a,[roll_x]

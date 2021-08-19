@@ -453,4 +453,8 @@ gbc_ingame_bg_palette_end:
   db  7, 4, 0
   db 20,19, 5
   db 31,31,11
+  db 31, 0,31  ; OC2: Shadow
+  db  0, 0, 0
+  db 31, 0,31
+  db 31, 0,31
 gbc_ingame_palette_end:
