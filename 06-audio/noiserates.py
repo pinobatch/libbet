@@ -61,10 +61,20 @@ nes $f,   440 Hz = gb $75,   410 Hz; 7% diff
 """
 
 def gbnoiserate(x):
+    "Convert a Game Boy NR43 value to a sample rate in Hz"
     freq = 524288 >> (x >> 4)
     divisor = (x & 0x07) * 2 or 1
     return freq/divisor
 
+# This table helps it generate only unique rates: 00-07, 14-17,
+# 24-27, etc.  Pairs like 46 and 53 sound the same, as do sets
+# like 24, 32, 41, and 50.  Though the table could be extended
+# to D4, 74 is adequate to cover the NES's entire range.
+# Incidentally, for Sega Master System and Game Gear noise,
+# you just need 35, 45, and 55.
+hinibbles = [0x00,0x04,0x14,0x24,0x34,0x44,0x54,0x64,0x74]
+
+# NES noise period table and respective best GB approximations
 nesperiods = [
   4,8,16,32, 64,96,128,160,
   202,254,380,508, 762,1016,2034,4068
@@ -73,7 +83,7 @@ nr43s = [
     0x00,0x01,0x02,0x05, 0x15,0x17,0x25,0x26,
     0x27,0x35,0x37,0x45, 0x47,0x55,0x65,0x75
 ]
-for hinib in (0x00,0x04,0x14,0x24,0x34,0x44,0x54,0x64,0x74):
+for hinib in hinibbles:
     for nr43 in range(hinib, hinib+4):
         gbf = int(round(gbnoiserate(nr43)))
         print("gb $%02x,%6d Hz" % (nr43, gbf))
