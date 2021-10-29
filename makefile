@@ -30,7 +30,8 @@ ifdef COMSPEC
   PY := py -3
 else
   ifndef GBEMU
-    GBEMU := ~/.wine/drive_c/Program\ Files\ \(x86\)/bgb/bgb.exe
+    # I now use a shell script in ~/.local/bin
+    GBEMU := bgb
   endif
   PY := python3
 endif
