@@ -31,6 +31,10 @@ Once you've built it (or downloaded a binary release), it will play
 in SameBoy, bgb, or mGBA emulator, or on a Game Boy through a
 Catskull or EverDrive flash cart.
 
+The game is not yet ported to Mega Duck or Analogue Pocket, as
+supply chain problems have prevented the developer from procuring
+a system on which to test it.
+
 Achievements
 ------------
 Performing feats in the game will earn you achievements.  Some are

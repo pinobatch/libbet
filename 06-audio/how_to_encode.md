@@ -19,7 +19,8 @@ to actual appearance while remaining easy to remember in hex form:
 
 In Options, open GB Colors.  Select the first of the four colors to
 the left of "Interpolate", then enter the numbers after `rgb` in the
-fields.  Repeat for the last color, then click "Interpolate".
+fields.  Repeat for each color.  Or as a shortcut, enter only the
+first and last colors and then click "Interpolate".
 
 How to make AVIs in bgb
 -----------------------
@@ -27,6 +28,17 @@ How to make AVIs in bgb
 In Options, open "Sound" and enable "WAV file writer" and "record
 AVI", output, then Apply.  Play the demo, then disable them and hit
 Apply when the demo ends.
+
+By default, bgb encodes uncompressed AVI files using the `DIB` codec.
+If you are using 32-bit bgb, you can make smaller lossless files
+using [CamStudio Lossless Codec].  Download and run its installer,
+then in Sound, change the codec from `DIB` to `CSCD`.  To confirm
+that the codec works, click "Config".  If this button displays an
+alert box stating "Unable to open codec", the codec is not installed
+or otherwise not usable.  (Note: You will *not* be able to use CSCD
+or any other 32-bit software on a Mac running macOS 10.15 or later.)
+
+[CamStudio Lossless Codec]: https://sourceforge.net/projects/camstudio/files/legacy/
 
 How to encode
 -------------
