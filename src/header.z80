@@ -40,13 +40,7 @@ SECTION "header", ROM0[$0100]
   ; corrupt battery-backed save RAM.
   ; TODO: Figure out how much of this RGBFIX can fill in for me
 
-  ; magiccookiedata: spells "Nintendo" when deinterleaved to tiles
-  ; Top 4 scanlines
-  db $CE,$ED,$66,$66,$CC,$0D,$00,$0B,$03,$73,$00,$83  ; Nint
-  db $00,$0C,$00,$0D,$00,$08,$11,$1F,$88,$89,$00,$0E  ; endo
-  ; Bottom 4 scanlines
-  db $DC,$CC,$6E,$E6,$DD,$DD,$D9,$99,$BB,$BB,$67,$63  ; Nint
-  db $6E,$0E,$EC,$CC,$DD,$DC,$99,$9F,$BB,$B9,$33,$3E  ; endo
+  ds 48, 0  ; skip troubleshooting logo, which RGBFIX inserts
 
   ; 11-character title
   DB "LIBBET"

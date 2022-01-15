@@ -18,7 +18,11 @@
 ; 2. Altered source versions must be plainly marked as such, and must not be
 ;    misrepresented as being the original software.
 ; 3. This notice may not be removed or altered from any source distribution.
-;
+
+; Changes:
+; 2022-01-14: DY added driver notes on suggestion from tbsp
+; <https://github.com/tbsp/shock-lobster/blob/28e7fb19c671b9086c07eabfb96dff4945e5ceac/src/misc/audio.asm>
+
 include "src/hardware.inc"
 include "src/global.inc"
 
@@ -42,6 +46,14 @@ Channel_envpitch = 3
 section "wavebank", ROM0, ALIGN[4]
 wavebank:
   db $FF,$EE,$DD,$CC,$BB,$AA,$99,$88,$77,$66,$55,$44,$33,$22,$11,$00
+
+; Each entry in sfx_table is 4 bytes
+; - First byte is the channel to use for the effect
+;   0: pulse 1; 1: pulse 2; 2: wave; 3: noise
+;   Use pulse 2 sparingly, as it's more likely to interrupt music
+;   if you have a music player hooked up.
+; - Second byte is unused (padding)
+; - Final word is the address of the effect segments
 
 sfx_table:
   db 3, 0
@@ -75,6 +87,27 @@ sfx_table:
 
 sgb_sfx_table:
   ; To be filled in later
+
+; Format of a sound effect
+; - Each sound effect is a sequence of segments
+; - There are up to 3 possible bytes for a segment:
+;   - The first byte contains a 2-bit 'quick parameter', flags
+;     indicating if deep parameter and/or pitch bytes are present,
+;     and a 4-bit duration 0-15 ticks.  For longer durations,
+;     add another segment.
+;   - The second/third bytes are the deep parameter and pitch, in
+;     that order, if their flags are set (ENVF_DPAR and ENVF_PITCH)
+; - Quick parameter $00, $40, $80, or $C0 controls pulse duty or
+;   wave volume.  Value $C0 with a deep parameter or pitch isn't very
+;   useful, as $C0 is a duplicate of $40 on pulse or mute on wave.
+;   Thus a first byte in $F0-$FF is reserved for special purposes,
+;   of which $FF is defined as end of the effect.
+; - The noise channel has no quick parameter.  The first byte
+;   indicates duration and whether deep parameter and pitch follow.
+; - Deep parameter retriggers the note with a new wave on wave
+;   or a new volume envelope (NRx2) elsewhere.
+; - Pitch is an NR43 value on noise or a semitone number elsewhere.
+; - The driver does not expose hardware sweep or length counter.
 
 fx_roll:
   db ENVF_DPAR|ENVF_PITCH|1, $10, $6E
@@ -249,34 +282,26 @@ audio_play_fx::
 ; Sequence reading ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 audio_update::
-  ld a,0
-  call audio_update_ch_a
-  ld a,1
-  call audio_update_ch_a
-  ld a,2
-  call audio_update_ch_a
-  ld a,3
+  ld hl, audio_channels+(0 << LOG_SIZEOF_CHANNEL)+Channel_envseg_cd
+  call audio_update_ch_hl
+  ld hl, audio_channels+(1 << LOG_SIZEOF_CHANNEL)+Channel_envseg_cd
+  call audio_update_ch_hl
+  ld hl, audio_channels+(2 << LOG_SIZEOF_CHANNEL)+Channel_envseg_cd
+  call audio_update_ch_hl
+  ld hl, audio_channels+(3 << LOG_SIZEOF_CHANNEL)+Channel_envseg_cd
 
-audio_update_ch_a:
-  ; Get pointer to current position in effect
-  ld l,a
-  ld h,0
-  rept LOG_SIZEOF_CHANNEL
-    add hl,hl
-  endr
-  ld de,audio_channels+Channel_envseg_cd
-  add hl,de
-
+audio_update_ch_hl:
   ; Each segment has a duration in frames.  If this segment's
   ; duration has not expired, do nothing.
-  ld a,[hl]
+  ld a,[hl+]
   or a
   jr z,.read_next_segment
+    dec l
     dec [hl]
     ret
   .read_next_segment:
 
-  inc l
+  ; Is an effect even playing on this channel?
   ld e,[hl]
   inc l
   ld a,[hl-]
@@ -305,15 +330,14 @@ audio_update_ch_a:
   dec l
   ld [hl+],a
 
-  ; Is there a deep parameter?
-  bit ENVB_DPAR,b
+  bit ENVB_DPAR,b  ; Is there a deep parameter?
   jr z,.nodeep
     ld a,[de]
     inc de
     ld c,a
   .nodeep:
 
-  bit ENVB_PITCH,b
+  bit ENVB_PITCH,b  ; Is the pitch changing?
   jr z,.nopitch
     ld a,[de]
     inc de
