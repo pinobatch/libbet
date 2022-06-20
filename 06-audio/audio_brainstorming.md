@@ -2,8 +2,10 @@ Practical audio representation for Game Boy
 ===========================================
 
 A few NES games use its limited hardware envelope support, such as
-Tengen's _Klax_.  But most games use software volume control instead.
-Thus a sound effect can be described with 2 bytes per frame.
+Tengen's _Klax_.  Most games use software volume control instead,
+calculationg a volume 50 to 60 times per second and writing it to
+the sound circuit's registers.  A sound effect can be described with
+2 bytes per frame: one for pitch and one for timbre and volume.
 Pently, an NES audio driver by Damian Yerrick, has used the
 following format for sound effects and drums since 2009 and
 instrument attacks since 2014.
@@ -45,7 +47,8 @@ For the pulse channels, the quick parameter is duty (1/8, 1/4, 1/2),
 written to FF11, FF16 D7-6.  Quick parameter value 3 (3/4 duty) is
 not used because it sounds the same as value 1 (1/4 duty).
 
-Deep parameter for pulse or noise controls the volume envelope.
+Deep parameter for pulse or noise controls the volume envelope
+via FF12, FF17, or FF21.
 
     7654 3210  Pulse/noise deep parameter: Envelope
     |||| ||||
@@ -54,7 +57,7 @@ Deep parameter for pulse or noise controls the volume envelope.
     ++++------ Starting volume (0: mute; 1-15: linear)
 
 Though frames in the segment header are 59.73 Hz, frames to the
-envelope unit are 64.00 Hz, not 59.73 Hz.  But ideally, listeners
+envelope unit are 64.00 Hz, not 59.73 Hz.  Ideally, listeners
 should not notice the difference.
 
 For sound effects, pitch is an offset in semitones above the lowest
@@ -68,9 +71,13 @@ mute), written to FF1C D6-5.  The value in the instrument is one
 less than that actually written to FF1C, such that value 3 mutes
 the channel.
 
-Wave deep parameter is an index into a 4096-byte block of wavetables.
+Wave deep parameter is an index into a 4096-byte block of wavetables,
+each 16 bytes long with 2 samples per byte.
 
-Pitch is one octave below the corresponding pulse pitch.
+Though the wave channel's playback rate is twice as fast as that
+of the pulse channel, the waveform is four times as long: 32 samples
+instead of 8.  This makes a given pitch value play one octave lower
+than the same pitch value on the pulse channel.
 
 ### Noise
 
@@ -88,7 +95,10 @@ sample rate of `2^(19 - s) / r` Hz.
     ||||       1: 127 steps; more tone-like)
     ++++------ Period prescaler s
 
-Be careful when switching to and from periodic noise.  There are
+With periodic mode on, the eight divider values produce notes close
+to C, C, C, F, C, G#, F, and D respectively.
+
+Be careful when switching the periodic flag from 0 to 1.  There are
 cases when this causes the LFSR to get stuck, and emulators don't
 always emulate this.
 
@@ -98,7 +108,7 @@ Quick parameter value 3, deep parameter, and pitch change should not
 be used in the same segment, as segment header codes $F0-$FF are
 reserved.  This is why quick parameters are assigned such that either
 3 is not used or not used with a deep parameter.  Pulse duty 3 is
-redundant, and muted triangle needs no wave change.
+redundant, and muted triangle needs no wave or pitch change.
 
 Showing it off
 --------------

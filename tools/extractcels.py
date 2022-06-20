@@ -384,7 +384,8 @@ def stripsvis(backim, frames):
         (-2, 2, 1, 2)
     ]
     
-    backim = backim.convert("RGB").resize((backim.size[0]*2, backim.size[1]*2))
+    backim = backim.convert("RGB").resize((backim.size[0]*2, backim.size[1]*2),
+                                          Image.NEAREST)
     dc = ImageDraw.Draw(backim)
     try:
         frames = frames.values()
