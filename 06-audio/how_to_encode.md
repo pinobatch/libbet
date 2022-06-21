@@ -86,6 +86,26 @@ If your recording has an SGB border, or it is of an NES or Super NES
 game captured at 256x224 pixels, change the sizes in the `scale`
 commands to `512:448` and `584:448`.
 
+Vertical video
+--------------
+
+If you're making a vertical video, and you want to insert a clip of a
+Game Boy game with a frame that looks like a pixel art Game Boy Color:
+```
+ffmpeg -i bgb-1567896789.avi -i GB_shorts_border.png -i bgb-1567896789.wav -filter_complex \
+  "[0]tblend=all_mode=average, framestep=2, scale=320:288:sws_flags=neighbor, pad=384:672:32:32[V]; [V][1]overlay" \
+  -pix_fmt yuv420p -ab 96000 -movflags +faststart out.mp4
+```
+
+Consider alternating the GBC frame with close-ups using the
+`crop` filter:
+```
+ffmpeg -i bgb-1567896789.avi -i bgb-1567896789.wav -t 47.5 -vf \
+  "framestep=2, crop=96:144, scale=384:576:sws_flags=neighbor, pad=384:672" \
+  -pix_fmt yuv420p -ab 96000 -movflags +faststart out.mp4
+```
+
+
 Further reading
 ---------------
 
