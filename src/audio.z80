@@ -91,21 +91,28 @@ sgb_sfx_table:
 ; Format of a sound effect
 ; - Each sound effect is a sequence of segments
 ; - There are up to 3 possible bytes for a segment:
-;   - The first byte contains a 2-bit 'quick parameter', flags
-;     indicating if deep parameter and/or pitch bytes are present,
-;     and a 4-bit duration 0-15 ticks.  For longer durations,
-;     add another segment.
+;   - The first byte is a bitfield.  Bits 7-6 (mask $C0) are a 2-bit
+;     "quick parameter" whose interpretation varies per channel type.
+;     Bit 5 (value $20) is true if a deep parameter follows.
+;     Bit 4 (value $10) is true if a pitch change follows.
+;     Bits 3-0 (mask $0F) are the length in frames of the segment
+;     minus 1.  Values 0-F produce length 1-16.  For longer
+;     durations, add another segment.
 ;   - The second/third bytes are the deep parameter and pitch, in
 ;     that order, if their flags are set (ENVF_DPAR and ENVF_PITCH)
 ; - Quick parameter $00, $40, $80, or $C0 controls pulse duty or
-;   wave volume.  Value $C0 with a deep parameter or pitch isn't very
-;   useful, as $C0 is a duplicate of $40 on pulse or mute on wave.
-;   Thus a first byte in $F0-$FF is reserved for special purposes,
+;   wave volume.
+;   - On pulse, $00 means 1/8, $40 means 1/4, and $20 means 1/2.
+;     ($C0 is 3/4, which sounds the same as 1/4.)
+;   - On wave, $00 means full, $40 means 1/2, $80 means 1/4, and
+;     $C0 means mute.
+;   - On noise, quick parameter does nothing.
+;   Because value $C0 with a deep parameter or pitch isn't very
+;   useful, a first byte in $F0-$FF is reserved for special purposes,
 ;   of which $FF is defined as end of the effect.
-; - The noise channel has no quick parameter.  The first byte
-;   indicates duration and whether deep parameter and pitch follow.
-; - Deep parameter retriggers the note with a new wave on wave
-;   or a new volume envelope (NRx2) elsewhere.
+; - Deep parameter changes a value and retriggers the note.
+;   - On wave, the value is an index into wavebank in 16-byte units.
+;   - On pulse or noise, the value is a volume envelope (NRx2).
 ; - Pitch is an NR43 value on noise or a semitone number elsewhere.
 ; - The driver does not expose hardware sweep or length counter.
 
