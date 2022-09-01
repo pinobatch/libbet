@@ -465,9 +465,9 @@ draw_whole_floor::
     call popslide_terminate_blit
     
     ld a, [hw_capability]
-    rlca
+    rlca  ; bit 0 and CF true for GBC
     jr nc, .noGBCCellAttrs
-      ld [rVBK], a
+      ldh [rVBK], a
       xor a
       .attrloop:
         ld [cursor_x],a
@@ -480,7 +480,7 @@ draw_whole_floor::
         jr nz,.attrloop
       call popslide_terminate_blit
       xor a
-      ld [rVBK], a
+      ldh [rVBK], a
     .noGBCCellAttrs:
 
     ; And move to the next row

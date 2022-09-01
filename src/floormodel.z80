@@ -520,7 +520,7 @@ count_max_score::
         jr nz,.moveloop
 
       ; Add count of track bits to score
-      ld a,[hFound]
+      ldh a,[hFound]
       or a
       jr z,.cell_has_no_score
       ld hl,max_score

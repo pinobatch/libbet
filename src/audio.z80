@@ -89,23 +89,23 @@ sgb_sfx_table:
   ; To be filled in later
 
 ; Format of a sound effect
-; - Each sound effect is a sequence of segments
-; - There are up to 3 possible bytes for a segment:
+; - Each sound effect is a sequence of segments.
+; - Each segment is 1 to 3 bytes:
 ;   - The first byte is a bitfield.  Bits 7-6 (mask $C0) are a 2-bit
 ;     "quick parameter" whose interpretation varies per channel type.
-;     Bit 5 (value $20) is true if a deep parameter follows.
-;     Bit 4 (value $10) is true if a pitch change follows.
+;     Bit 5 (ENVF_DPAR = $20) is true if a deep parameter follows.
+;     Bit 4 (ENVF_PITCH = $10) is true if a pitch change follows.
 ;     Bits 3-0 (mask $0F) are the length in frames of the segment
 ;     minus 1.  Values 0-F produce length 1-16.  For longer
 ;     durations, add another segment.
-;   - The second/third bytes are the deep parameter and pitch, in
-;     that order, if their flags are set (ENVF_DPAR and ENVF_PITCH)
+;   - The second and third bytes are the deep parameter and pitch,
+;     in that order, if their flags are set.
 ; - Quick parameter $00, $40, $80, or $C0 controls pulse duty or
 ;   wave volume.
-;   - On pulse, $00 means 1/8, $40 means 1/4, and $20 means 1/2.
+;   - On pulse, $00 means 1/8 duty, $40 means 1/4, and $80 means 1/2.
 ;     ($C0 is 3/4, which sounds the same as 1/4.)
-;   - On wave, $00 means full, $40 means 1/2, $80 means 1/4, and
-;     $C0 means mute.
+;   - On wave, $00 means full volume, $40 means 1/2, $80 means 1/4,
+;     and $C0 means mute.
 ;   - On noise, quick parameter does nothing.
 ;   Because value $C0 with a deep parameter or pitch isn't very
 ;   useful, a first byte in $F0-$FF is reserved for special purposes,
@@ -488,11 +488,11 @@ update_wave:
   ; Copy wave
   xor a
   ldh [rNR30],a  ; give CPU access to waveram
-WAVEPTR set _AUD3WAVERAM
+WAVEPTR = _AUD3WAVERAM
   rept 16
     ld a,[hl+]
     ldh [WAVEPTR],a
-WAVEPTR set WAVEPTR+1
+WAVEPTR = WAVEPTR+1
   endr
   ld a,$80
   ldh [rNR30],a  ; give APU access to waveram

@@ -185,9 +185,9 @@ sgb_send_immediate::
 
   ; Send $20 $30 as end of packet
   ld a,$20
-  ld [rP1],a
+  ldh [rP1],a
   ld a,$30
-  ld [rP1],a
+  ldh [rP1],a
   ret
 
 ; SGB palette commands ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

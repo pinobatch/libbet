@@ -73,7 +73,7 @@ read_pad::
 
   ; And release the controller
   ld a,P1F_GET_NONE
-  ld [rP1],a
+  ldh [rP1],a
 
   ; Combine with previous cur_keys to make new_keys
   ld a,[cur_keys]

@@ -194,14 +194,14 @@ draw_metasprite::
     ; Copy sprites to OAM
     .spriteloop:
       push bc  ; sprite count and strip attribute
-      ld a,[hmsprStripY]
+      ldh a,[hmsprStripY]
       ld [de],a
 
       ; Only resulting X locations in 1-167 are in range
-      ld a,[hmsprStripXHi]
+      ldh a,[hmsprStripXHi]
       or a
       jr nz,.skip_one_tile
-      ld a,[hmsprStripXLo]
+      ldh a,[hmsprStripXLo]
       or a
       jr z,.skip_one_tile
       cp SCRN_X+LMARGIN
@@ -215,7 +215,7 @@ draw_metasprite::
       ld a,[hl]
       and $3F
       ld b,a
-      ld a,[hmsprBaseTile]
+      ldh a,[hmsprBaseTile]
       add b
       ld [de],a
       inc e
@@ -227,25 +227,25 @@ draw_metasprite::
       inc e
 
     .skip_one_tile:
-      ld a,[hmsprXAdd]
+      ldh a,[hmsprXAdd]
       ld b,a
-      ld a,[hmsprStripXLo]
+      ldh a,[hmsprStripXLo]
       add b
-      ld [hmsprStripXLo],a
-      ld a,[hmsprStripXHi]
+      ldh [hmsprStripXLo],a
+      ldh a,[hmsprStripXHi]
       adc 0
       bit 7,b
       jr z,.anoneg
         dec a
       .anoneg:
-      ld [hmsprStripXHi],a
+      ldh [hmsprStripXHi],a
       pop bc
       inc hl
       dec b
       jr nz,.spriteloop
     ld a,e
     ld [oam_used],a
-    ld a,[hmsprAttr]
+    ldh a,[hmsprAttr]
     ld c,a
     jp .rowloop
 

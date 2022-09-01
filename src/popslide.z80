@@ -230,6 +230,7 @@ popslide_blit::
 ; We can write to VRAM during the 21+ cycles of hblank plus the
 ; 20 cycles of the following line's OAM scan.
 ;
+; Uses DI HALT; may malfunction on VisualBoyAdvance 1.x.
 ; @param HL source address (usually ROM or WRAM)
 ; @param DE destination address (usually VRAM)
 ; @param C number of 8-byte units to copy (usually 1 to 128)
@@ -245,9 +246,9 @@ popslide_hblank_copy::
 
   ; Set hblank as only interrupt that ends HALT
   ld a, IEF_LCDC
-  ld [rIE], a
+  ldh [rIE], a
   ld a, STATF_MODE00
-  ld [rSTAT], a
+  ldh [rSTAT], a
 
   ; Point the stack at the source
   ld sp,hl
@@ -266,6 +267,7 @@ popslide_hblank_copy::
   ld a, e
   pop de
   halt
+  nop
 
   ; Write four already-popped bytes (14 cycles)
   ld [hl+], a

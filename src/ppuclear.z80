@@ -95,6 +95,7 @@ lcd_off::
 wait_vblank_irq::
   ld hl,nmis
   ld a,[hl]
+  ; there's a slight risk of waiting 2 vblanks at some rare timing
 .loop:
   halt
   cp [hl]

@@ -254,8 +254,8 @@ gbcfade_dest:    ds 128
 section "gbcfadecode", ROM0
 
 ;;
-; UNTESTED
 ; Loads native GBC palette data in hblank.
+; Uses DI HALT; may malfunction on VisualBoyAdvance 1.x.
 ; @param A offset into palette memory (0, 8, 16, ..., 56) plus $80
 ; @param B number of 4-color or 8-byte subpalettes to copy
 ; @param C palette port to write: LOW(rBCPS) or LOW(rOCPS)
@@ -284,6 +284,7 @@ set_gbc_palette_hblank:
   ldh [rIF], a
   ld a, [hl+]
   halt
+  nop
   ; At worst, we get 85 dots of mode 0 plus 80 dots of mode 2
   ; on next line, for 165 dots or 41 cycles. We'll use 30.
   ld [$FF00+c], a
@@ -413,13 +414,13 @@ gbc_fade_init::
   rlca
   ret nc
   ld a, 2
-  ld [rSVBK], a
+  ldh [rSVBK], a
   ld hl, gbc_ingame_palette
   ld bc, gbc_ingame_palette_end - gbc_ingame_palette
   ld de, gbcfade_palette
   call memcpy
   ld a, 1
-  ld [rSVBK], a
+  ldh [rSVBK], a
   ret
 
 section "gbc_palettes", ROM0

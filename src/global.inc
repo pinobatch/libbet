@@ -21,7 +21,7 @@
 ;
 
   IF  !DEF(GB_INC)
-GB_INC SET 1
+GB_INC = 1
 
 ; things left out of hardware.inc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

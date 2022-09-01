@@ -77,17 +77,11 @@ $(title).gb: $(objlisto)
 	rgblink -p 0xFF -m$(title).map -n$(title).sym -o$@ $^
 	rgbfix -p 0xFF -v $@
 
-#obj/gb/%.o: obj/gb/%-dedent.z80 src/hardware.inc src/global.inc
-#	rgbasm -o $@ $<
-#
-#obj/gb/%-dedent.z80: src/%.z80
-#	$(PY) tools/bgrdedent.py -o $@ $<
-
 obj/gb/%.o: src/%.z80 src/hardware.inc src/global.inc
-	rgbasm -o $@ $<
+	rgbasm -h -o $@ $<
 
 obj/gb/%.o: obj/gb/%.z80
-	rgbasm -o $@ $<
+	rgbasm -h -o $@ $<
 
 # Files that will be included with incbin
 
@@ -116,6 +110,7 @@ obj/gb/%.chrgb: tilesets/%.png
 
 obj/gb/%-h.chrgb: tilesets/%.png
 	rgbgfx -h -o $@ $<
+	@echo "(a warning means you have successfully upgraded rgbgfx)"
 
 obj/gb/%-h.chr1: tilesets/%.png
 	rgbgfx -d1 -h -o $@ $<
