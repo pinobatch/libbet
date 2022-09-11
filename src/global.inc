@@ -37,9 +37,9 @@ REGION_UE EQU $01
 ;;
 ; Syntax: drgb $FF9966 for color #FF9966
 ; Divides each hex tuplet by 8 and rounds down. 
-drgb: macro
+macro drgb
   dw (\1 & $F80000) >> 19 | (\1 & $00F800) >> 6 | (\1 & $0000F8) << 7
-  endm
+endm
 
 ; global constants and the like ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,13 +147,13 @@ LCDCF_SCRNADDR equ LCDCF_WIN9C00|LCDCF_BG9800
 ; @param y vertical distance in tiles from top (0-31)
 ; @param mapbase start address of 32-cell-wide tilemap:
 ;   SCRN_BG (default), _SCRN0, _SCRN1, or a virtual tilemap in WRAM.
-ldxy: macro
+macro ldxy
   if _NARG < 4
     ld \1, (\3) * SCRN_VX_B + (\2) + SCRN_BG
   else
     ld \1, (\3) * SCRN_VX_B + (\2) + (\4)
   endc
-  endm
+endm
 
 ACH_100PCT         equ 0
 ACH_100PCT_DEADEND equ 1

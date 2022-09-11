@@ -44,7 +44,7 @@ run: $(title).gb
 all: $(title).gb
 
 clean:
-	-rm obj/gb/*.z80 obj/gb/*.o obj/gb/*.chrgb obj/gb/*.pb16
+	-rm obj/gb/*.z80 obj/gb/*.o obj/gb/*.2bpp obj/gb/*.pb16
 	-rm obj/gb/*.chr1
 
 # Packaging
@@ -86,29 +86,29 @@ obj/gb/%.o: obj/gb/%.z80
 # Files that will be included with incbin
 
 obj/gb/intro.o: \
-  obj/gb/roll32-h.chrgb.pb16
+  obj/gb/roll32-h.2bpp.pb16
 obj/gb/floorvram.o: \
-  obj/gb/floorpieces-h.chrgb.pb16 \
-  obj/gb/floorborder-h.chrgb.pb16 obj/gb/floorborder-sgb-h.chrgb.pb16
+  obj/gb/floorpieces-h.2bpp.pb16 \
+  obj/gb/floorborder-h.2bpp.pb16 obj/gb/floorborder-sgb-h.2bpp.pb16
 obj/gb/statusbar.o: \
   obj/gb/bigdigits-h.chr1
 obj/gb/metasprite.o: \
   obj/gb/Libbet.z80
 obj/gb/main.o: \
-  obj/gb/Libbet.chrgb.pb16
+  obj/gb/Libbet.2bpp.pb16
 obj/gb/sgb.o: \
   obj/gb/sgbborder.border
 
 # Graphics conversion
 
-# .chrgb (CHR data for Game Boy) denotes the 2-bit tile format
+# .2bpp (CHR data for Game Boy) denotes the 2-bit tile format
 # used by Game Boy and Game Boy Color, as well as Super NES
 # mode 0 (all planes), mode 1 (third plane), and modes 4 and 5
 # (second plane).
-obj/gb/%.chrgb: tilesets/%.png
+obj/gb/%.2bpp: tilesets/%.png
 	rgbgfx -o $@ $<
 
-obj/gb/%-h.chrgb: tilesets/%.png
+obj/gb/%-h.2bpp: tilesets/%.png
 	rgbgfx -h -o $@ $<
 	@echo "(a warning means you have successfully upgraded rgbgfx)"
 
@@ -125,10 +125,10 @@ obj/gb/vwf7.z80: tools/vwfbuild.py tilesets/vwf7_cp144p.png
 # remotely possible for recipes with multiple outputs to fall out
 # of sync.
 
-obj/gb/Libbet.chrgb: tools/extractcels.py tilesets/Libbet.ec tilesets/Libbet.png
+obj/gb/Libbet.2bpp: tools/extractcels.py tilesets/Libbet.ec tilesets/Libbet.png
 	$(PY) $^ $@ obj/gb/Libbet.z80
 
-obj/gb/Libbet.z80: obj/gb/Libbet.chrgb
+obj/gb/Libbet.z80: obj/gb/Libbet.2bpp
 	touch $@
 
 obj/gb/pitchtable.z80: tools/pitchtable.py

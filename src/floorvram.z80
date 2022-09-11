@@ -227,9 +227,9 @@ load_floor_chr::
   jp pb16_unpack_block
 
 section "floor_chr", ROM0
-floortiles_pb16: incbin "obj/gb/floorpieces-h.chrgb.pb16"
-floorborder_pb16: incbin "obj/gb/floorborder-h.chrgb.pb16"
-floorborder_sgb_pb16: incbin "obj/gb/floorborder-sgb-h.chrgb.pb16"
+floortiles_pb16: incbin "obj/gb/floorpieces-h.2bpp.pb16"
+floorborder_pb16: incbin "obj/gb/floorborder-h.2bpp.pb16"
+floorborder_sgb_pb16: incbin "obj/gb/floorborder-sgb-h.2bpp.pb16"
 floormirrortypes:
 MIRRNO equ 1
 MIRRH equ 2

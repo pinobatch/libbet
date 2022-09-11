@@ -338,7 +338,7 @@ show_intro::
 
   ret
 
-roll32_chr:  incbin "obj/gb/roll32-h.chrgb.pb16"
+roll32_chr:  incbin "obj/gb/roll32-h.2bpp.pb16"
 
 ; 4x4 column major (was previously considering 8x16 but decided
 ; against it given title screen uses 8x8)

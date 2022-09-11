@@ -608,4 +608,4 @@ mark_exit_open:
 
 section "Libbet_chr", ROM0
 Libbet_pb16:
-  incbin "obj/gb/Libbet.chrgb.pb16"
+  incbin "obj/gb/Libbet.2bpp.pb16"
