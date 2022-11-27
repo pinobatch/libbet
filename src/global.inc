@@ -113,7 +113,8 @@ vwf_page_first_tileid = 256 - 8 * vwf_page_width
 
 ; achievements needs NUM_FLOORS to calculate Completionist
 ; this is 5 for production or often 2 for debugging
-NUM_FLOORS = 5
+NUM_FLOORS = 6
+FIRST_ACH_FLOOR = 1  ; no achievements from tutorial
 
 ; 1: use the attract mode floor for a predictable
 ; when testing achievements

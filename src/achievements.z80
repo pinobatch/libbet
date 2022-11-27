@@ -161,6 +161,9 @@ achievements_end_floor::
   ld a,[attract_mode]
   or a
   ret nz
+  ld a, [cur_floor]
+  cp FIRST_ACH_FLOOR
+  ret c
 
   ; "Sink it": Reach 100% by moving to a dead end
   ld a,[move_flags]
@@ -195,24 +198,23 @@ achievements_end_floor::
     call z,achievements_earn
   endc
 
-  ; "Completionist": Finish final floor with all floor scores
-  ; equal to maximum
+  ; "Completionist": Finish final floor with all non-tutorial
+  ; floor scores equal to maximum
   ld a,[cur_floor]
   cp NUM_FLOORS - 1
   jr nz,.not_completionist
-  inc a
-  ld b,a
-  ld hl,floor_scores
-  .testloop:
-    ld a,[hl+]  ; score
-    cp [hl]     ; max score
-    jr c,.not_completionist
-    inc hl
-    dec b
-    jr nz,.testloop
-  ld a,ACH_100PCT
-  call achievements_earn
-.not_completionist:
+    ld b, NUM_FLOORS - FIRST_ACH_FLOOR
+    ld hl, floor_scores + 2 * FIRST_ACH_FLOOR
+    .testloop:
+      ld a,[hl+]  ; score
+      cp [hl]     ; max score
+      jr c,.not_completionist
+      inc hl
+      dec b
+      jr nz,.testloop
+    ld a,ACH_100PCT
+    call achievements_earn
+  .not_completionist:
 
   ret
 

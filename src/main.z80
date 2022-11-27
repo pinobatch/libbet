@@ -27,12 +27,14 @@ LIBBET_NUM_TILES = 48
 
 section "floorsizes", ROM0
 floor_sizes:
-  db 2, 8
+  db 2, 2  ; Tutorial level
+  db 2, 7
   db 4, 4
   db 6, 4
   db 6, 6
   db 8, 6
 floor_sizes_end:
+  assert (floor_sizes_end-floor_sizes)/2 >= NUM_FLOORS
 
 section "mainvars", WRAM0
 cur_floor:: ds 1
