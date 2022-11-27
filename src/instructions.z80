@@ -364,6 +364,14 @@ attract_update::
     ret
   .not_end:
 
+  ; If at peekwait, wait for peek
+  cp PEEKWAIT
+  jr nz, .not_peekwait
+    ld a, [roll_frame]
+    or a
+    jr nz, .not_known_control_character
+  .not_peekwait:
+
   ; If not at the end, write back pointer
   ld c,a
   ld a,l
@@ -372,6 +380,8 @@ attract_update::
   ld [attract_src_ptr+1],a
 
   ld a,c
+  or a
+  ret z  ; zero left by PEEKWAIT
   cp $09
   jr nc,.not_direction
     dec c
@@ -430,7 +440,7 @@ attract_update::
       pop af
     .letter_not_new_tile:
     ld [attract_vwf_x],a
-  .not_formfeed:
+  .not_known_control_character:
     xor a
     ret
   .not_letter:
@@ -454,7 +464,7 @@ attract_update::
   .not_linefeed:
 
   cp FF
-  jr nz,.not_formfeed
+  jr nz,.not_known_control_character
     ; Go to screen clearin' mode
     ld a,$80
     ld [attract_vwf_tile_id],a
@@ -508,6 +518,7 @@ AM_RR equ $05
 AM_LL equ $06
 AM_UU equ $07
 AM_DD equ $08
+PEEKWAIT equ $0F
 
 ;;
 ; Bytecode format
@@ -520,6 +531,7 @@ attract_script:
 ; Start at c1
 ; roll/jump on same color:
   db "The floor tiles have four",LF
+  db PEEKWAIT
   db "shades. Libbet can roll",LF
   db "or jump between tiles of",LF
   db "the same shade."
@@ -538,20 +550,28 @@ attract_script:
 ; roll/jump on different colors:
   db FF
   db "She can also roll or jump",LF
-  db "onto the next brighter",LF
-  db "shade or from white to",LF
-  db "black. This leaves a track."
-; b1 a1+ a2+ b2+ b3+ d3+ d2 c2+ c3+ a3+
-  db AM_L, AM_L, AM_U, AM_R, AM_U, AM_RR, AM_D, AM_L, AM_U, AM_LL
-; so far: 8/20 (40%)
+  db "to the next brighter shade",LF
+  db "or from white to black.", PEEKWAIT
+  db AM_L, AM_L, AM_U   ; b1 a1+ a2+
+  db AM_R, AM_U, AM_RR  ; b2+ b3+ d3+
+; so far: 5/20 (25%)
+  db FF
+  db "She must visit shades in",LF
+  db "order. Changing shades",LF
+  db "leaves a track in the",LF
+  db "direction."
+  db AM_D, AM_L, AM_U, AM_LL, AM_U  ; d2 c2+ c3+ a3+ a4+
+  db PEEKWAIT
+; so far: 9/20 (45%)
 
 ; dead ends:
   db FF
   db "Tiles with no exits",LF
   db "contain a trap door that",LF
-  db "leads to the entrance."
-; a4+ b4+ d4+ [c1] a1+ a2[+] c2 c4+ d4 [c1]
-  db AM_U, AM_R, AM_RR
+  db "leads to the entrance,",LF
+; b4+ d4+ [c1] a1+ a2 c2 c4+ d4 [c1]
+  db AM_R, AM_RR
+  db "so she doesn't get stuck."
   db AM_LL, AM_U, AM_RR, AM_UU, AM_R
 ; result: 13/20 (65%)
 

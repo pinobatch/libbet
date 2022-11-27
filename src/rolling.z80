@@ -31,7 +31,7 @@ roll_dy: ds 1
 roll_y: ds 1
 roll_dz: ds 1
 roll_z: ds 1
-roll_frame: ds 1
+roll_frame:: ds 1
 roll_frame_cd: ds 1
 roll_prio: ds 1
 cursor_facing:: ds 1
