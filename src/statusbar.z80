@@ -29,7 +29,7 @@ STATUS_BLANK equ $F7
 BIG_DIGIT_BASE equ $E0
 SPRITE_BIG_DIGIT_BASE equ $60
 STATUS_PERCENT equ $F4
-STATUSBAR_CHR_COUNT equ 40
+STATUSBAR_CHR_COUNT equ 42
 export SPRITE_BIG_DIGIT_BASE
 
 ; The status bar is and occupies the last two rows of the tilemap

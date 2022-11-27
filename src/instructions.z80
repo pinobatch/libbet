@@ -211,6 +211,41 @@ attract_vwf_x:: ds 1  ; X = $FF and tile id < $C0 means a clear is in progress
 
 section "attractcode", ROM0
 
+attract_reload_vwf_nametable:
+  ld de, popslide_used
+  ld a, [de]
+  ld e, a
+  ld hl, attract_restore_attr_stripe
+  ld bc, attract_restore_attr_stripe_end-attract_restore_attr_stripe
+  call memcpy
+  ld h, d
+  ld l, e
+  ; load tile values
+  ldxy de, 2, 12
+  ld a, $80
+  .rowloop
+    ld [hl], e
+    inc l
+    ld [hl], d
+    inc l
+    ld [hl], 16-1
+    inc l
+    ld [hl], 0
+    inc l
+    ld c, 16
+    call memset_inc
+    ld c, a
+    ld a, e
+    add 32
+    ld e, a
+    ld a, c
+    cp $C0
+    jr c, .rowloop
+  ld a, l
+  ld [popslide_used], a
+  ret
+
+
 attract_init_vram::
   ; Extend status bar
   ldxy hl, 0, 12
@@ -219,17 +254,8 @@ attract_init_vram::
   call memset_tiny
 
   ; Set up VWF canvas on extended status bar
-  ld a,$80
-  ldxy hl, 2, 12
-  ld bc,$0410
-  ld de,16
-  .msiloop:
-    push bc
-    call memset_inc
-    pop bc
-    add hl,de
-    dec b
-    jr nz,.msiloop
+  call attract_reload_vwf_nametable
+  call popslide_terminate_blit
 
   ; Clear VWF canvas
   ld hl, CHRRAM1
@@ -464,16 +490,65 @@ attract_update::
   .not_linefeed:
 
   cp FF
-  jr nz,.not_known_control_character
+  jr nz, .not_formfeed
     ; Go to screen clearin' mode
     ld a,$80
     ld [attract_vwf_tile_id],a
     ld a,$FF
     jr .set_vwf_x_clear_linebuf
+  .not_formfeed:
+
+  cp HIDESHADES
+  jr z, .is_hide_shades
+
+  cp SHOWSHADES
+  jr nz, .not_known_control_character
+    ld de, popslide_used
+    ld a, [de]
+    ld e, a
+    ld hl, attract_seq_stripe
+    ld bc, attract_seq_stripe_end - attract_seq_stripe
+    call memcpy
+    ld a, e
+    ld [popslide_used], a
+    xor a
+    ret
+
+  .is_hide_shades:
+    call attract_reload_vwf_nametable
+    xor a
+    ret
+    
 
 ; Attract mode map ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section "attractdata", ROM0
+
+attract_restore_attr_stripe:
+ dw rVBK
+ db 0, 1
+ dw $99C3
+ db (14-1)+64, $04
+ dw $99E3
+ db (14-1)+64, $04
+ dw rVBK
+ db 0, 0
+attract_restore_attr_stripe_end:
+
+attract_seq_stripe:
+ dw rVBK
+ db 0, 1
+ dw $99C3, 14-1
+ db $01,$01,$04,$00,$00,$04,$02,$02,$04,$00,$00,$04,$01,$01
+ dw $99E3, 14-1
+ db $01,$01,$04,$00,$00,$04,$02,$02,$04,$00,$00,$04,$01,$01
+ dw rVBK
+ db 0, 0
+ dw $99C3, 14-1
+ db $00,$02,$F8,$04,$06,$F8,$08,$0A,$F8,$0C,$0E,$F8,$00,$02
+ dw $99E3, 14-1
+ db $01,$03,$F9,$05,$07,$F9,$09,$0B,$F9,$0D,$0F,$F9,$01,$03
+attract_seq_stripe_end:
 
 attract_map::
  db 3, 0, 0, 1  ; 4
@@ -507,7 +582,7 @@ attract_map::
 
 ; Attract mode script ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-section "attractmap", ROM0
+section "attractscript", ROM0
 
 ; AM_constants are one greater than the underlying move code
 AM_R equ $01
@@ -518,6 +593,8 @@ AM_RR equ $05
 AM_LL equ $06
 AM_UU equ $07
 AM_DD equ $08
+HIDESHADES equ $0D
+SHOWSHADES equ $0E
 PEEKWAIT equ $0F
 
 ;;
@@ -531,7 +608,6 @@ attract_script:
 ; Start at c1
 ; roll/jump on same color:
   db "The floor tiles have four",LF
-  db PEEKWAIT
   db "shades. Libbet can roll",LF
   db "or jump between tiles of",LF
   db "the same shade."
@@ -549,19 +625,16 @@ attract_script:
 ; so far: 0/20 (0%)
 ; roll/jump on different colors:
   db FF
-  db "She can also roll or jump",LF
-  db "to the next brighter shade",LF
-  db "or from white to black.", PEEKWAIT
+  db "She can roll or jump to",LF
+  db "the next brighter shade:", SHOWSHADES, PEEKWAIT
   db AM_L, AM_L, AM_U   ; b1 a1+ a2+
   db AM_R, AM_U, AM_RR  ; b2+ b3+ d3+
 ; so far: 5/20 (25%)
   db FF
-  db "She must visit shades in",LF
-  db "order. Changing shades",LF
-  db "leaves a track in the",LF
-  db "direction."
+  db "Changing shades leaves a",LF
+  db "track in the direction."
   db AM_D, AM_L, AM_U, AM_LL, AM_U  ; d2 c2+ c3+ a3+ a4+
-  db PEEKWAIT
+  db PEEKWAIT, HIDESHADES
 ; so far: 9/20 (45%)
 
 ; dead ends:
