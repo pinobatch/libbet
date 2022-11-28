@@ -127,6 +127,9 @@ overlay4:
     jr nz, .loop
   ret
 
+FLOORBORDER_BASE_TILE equ $68
+FLOORBORDER_NUM_TILES equ 24
+
 ;;
 ; Load the CHR
 load_floor_chr::
@@ -222,8 +225,8 @@ load_floor_chr::
     ld de, floorborder_sgb_pb16
   .border_not_sgb:
 
-  ld hl,CHRRAM2+$6C*16
-  ld b,20
+  ld hl,CHRRAM2+FLOORBORDER_BASE_TILE*16
+  ld b,FLOORBORDER_NUM_TILES
   jp pb16_unpack_block
 
 section "floor_chr", ROM0

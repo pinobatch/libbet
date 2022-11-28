@@ -500,26 +500,33 @@ attract_update::
     jr .set_vwf_x_clear_linebuf
   .not_formfeed:
 
+  cp SHOWCONTROLS
+  jr z, .is_show_controls
   cp HIDESHADES
   jr z, .is_hide_shades
-
   cp SHOWSHADES
   jr nz, .not_known_control_character
+    ld hl, attract_seq_stripe
+    ld bc, attract_seq_stripe_end - attract_seq_stripe
+  .push_stripe:
     ld de, popslide_used
     ld a, [de]
     ld e, a
-    ld hl, attract_seq_stripe
-    ld bc, attract_seq_stripe_end - attract_seq_stripe
     call memcpy
     ld a, e
     ld [popslide_used], a
     xor a
     ret
 
+  .is_show_controls:
+    ld hl, attract_controls_stripe
+    ld bc, attract_controls_stripe_end - attract_controls_stripe
+    jr .push_stripe
   .is_hide_shades:
     call attract_reload_vwf_nametable
     xor a
     ret
+
     
 
 ; Attract mode map ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -540,6 +547,29 @@ attract_restore_attr_stripe:
  dw rVBK
  db 0, 0
 attract_restore_attr_stripe_end:
+
+attract_controls_stripe:
+ dw rVBK
+ db 0, 1
+ dw $998B
+ db (4-1)+64, $00
+ dw $99AB
+ db (4-1)+64, $00
+ dw $99CB
+ db (6-1)+64, $00
+ dw $99EB
+ db (6-1)+64, $00
+ dw rVBK
+ db 0, 0
+ dw $998B, 4-1
+ db $0C,$1E,$0C,$0E
+ dw $99AB, 4-1
+ db $0D,$1F,$0D,$0F
+ dw $99CB, 6-1
+ db $0C,$0E,$68,$6A,$0C,$0E
+ dw $99EB, 6-1
+ db $0D,$0F,$69,$6B,$0D,$0F
+attract_controls_stripe_end:
 
 attract_seq_stripe:
  dw rVBK
@@ -599,6 +629,7 @@ AM_RR equ $05
 AM_LL equ $06
 AM_UU equ $07
 AM_DD equ $08
+SHOWCONTROLS equ $0B
 HIDESHADES equ $0D
 SHOWSHADES equ $0E
 PEEKWAIT equ $0F
@@ -621,16 +652,18 @@ attract_script:
   db AM_L, AM_UU, AM_L, AM_R, AM_DD, AM_R
 
 ; repeat same moves while explaining controls
-  db FF
-  db DPADSYM,": Roll to next cell",LF
-  db ABTNSYM,DPADSYM,": Jump over a cell"
+  db FF, SHOWCONTROLS
+  db DPADSYM,": Roll to",LF
+  db "  next cell",LF
+  db ABTNSYM,DPADSYM,": Jump",LF
+  db "  over a cell"
   db AM_L, AM_UU, AM_L, AM_R, AM_DD, AM_R
 
 ; so far: 0/20 (0%)
 ; roll/jump on different colors:
-  db FF
+  db FF, HIDESHADES, SHOWSHADES
   db "She can roll or jump to",LF
-  db "the next brighter shade:", SHOWSHADES, PEEKWAIT
+  db "the next brighter shade.", PEEKWAIT
   db AM_L, AM_L, AM_U   ; b1 a1+ a2+
   db AM_R, AM_U, AM_RR  ; b2+ b3+ d3+
 ; so far: 5/20 (25%)
