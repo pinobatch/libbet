@@ -37,7 +37,12 @@ lineImgBuf:: ds lineImgBufLen * 2
 CHAR_BIT EQU 8
 LOG_GLYPH_HEIGHT EQU 3
 GLYPH_HEIGHT EQU (1 << LOG_GLYPH_HEIGHT)
-GLYPH_HEIGHT_MINUS_1 EQU 7
+GLYPH_HEIGHT_MINUS_1 EQU GLYPH_HEIGHT + (-1)
+
+NUM_GLYPHS EQU 104
+export NUM_GLYPHS
+FIRST_PRINTABLE_CU EQU $18
+export FIRST_PRINTABLE_CU
 
 ; Approximate timing for vwfPutTile:
 ;
@@ -72,7 +77,7 @@ vwfPutTile_shifter:
   ldh a,[Ldstoffset]
   ld l,a
 
-  ; Break it up into 2 bytes
+  ; Break up glyph bits into 2 bytes
   ldh a,[Lshiftermask]
   and h
   ld c,a  ; C: right half bits
@@ -92,7 +97,7 @@ vwfPutTile_shifter:
   ld [hl],a
   ld a,l
   sub GLYPH_HEIGHT-1
-vwfPutTile_have_dstoffset:
+.have_new_dstoffset:
   ldh [Ldstoffset],a
 
   ; Advance to next row
@@ -116,16 +121,18 @@ vwfPutTile_rowloop:
 .sliver_is_blank:
   ldh a,[Ldstoffset]
   inc a
-  jr vwfPutTile_have_dstoffset
+  jr vwfPutTile_shifter.have_new_dstoffset
 
 ;;
 ; Draws the tile for glyph A at horizontal position B
+; using the font at vwfChrData, which must be aligned to
+; LOG_GLYPH_HEIGHT bits
 vwfPutTile::
 
   ; Calculate address of glyph
   ld h,0
   ld l,a
-  ld de,vwfChrData - (" "*GLYPH_HEIGHT)
+  ld de,vwfChrData - (FIRST_PRINTABLE_CU*GLYPH_HEIGHT)
   rept LOG_GLYPH_HEIGHT
     add hl,hl
   endr
@@ -167,27 +174,26 @@ vwfPuts::
 .chloop:
   ; Load character, stopping at control character
   ld a,[hl+]
-  cp 32
+  cp FIRST_PRINTABLE_CU
   jr c,.decret
 
   ; Save position, draw glyph, load position
-  jr z,.nodrawspace
   ld c,a
   push hl
   push bc
-  call vwfPutTile
+  cp " "  ; Optimization: Don't draw glyph for space character
+  call nz, vwfPutTile
   pop bc
   pop hl
   ld a,c
-.nodrawspace:
   
   ; Add up the width of the glyph
-  ld de,vwfChrWidths-" "
+  ld de,vwfChrWidths-FIRST_PRINTABLE_CU
   add e
   ld e,a
-  jr nc,.gwnowrap
-  inc d
-.gwnowrap:
+  adc d
+  sub e
+  ld d, a
   ld a,[de]
   add b
   ld b,a
@@ -203,22 +209,22 @@ vwfPuts::
 
 ;;
 ; Calculates the width of a string in pixels
-; @param HL
+; @param HL pointer to unprintable-terminated string
 ; @return A: last char; B: width; HL points at end of string;
 ; C unchanged; DE trashed
 vwfStrWidth::
   ld b,0
 .loop:
   ld a,[hl+]
-  cp 32
+  sub FIRST_PRINTABLE_CU
   jr c,vwfPuts.decret
-  
-  ld de,vwfChrWidths-32
+
+  ld de,vwfChrWidths
   add e
   ld e,a
-  jr nc,.gwnowrap
-  inc d
-.gwnowrap:
+  adc d
+  sub e
+  ld d, a
   ld a,[de]
   add b
   ld b,a
@@ -226,7 +232,7 @@ vwfStrWidth::
 
 ;;
 ; Clears the line image.
-; @return C = 0; HL = lineImgBuf + lineImgBufLen
+; @return A = C = 0; HL = lineImgBuf + lineImgBufLen
 vwfClearBuf::
   ld hl,lineImgBuf
   ld c,lineImgBufLen/4
@@ -240,18 +246,18 @@ vwfClearBuf::
   ret
 
 ;;
-; Copies the VWF buffer to VRAM address HL using fg color 3
+; Copies the VWF buffer to VRAM address HL using fg color 1 or 3
 ; and bg color 0
 ; @param HL destination address
 ; @param DE source address within lineImgBuf (if using _continue)
 ; @param C tile count (if using _lenC)
-; @param B $00 for FG color 0 or $FF for FG color 3
+; @param B $00 for color 1 on 0 or $FF for color 3 on 0
 ; @return DE end of lineImgBuf; C=0; B unchanged
 vwfPutBuf03::
   ld c,lineImgBufLen/8
 vwfPutBuf03_lenC::
   ld de,lineImgBuf
-vwfPutBuf03_continue_lenC::  ; this entry good for popslide
+vwfPutBuf03_continue_lenC::  ; this entry for intermediate WRAM buffer
   sla c
 .loop:
   rept 4

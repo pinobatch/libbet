@@ -370,7 +370,7 @@ intro_close_scroll:
 intro_close_scroll_end:
 
 LF = $0A
-COPR equ $7F
+COPR equ $1A
 coprNotice:
  db "",LF
  db COPR," 2002, 2012 Martin Korth",LF

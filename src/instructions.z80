@@ -25,7 +25,9 @@ include "src/global.inc"
 
 LF equ $0A
 FF equ $0C
-COPR equ $7F
+ABTNSYM equ $18
+BBTNSYM equ $19
+DPADSYM equ $7F
 
 section "instructions", ROM0
 
@@ -427,7 +429,7 @@ attract_update::
     ret
   .not_direction:
 
-  cp $10
+  cp FIRST_PRINTABLE_CU
   jr c,.not_letter
     ld a,[attract_vwf_x]
     ld b,a
@@ -438,13 +440,13 @@ attract_update::
 
     ; Move pen forward by the glyph's width
     pop bc
-    ld de,vwfChrWidths-" "
+    ld de,vwfChrWidths-FIRST_PRINTABLE_CU
     ld a,c
     add e
     ld e,a
-    jr nc,.gwnowrap
-      inc d
-    .gwnowrap:
+    adc d
+    sub e
+    ld d, a
     ld a,[de]
     add b
 
@@ -527,6 +529,10 @@ section "attractdata", ROM0
 attract_restore_attr_stripe:
  dw rVBK
  db 0, 1
+ dw $9983
+ db (14-1)+64, $04
+ dw $99A3
+ db (14-1)+64, $04
  dw $99C3
  db (14-1)+64, $04
  dw $99E3
@@ -616,10 +622,8 @@ attract_script:
 
 ; repeat same moves while explaining controls
   db FF
-  db "To roll, press a direction",LF
-  db "on the Control Pad.",LF
-  db "To jump, hold the A Button",LF
-  db "and press a direction."
+  db DPADSYM,": Roll to next cell",LF
+  db ABTNSYM,DPADSYM,": Jump over a cell"
   db AM_L, AM_UU, AM_L, AM_R, AM_DD, AM_R
 
 ; so far: 0/20 (0%)
@@ -642,9 +646,9 @@ attract_script:
   db "Tiles with no exits",LF
   db "contain a trap door that",LF
   db "leads to the entrance,",LF
+  db "so she doesn't get stuck."
 ; b4+ d4+ [c1] a1+ a2 c2 c4+ d4 [c1]
   db AM_R, AM_RR
-  db "so she doesn't get stuck."
   db AM_LL, AM_U, AM_RR, AM_UU, AM_R
 ; result: 13/20 (65%)
 
