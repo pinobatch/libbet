@@ -463,14 +463,14 @@ sgb_cmd_clear_attrs::
   db 0, 0, 0, 0, 0, 0, 0, 0
 
 sgb_ingame_palette:
-  db 31,31,11
-  db 31,23,21
-  db 31, 0,31
-  db  7, 4, 0
+  db 31,31,18  ; Libbet's bodysuit
+  db 31,23,21  ; Libbet's skin
+  db 31, 0,31  ; unused color
+  db  7, 4, 0  ; brown/black
   db 18,18,18  ; dark gray and white tiles
   db  4, 4,27  ; blue (with black)
-  db 12,27,12  ; green (with white)
-  db 18,12, 0  ; walls
+  db 14,29,14  ; green (with white)
+  db 18,12, 0  ; walls & status bar
 sgb_ingame_palette_end:
 
 sgbborder: incbin "obj/gb/sgbborder.border"

@@ -426,19 +426,19 @@ gbc_fade_init::
 section "gbc_palettes", ROM0
 gbc_ingame_palette:
   db  0, 0, 0  ; BC0: gray (for dark gray and white tiles)
-  db 11,11,11
-  db 21,21,21
+  db 10,10,10  ; This is meant to be the same as Left+B
+  db 20,20,20  ; on the GBC boot screen
   db 31,31,31
   db  0, 0, 0  ; BC1: blue (for black tiles)
-  db  4, 4,20
-  db 16,16,31
+  db  4, 4,16
+  db 12,12,28
   db 31,31,31
   db  0, 0, 0  ; BC2: green (for light gray tiles)
-  db  4,18, 4
-  db 12,27,12
+  db  6,18, 6
+  db 18,27,18
   db 31,31,31
   db  6, 2, 0  ; BC3: walls
-  db 18, 4, 4
+  db 18, 8, 0
   db 27,18, 0
   db 27,22,18
   db  0, 0, 0  ; BC4: status and border
