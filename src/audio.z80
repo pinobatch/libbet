@@ -52,7 +52,7 @@ wavebank:
 ;   0: pulse 1; 1: pulse 2; 2: wave; 3: noise
 ;   Use pulse 2 sparingly, as it's more likely to interrupt music
 ;   if you have a music player hooked up.
-; - Second byte is unused (padding)
+; - Second byte is unused (padding the entry to a power of 2 bytes)
 ; - Final word is the address of the effect segments
 
 sfx_table:
