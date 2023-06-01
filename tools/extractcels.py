@@ -14,16 +14,18 @@ rectangles of sprite tiles are located within each cel.
 # is a comment and ignored.
 # The file begins with file-wide things like palette declarations:
 
-backdrop <#rrggbb>
-palette <palid> <#rrggbb> <#rrggbb> <#rrggbb>
+backdrop <#rgb>
+palette <palid> <#rgb> <#rgb> <#rgb> <#rgb>=2 <#rgb>=3
 
 # backdrop tells what color is used for pixels that are always
 # transparent, and palette tells what colors are associated with
 # pixels in a given palette.
 # Bit 4 of the palette ID specifies a DMG palette (0 for OBP0
 # or 16 for OBP1), and bits 2-0 specify a GBC palette ID (0 to 7).
-# An <#rrggbb> specifies an RGB color using 3- or 6-digit
-# hexadecimal: #fa9 or #ffaa99
+# An <#rgb> specifies an RGB color using 3- or 6-digit
+# hexadecimal, such as #fa9 or #ffaa99
+# In palette statements, it may be followed by =1, =2, or =3 to
+# force a color to also be converted to this index.
 
 # Then for each frame:
 
@@ -34,14 +36,14 @@ hotspot <loc>
 
 # Each frame means one cel, and each strip marks a rectangle of
 # nontransparent pixels within that cel using one palette.
-# A cliprect is four integers of the form left top width height
+# A <cliprect> is four integers of the form left top width height
 # If the frame does not specify a cliprect, it will be the union of
 # all strips.  If the strip does not specify a cliprect, it uses
 # that of the frame.
-# A strip may specify a position in order to place the pixels taken
+# A <strip> may specify a position in order to place the pixels taken
 # from its cliprect at a different position.  Useful for advanced
 # tile reuse scenarios.
-# palette tells what palette to use for this strip, as a cel may
+# <palette> tells what palette to use for this strip, as a cel may
 # have multiple adjacent or overlaid strips with different palettes.
 # hotspot gives the starting position used to calculate the offset
 # of each rectangle when the cel is drawn.  It defaults to the
@@ -50,9 +52,7 @@ hotspot <loc>
 # END .ec DOCS
 """
 from PIL import Image, ImageDraw
-import sys
-import re
-import argparse
+import os, sys, argparse, re
 from collections import OrderedDict
 import pilbmp2nes
 
@@ -111,7 +111,7 @@ class InputFrame(object):
 
         # Guess cliprect based on destination bounding boxes of strips
         l, t = r, b = self.strips[0][7:9]
-        for row in strips:
+        for row in self.strips:
             sw, sh = row[3:5]
             sl, st = row[7:9]
             l = min(l, sl)
@@ -193,13 +193,24 @@ class InputParser(object):
         name, cliprect = words[0], None
         if name in self.frames:
             raise ValueError("duplicate definition of frame "+name)
+        self.frames[name] = InputFrame(self.frames)
+        self.cur_frame = name
         if len(words) == 5 and all(isdig[1:5]):
-            cliprect = tuple(int(x) for x in words[1:5])
+            self.frames[name].cliprect = tuple(int(x) for x in words[1:5])
+        elif len(words) == 3 and words[1] == 'repeats':
+            self.add_repeats(words[2:])
         elif len(words) != 1:
             raise ValueError("unrecognized arguments to frame "
                              + " ".join(words))
-        self.frames[name] = InputFrame(self.frames, cliprect=cliprect)
-        self.cur_frame = name
+
+    def add_repeats(self, words):
+        if len(words) != 1:
+            raise ValueError("unrecognized arguments to repeats "
+                             + " ".join(words))
+        frame = self.frames[self.cur_frame]
+        srcframe = self.frames[words[0]]
+        frame.strips[:] = srcframe.strips
+        frame.cliprect = srcframe.cliprect
 
     def add_strip(self, words):
         isdig = [isint(x) for x in words]
@@ -261,6 +272,7 @@ Convert self.palette to these:
 
     wordcmds = {
         "frame": add_frame,
+        "repeats": add_repeats,
         "strip": add_strip,
         "hotspot": add_hotspot,
         "palette": add_palette,
@@ -269,22 +281,13 @@ Convert self.palette to these:
 
 # Extracting the tiles for each cel
 
-def quantizetopalette(silf, palette, dither=False):
-    """Convert an RGB or L mode image to use a given P image's palette."""
+def quantizetopalette(src, palette, dither=False):
+    """Convert an RGB or L mode image to use a given P image's palette.
 
-    silf.load()
-
-    # use palette from reference image
-    palette.load()
-    if palette.mode != "P":
-        raise ValueError("bad mode for palette image")
-    if silf.mode != "RGB" and silf.mode != "L":
-        raise ValueError(
-            "only RGB or L mode images can be quantized to a palette"
-            )
-    im = silf.im.convert("P", 1 if dither else 0, palette.im)
-    # the 0 above means turn OFF dithering
-    return silf._new(im)
+Requires Pillow 6 or later.
+Reference: https://stackoverflow.com/a/29438149/2738262
+"""
+    return src.quantize(palette=palette, dither=1 if dither else 0)
 
 def apply_global_palette(im, doc):
     if not doc.global_palette:
@@ -470,7 +473,7 @@ def emit_frames(framestrips, nt, framenames):
             for strip in framedef
         )
 
-    out.extend("FRAME_%s equ %d" % (n, i) for i, n in enumerate(framenames))
+    out.extend("def FRAME_%s equ %d" % (n, i) for i, n in enumerate(framenames))
     out.extend(" export FRAME_%s" % (n,) for n in framenames)
     return "\n".join(out)
 
