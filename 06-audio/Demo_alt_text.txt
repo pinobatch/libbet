@@ -1,0 +1,15 @@
+Libbet, a character appearing as a yellow ball with two arms and a head, appears at bottom center of a floor of 4 square cells across by 4 down. Four cells are black with blue dots, four gray with horizontal lines, four light green with white checks, and four white. Above the floor is a closed door.
+Caption: "The floor tiles have four shades. Libbet can roll or jump between tiles of the same shade. (0%, 0/20)"
+Libbet tucks her head in, rolls between green cells, jumps with her hands across a gray cell to another green cell, and returns.
+Caption: "Control Pad: Roll to next cell" (white cell with arrow to adjacent white cell); "A Button and Control Pad: Jump over a cell" (white cell, gray square with arch arrow representing jumping, white cell)
+After briefly poking her head out, Libbet repeats the round trip.
+(Description continues)
+
+Caption: "She can roll or jump to the next brighter shade." (Black cell, arrow to gray cell, arrow to green cell, arrow to white cell, arrow to black cell)
+Libbet rolls and jumps across some cells in sequence, leaving tracks shown as white arrows.
+Caption: "Changing shades leaves a track in the direction. (25%, 5/20)"
+Libbet continues to roll and jump and leave tracks.
+Caption: "Tiles with no exits contain a trap door that leads to the entrance, so she doesn't get stuck. (45%, 9/20)"
+Libbet jumps to the gray cell in a corner, in which appears a hole in the center, and falls in. She is ejected at the starting point. She makes her way back and rolls in, leaving another track pointing at the hole, falls in again, and again returns to start.
+Caption: "Leave 90 percent of possible tracks and roll to the exit at top to win. (65%, 13/20)"
+Libbet continues to roll, jump, and leave tracks until she reaches 90%, the screen flashes, and the door at top opens. Then she rolls to the door.
