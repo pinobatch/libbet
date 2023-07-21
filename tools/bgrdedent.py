@@ -2,14 +2,30 @@
 """
 Indentation translator for RGBASM
 Copyright 2018 Damian Yerrick
-(insert zlib License here)
 
-bgrdedent.py is a preprocessor for LR35902 assembly language source
-code files intended to be assembled using the RGBDS assembler
-([RGBASM]).  It translates the "followed by colon" convention for
-denoting labels that [ca65] and other modern assemblers use to the
-"begins in first column" convention that punch-card-era assemblers
-used and RGBASM continues to use.
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+"""
+"""
+bgrdedent.py is a preprocessor for SM83 (Game Boy CPU) assembly
+language source code files intended to be assembled using older
+versions of RGBDS assembler ([RGBASM]).  It translates the "followed
+by colon" convention for denoting labels that [ca65] and other modern
+assemblers use to the "begins in first column" convention that
+punch-card-era assemblers used and RGBASM used prior to 0.4.0.
 
 First all leading and trailing whitespace is removed.  Then decide
 whether or not to re-add a leading space based on the first of the
