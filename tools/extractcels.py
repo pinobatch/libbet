@@ -504,7 +504,8 @@ def gbtilestoim(tiles, num_cols=16):
     im.putpalette(previewpalette)
     return im
 
-def pack_frames(framestrips, nt, streaming=False, verbose=False):
+def pack_frames(framestrips, nt,
+                streaming=False, verbose=False, tileid_factor=1):
     """Pack the frames in
 
 streaming -- if true, find all the unique tiles first
@@ -557,7 +558,8 @@ Return a list of lists of bytes, one for each frame.
                           file=sys.stderr)
             b = bytearray([y + 128, x + 128,
                            palette | ((len(tilenums) - 1) << 5)])
-            b.extend(((x & 0x6000) >> 7) | (x & 0x3F) for x in tilenums)
+            b.extend(((x & 0x6000) >> 7) | ((x * tileid_factor) & 0x3F)
+                     for x in tilenums)
             strip.append(bytes(b))
         strip.append(b"\x00")
         out.append(strip)
@@ -567,7 +569,8 @@ def emit_frames(framestrips, nt, framenames,
                 streaming=False, verbose=False, tileid_factor=1):
     out = [" dw mspr_" + n for n in framenames]
     ntoffset = 0
-    packed = pack_frames(framestrips, nt, streaming=streaming, verbose=verbose)
+    packed = pack_frames(framestrips, nt, streaming=streaming,
+                         verbose=verbose, tileid_factor=tileid_factor)
 
     # Consider only unique framedefs
     allframedefs = OrderedDict()
@@ -580,7 +583,7 @@ def emit_frames(framestrips, nt, framenames,
     for thisframenames, framedef in allframedefs.values():
         out.extend("mspr_%s:" % framename for framename in thisframenames)
         out.extend(
-            " db " + ",".join("$%02x" % (b * tileid_factor) for b in strip)
+            " db " + ",".join("$%02x" % b for b in strip)
             for strip in framedef
         )
 
