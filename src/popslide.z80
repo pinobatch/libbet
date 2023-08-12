@@ -85,6 +85,7 @@ literal_h_base::
     ld a,b
     ld [hl+],a
   endr
+  fallthrough popslide_next_packet
 popslide_next_packet:
   pop hl
   bit 7,h
@@ -206,7 +207,7 @@ popslide_terminate_blit::
   xor a
   ld [hl+],a  ; Terminate at old fill level
   ld [hl],a
-  ; Fall through
+  fallthrough popslide_blit
 popslide_blit::
   ld [popslide_sp_save],sp
   ld sp,popslide_buf

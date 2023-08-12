@@ -148,6 +148,7 @@ if USE_NAM
 
 load_full_nam::
   ld bc,256*20+18
+  fallthrough load_nam
 ;;
 ; Copies a B column by C row tilemap from HL to screen at DE.
 load_nam::
@@ -205,6 +206,7 @@ set_obp0::
 set_bgp::
   ldh [rBGP],a
   ld bc,$8000 + low(rBCPS)
+  fallthrough set_gbc_mono_palette
 
 ;;
 ; Emulates mono palette setting on Game Boy Color.

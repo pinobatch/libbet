@@ -20,6 +20,7 @@
 ; 3. This notice may not be removed or altered from any source distribution.
 ;
 include "src/hardware.inc"
+include "src/global.inc"
 
 section "fadewram", WRAM0
 fade_level:: ds 1
@@ -99,7 +100,7 @@ fade_update::
     ld a, FADE_MAX
   .have_new_fade_level:
   ld [hl], a
-  ; Fall through to fade_update_same
+  fallthrough fade_update_same
 
 ;;
 ; Calculates color values for the current fade step.

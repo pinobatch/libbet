@@ -44,6 +44,7 @@ color2to1_if_sgb:
   ld a, [hw_capability]
   rra
   ret nc
+  fallthrough color2to1
 color2to1:
   ld a, [hl+]
   ld c, a      ; E: plane 0
@@ -276,7 +277,7 @@ goto_tile_at_cursor:
   ld d,a
   ld a,[cursor_x]
   ld e,a
-  ; fall through
+  fallthrough goto_tile_e_d
 
 ;;
 ; Sets HL to the tilemap address of cell (E, D)

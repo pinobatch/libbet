@@ -296,6 +296,7 @@ audio_update::
   ld hl, audio_channels+(2 << LOG_SIZEOF_CHANNEL)+Channel_envseg_cd
   call audio_update_ch_hl
   ld hl, audio_channels+(3 << LOG_SIZEOF_CHANNEL)+Channel_envseg_cd
+  fallthrough audio_update_ch_hl
 
 audio_update_ch_hl:
   ; Each segment has a duration in frames.  If this segment's
@@ -412,6 +413,7 @@ update_pulse1:
   jr update_pulse_hl
 update_pulse2:
   ld hl,rNR21
+  fallthrough update_pulse_hl
 update_pulse_hl:
   ld [hl],b  ; Quick parameter is duty
   inc l
@@ -433,6 +435,7 @@ update_pulse_hl:
     .no_vol8fix:
   .no_new_volume:
   inc l
+  fallthrough set_pitch_hl_to_d
 set_pitch_hl_to_d:
   ; Write pitch
   ld a,d

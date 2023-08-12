@@ -198,7 +198,7 @@ draw_statusbar_tilemap::
   and $0F
   or SMALL_DIGIT_BASE
   ld [hl+],a
-  ; fall through
+  fallthrough prepare_pctage
 
 ;;
 ; Draws the current score as percentage and number of tracks

@@ -14,6 +14,7 @@ class AsmFile(object):
         self.toplabel = None
         self.last_was_jump = False
         self.section_is_bss = False
+        self.in_macro = False
         self.seen_nonjump_opcodes = {
             'ld', 'add', 'adc', 'sub', 'sbc', 'xor', 'or', 'and', 'cp',
             'rlca', 'rla', 'rrca', 'rra', 'rlc', 'rl', 'rrc', 'rr',
@@ -48,6 +49,16 @@ class AsmFile(object):
         if opcode in ('export', 'global'):
             self.exports.update(operands)
             return
+        if opcode == 'endm':
+            if not self.in_macro:
+                raise ValueError("endm without macro")
+            self.in_macro = False
+            return
+        if opcode == 'macro':
+            if self.in_macro:
+                raise ValueError("nested macro not supported")
+            self.in_macro = True
+            return
 
         preserves_jump = self.opcode_preserves_jump_always(opcode, operands)
         is_jump = self.opcode_is_jump_always(opcode, operands)
@@ -60,6 +71,9 @@ class AsmFile(object):
 
         if self.opcode_can_jump(opcode):
             _, target = self.condition_split(operands)
+##            if opcode == 'fallthrough':
+##                print("%d: adding fallthrough from %s to %s"
+##                      % (self.linenum, self.toplabel, target), file=sys.stderr)
             self.add_tailcall(self.toplabel, target)
         elif self.opcode_can_call(opcode):
             _, target = self.condition_split(operands)
@@ -159,6 +173,7 @@ Return (opcode, [operand, ...])
         ignored_opcodes = (
             'if', 'else', 'elif', 'endc', 'def', 'include', 'incbin',
             'rept', 'endr', 'dw', 'db', 'ds', 'rsreset', 'rsset', 'assert',
+            'warn', 'fail'
         )
         if opcode in ignored_opcodes: return True
         return False
@@ -167,7 +182,7 @@ Return (opcode, [operand, ...])
     def opcode_is_jump_always(opcode, operands):
         """Return true if the following line is never reachable from this line"""
         return_opcodes = ('ret', 'reti')
-        jump_opcodes = ('jp', 'jr')
+        jump_opcodes = ('jp', 'jr', 'fallthrough')
         is_conditional, target = AsmFile.condition_split(operands)
         if is_conditional: return False
         if opcode in return_opcodes or opcode in jump_opcodes: return True
@@ -240,8 +255,10 @@ def main(argv=None):
 
 if __name__=='__main__':
     if 'idlelib' in sys.modules:
-        main("""./callgraph.py
-../src/main.z80
-""".split())
+        folder = "../src"
+        args = ["./callgraph.py"]
+        args.extend(os.path.join(folder, file)
+                    for file in sorted(os.listdir(folder)))
+        main(args)
     else:
         main()

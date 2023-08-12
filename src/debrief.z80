@@ -200,6 +200,7 @@ wr2bcd_de:
   swap a
   call wr1_de
   ld a,c
+  fallthrough wr1_de
 wr1_de:
   and $0F
   or "0"
@@ -214,6 +215,7 @@ wr1_de:
 ; @return A = 0; D = pointer to final NUL
 stpcpy_continue:
   inc de
+  fallthrough stpcpy
 stpcpy::
   ld a,[hl+]
   ld [de],a

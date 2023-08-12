@@ -111,8 +111,10 @@ intro_draw_character:
   ldh [hmsprAttr], a
   ldh [hmsprYHi], a
   call draw_metasprite
-  ; fall through to moving and drawing the (R) symbol
+  fallthrough intro_kick_check
 
+;;
+; moves the (R) symbol
 intro_kick_check:
   ; Do this only on mono
   ld a, [initial_a]

@@ -60,7 +60,7 @@ clear_all_vram:
   jp memset
 
 main::
-  ; If not a Super Game Boy, head straight in.
+  ; If init detected not a Super Game Boy, head straight in.
   ld a, [hw_capability]
   rra
   jr nc, no_clear_vram_main
@@ -80,6 +80,7 @@ main::
 
   ld a, LCDCF_ON
   ldh [rLCDC], a
+  fallthrough clear_vram_main
 
 ; A+B+Select+Start lands here
 clear_vram_main:
@@ -93,6 +94,7 @@ clear_vram_main:
     ldh [rVBK], a
   .not_gbc:
   call clear_all_vram
+  fallthrough no_clear_vram_main
 
 no_clear_vram_main:
   ; Set up vblank handler
@@ -113,6 +115,7 @@ no_clear_vram_main:
   endc
 
   call show_intro  ; Roll over the Nintendo logo
+  fallthrough skip_intro
 skip_intro:
   call do_instructions  ; Title screen
 
@@ -120,6 +123,7 @@ skip_intro:
   ; to close the instructions
   ld a,[new_keys]
   and PADF_SELECT
+  fallthrough straight_to_attract
 straight_to_attract:
   ld [attract_mode],a
 
@@ -144,6 +148,7 @@ straight_to_attract:
   ld a,7+48
   ldh [rWX],a
   call achievements_new_game
+  fallthrough another_floor
 
 another_floor:
   if RANDOMIZE_SEED
@@ -250,6 +255,7 @@ another_floor:
   ld a,LCDCF_ON|LCDCF_BG9800|LCDCF_SCRNADDR|LCDCF_BGON|LCDCF_OBJON|LCDCF_WINON
   ld [vblank_lcdc_value],a
   ldh [rLCDC],a
+  fallthrough forever
 
 forever:
 
@@ -601,7 +607,7 @@ mark_exit_open_100pct:
   ld a, [hl]
   and ~((1<<MVFB_PAUSED_SINCE_100) | (1<<MVFB_MOVED_SINCE_100) | (1<<MVFB_RETREATED_SINCE_100))
   ld [hl], a
-  ; fall through
+  fallthrough mark_exit_open
 mark_exit_open:
   ld a,6
   call audio_play_fx

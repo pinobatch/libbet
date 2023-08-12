@@ -126,7 +126,7 @@ init_player_pos::
   ld [roll_frame],a
   ld a,2
   ld [cursor_facing],a
-  ; fall through
+  fallthrough set_roll_start_pos
 
 set_roll_start_pos:
   ld a,[cursor_y]

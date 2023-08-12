@@ -58,6 +58,10 @@ calc_floor_area::
   ld a,[hl+]
   ld b,a
   ld c,[hl]
+  fallthrough calc_btimesc
+
+;;
+; Multiply B by C the naive way 
 calc_btimesc:
   xor a
   .calcarealoop:
@@ -132,6 +136,7 @@ make_shuffled_floor::
     ld a,b
     cp c
     jr c,.shuffleloop
+  fallthrough rowify_floor
 
 ; Entry point used by make_prefab_floor
 ; At this point, HL points at the last element of the floor
