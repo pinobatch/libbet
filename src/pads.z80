@@ -22,8 +22,8 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-DAS_DELAY = 15
-DAS_SPEED = 3
+def DAS_DELAY equ 15
+def DAS_SPEED equ 3
 
 SECTION "ram_pads", WRAM0
 cur_keys:: ds 1

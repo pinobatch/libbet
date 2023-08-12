@@ -6,9 +6,9 @@ include "src/global.inc"
 section "decompbuf", wram0, align[8]
 decompbuf:: ds $200
 
-KICK_TRIGGER_X = 132
-KICK_STARTING_X = (4+12)*8 + 8
-KICK_STARTING_Y = 8*8 + 16
+def KICK_TRIGGER_X equ 132
+def KICK_STARTING_X equ (4+12)*8 + 8
+def KICK_STARTING_Y equ 8*8 + 16
 
 section "intro", ROM0
 load_rolling_girl_tiles::
@@ -369,8 +369,8 @@ intro_close_scroll:
   db -28, -34, -40, -47, -54, -62, -70, -79, -88, -88
 intro_close_scroll_end:
 
-LF = $0A
-COPR equ $1A
+def LF equ $0A
+def COPR equ $1A
 coprNotice:
  db "",LF
  db COPR," 2002, 2012 Martin Korth",LF

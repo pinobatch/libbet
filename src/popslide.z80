@@ -39,13 +39,13 @@ include "src/global.inc"
 ; +32 literal: write first byte if lengthvalue is even,
 ; then copy next ceil(lengthvalue / 2) * 2 bytes, adding 32 to dst
 
-HORIZONTAL_MAX = 64
-VERTICAL_MAX = 32
+def HORIZONTAL_MAX equ 64
+def VERTICAL_MAX equ 32
 
 if VERTICAL_MAX <= 32
-LOG2_VERTICAL_MAX = 5
+def LOG2_VERTICAL_MAX equ 5
 else
-LOG2_VERTICAL_MAX = 6
+def LOG2_VERTICAL_MAX equ 6
 endc
 
 ; Make `di halt` safe on VisualBoyAdvance 1.7.2

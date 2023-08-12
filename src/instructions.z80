@@ -23,11 +23,11 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-LF equ $0A
-FF equ $0C
-ABTNSYM equ $18
-BBTNSYM equ $19
-DPADSYM equ $7F
+def LF equ $0A
+def FF equ $0C
+def ABTNSYM equ $18
+def BBTNSYM equ $19
+def DPADSYM equ $7F
 
 section "instructions", ROM0
 
@@ -199,7 +199,7 @@ page1txt:
 
 ; Attract mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-STATUS_BLANK equ $F7
+def STATUS_BLANK equ $F7
 
 section "attractstate", WRAM0
 attract_src_ptr:: ds 2
@@ -621,18 +621,18 @@ attract_map::
 section "attractscript", ROM0
 
 ; AM_constants are one greater than the underlying move code
-AM_R equ $01
-AM_L equ $02
-AM_U equ $03
-AM_D equ $04
-AM_RR equ $05
-AM_LL equ $06
-AM_UU equ $07
-AM_DD equ $08
-SHOWCONTROLS equ $0B
-HIDESHADES equ $0D
-SHOWSHADES equ $0E
-PEEKWAIT equ $0F
+def AM_R equ $01
+def AM_L equ $02
+def AM_U equ $03
+def AM_D equ $04
+def AM_RR equ $05
+def AM_LL equ $06
+def AM_UU equ $07
+def AM_DD equ $08
+def SHOWCONTROLS equ $0B
+def HIDESHADES equ $0D
+def SHOWSHADES equ $0E
+def PEEKWAIT equ $0F
 
 ;;
 ; Bytecode format

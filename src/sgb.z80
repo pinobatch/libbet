@@ -97,8 +97,8 @@ sgb_send_abc::
   pop hl
   jr sgb_send
 
-SIZEOF_SGB_PACKET EQU 16
-CHAR_BIT EQU 8
+def SIZEOF_SGB_PACKET EQU 16
+def CHAR_BIT EQU 8
 
 ;;
 ; Clears the Super Game Boy attribute table to 0.

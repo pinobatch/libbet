@@ -21,7 +21,7 @@
 include "src/global.inc"
 
   rsset hLocals
-pb16_byte0 rb 1
+def pb16_byte0 rb 1
 
 section "pb16", ROM0
 

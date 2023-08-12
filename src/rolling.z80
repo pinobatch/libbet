@@ -38,18 +38,18 @@ cursor_facing:: ds 1
 
 section "rolling", ROM0
 
-FRLB_MOVE     equ 4
-FRLB_JUMP     equ 5
-FRLB_READY    equ 6
-FRLB_KEEPROLL equ 7
-FRLF_MOVE     equ %00010000
-FRLF_JUMP     equ %00100000
-FRLF_READY    equ %01000000
-FRLF_KEEPROLL equ %10000000
-FRHB_BALLRETURN equ 6
-FRHB_LAST     equ 7
-FRHF_BALLRETURN equ %01000000
-FRHF_LAST     equ %10000000
+def FRLB_MOVE     equ 4
+def FRLB_JUMP     equ 5
+def FRLB_READY    equ 6
+def FRLB_KEEPROLL equ 7
+def FRLF_MOVE     equ %00010000
+def FRLF_JUMP     equ %00100000
+def FRLF_READY    equ %01000000
+def FRLF_KEEPROLL equ %10000000
+def FRHB_BALLRETURN equ 6
+def FRHB_LAST     equ 7
+def FRHF_BALLRETURN equ %01000000
+def FRHF_LAST     equ %10000000
 
 Libbet_framelist:
   ; 7654 3210  Byte 0

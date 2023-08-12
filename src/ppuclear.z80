@@ -22,9 +22,9 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-USE_NAM equ 1  ; used by SGB driver
-USE_GBC equ 1
-GBMONO_GREEN equ 0
+def USE_NAM equ 1  ; used by SGB driver
+def USE_GBC equ 1
+def GBMONO_GREEN equ 0
 
 section "irqvars",HRAM
 ; Used for bankswitching BG CHR RAM

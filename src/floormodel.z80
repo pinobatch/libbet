@@ -32,8 +32,8 @@ include "src/global.inc"
 ; 6. Max score at least cell count
 
 ; Possible floor sizes are 2x8, 4x4, 6x4, and 8x6
-MAX_WIDTH equ 8
-MAX_HEIGHT equ 8
+def MAX_WIDTH equ 8
+def MAX_HEIGHT equ 8
 
 section "floor_map",WRAM0,ALIGN[3]
 floor_map:: ds MAX_WIDTH*MAX_HEIGHT
@@ -307,15 +307,15 @@ cursor_to_home::
   ld [cursor_x],a
   ret
 
-FWDCHECKED equ $10
-FWDREACHED equ $20
-REVCHECKED equ $40
-REVREACHED equ $80
-DEADEND equ $04
+def FWDCHECKED equ $10
+def FWDREACHED equ $20
+def REVCHECKED equ $40
+def REVREACHED equ $80
+def DEADEND equ $04
 
   rsset hLocals
-hFound rb 1
-hCurMovedir rb 1
+def hFound rb 1
+def hCurMovedir rb 1
 
 ;;
 ; Finds all reachable cells in a freshly generated floor.

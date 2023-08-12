@@ -33,7 +33,7 @@ run_dma:: ds 10
 section "hram_locals", HRAM[hLocals]
   ds locals_size
 
-STACK_SIZE EQU 64
+def STACK_SIZE EQU 64
 section "stack", WRAM0, ALIGN[2]
 stack_top: ds STACK_SIZE
 

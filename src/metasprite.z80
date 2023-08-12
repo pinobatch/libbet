@@ -22,30 +22,29 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-TMARGIN equ 16
-LMARGIN equ 8
-SPRITEHT equ 8  ; or 16?
-SPRITEWID equ 8
+def TMARGIN equ 16
+def LMARGIN equ 8
+def SPRITEHT equ 8  ; or 16?
+def SPRITEWID equ 8
 
 ; args
   rsset hLocals
-hmsprYLo rb 1
-hmsprYHi rb 1
-hmsprXLo rb 1
-hmsprXHi rb 1
-hmsprAttr rb 1
-hmsprSheetID rb 1
-hmsprFrame rb 1
-hmsprBaseTile rb 1
+def hmsprYLo rb 1
+def hmsprYHi rb 1
+def hmsprXLo rb 1
+def hmsprXHi rb 1
+def hmsprAttr rb 1
+def hmsprSheetID rb 1
+def hmsprFrame rb 1
+def hmsprBaseTile rb 1
 export hmsprYLo, hmsprYHi, hmsprXLo, hmsprXHi
 export hmsprAttr, hmsprSheetID, hmsprFrame, hmsprBaseTile
 
-
 ; internal
-hmsprXAdd rb 1
-hmsprStripY rb 1
-hmsprStripXLo rb 1
-hmsprStripXHi rb 1
+def hmsprXAdd rb 1
+def hmsprStripY rb 1
+def hmsprStripXLo rb 1
+def hmsprStripXHi rb 1
 
 section "metasprite", ROM0
 

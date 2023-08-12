@@ -64,7 +64,7 @@ fade_in::
 initial_fade_density:
   db 6, 4, 2, 0, 6, 1, 0, 6, 4, 0
 
-FADE_MAX = 32
+def FADE_MAX = 32
 
 fade_out::
   ld hl,fade_level

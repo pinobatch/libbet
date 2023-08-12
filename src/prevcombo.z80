@@ -22,11 +22,11 @@
 
 ; When combo breaks, the previous combo rises off the status bar
 
-MIN_PREVCOMBO equ 3
-PREVCOMBO_X equ 8
-PREVCOMBO_START_Y equ 128
-PREVCOMBO_START_DY equ -20
-PREVCOMBO_FRAMES equ 80
+def MIN_PREVCOMBO equ 3
+def PREVCOMBO_X equ 8
+def PREVCOMBO_START_Y equ 128
+def PREVCOMBO_START_DY equ -20
+def PREVCOMBO_FRAMES equ 80
 
 section "prevcomboram", WRAM0
 prevcombo_timeleft: ds 1

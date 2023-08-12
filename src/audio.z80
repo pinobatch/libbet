@@ -26,22 +26,22 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-LOG_SIZEOF_CHANNEL equ 3
-LOG_SIZEOF_SFX equ 2
-NUM_CHANNELS equ 4
+def LOG_SIZEOF_CHANNEL equ 3
+def LOG_SIZEOF_SFX equ 2
+def NUM_CHANNELS equ 4
 
-ENVB_DPAR equ 5
-ENVB_PITCH equ 4
-ENVF_QPAR equ $C0
-ENVF_DPAR equ $20
-ENVF_PITCH equ $10
-ENVF_DURATION equ $0F
+def ENVB_DPAR equ 5
+def ENVB_PITCH equ 4
+def ENVF_QPAR equ $C0
+def ENVF_DPAR equ $20
+def ENVF_PITCH equ $10
+def ENVF_DURATION equ $0F
 
 section "audio_wram", WRAM0, ALIGN[LOG_SIZEOF_CHANNEL]
 audio_channels: ds NUM_CHANNELS << LOG_SIZEOF_CHANNEL
-Channel_envseg_cd = 0
-Channel_envptr = 1
-Channel_envpitch = 3
+def Channel_envseg_cd equ 0
+def Channel_envptr equ 1
+def Channel_envpitch equ 3
 
 section "wavebank", ROM0, ALIGN[4]
 wavebank:
@@ -488,11 +488,11 @@ update_wave:
   ; Copy wave
   xor a
   ldh [rNR30],a  ; give CPU access to waveram
-WAVEPTR = _AUD3WAVERAM
+  def I = 0
   rept 16
     ld a,[hl+]
-    ldh [WAVEPTR],a
-WAVEPTR = WAVEPTR+1
+    ldh [_AUD3WAVERAM + I],a
+    def I = I + 1
   endr
   ld a,$80
   ldh [rNR30],a  ; give APU access to waveram

@@ -29,10 +29,10 @@ floor_top_row:: ds 1
 section "load_floor_chr",ROM0
 
 ; Use tilemap as scratch space for unpacking 
-decomppos equ $8800
-harrow_chr equ decomppos+16*16
-varrow_chr equ decomppos+20*16
-deadend_chr equ decomppos+24*16
+def decomppos equ $8800
+def harrow_chr equ decomppos+16*16
+def varrow_chr equ decomppos+20*16
+def deadend_chr equ decomppos+24*16
 
 ;;
 ; Convert all pixels with color 2 to color 1, in place
@@ -127,8 +127,8 @@ overlay4:
     jr nz, .loop
   ret
 
-FLOORBORDER_BASE_TILE equ $68
-FLOORBORDER_NUM_TILES equ 24
+def FLOORBORDER_BASE_TILE equ $68
+def FLOORBORDER_NUM_TILES equ 24
 
 ;;
 ; Load the CHR
@@ -233,10 +233,12 @@ section "floor_chr", ROM0
 floortiles_pb16: incbin "obj/gb/floorpieces-h.2bpp.pb16"
 floorborder_pb16: incbin "obj/gb/floorborder-h.2bpp.pb16"
 floorborder_sgb_pb16: incbin "obj/gb/floorborder-sgb-h.2bpp.pb16"
+
+; Symmetry in each floorborder
+def MIRRNO equ 1
+def MIRRH equ 2
+def MIRRHV equ 3
 floormirrortypes:
-MIRRNO equ 1
-MIRRH equ 2
-MIRRHV equ 3
   db MIRRNO, MIRRH, MIRRH, MIRRH
   db MIRRH, MIRRH, MIRRH
   db 0
@@ -245,7 +247,7 @@ MIRRHV equ 3
 
 section "floor_tilemap",ROM0
 
-CELL_W = 2
+def CELL_W equ 2
 
 ;;
 ; Calculate the top row of the floor.  This is centered in the
