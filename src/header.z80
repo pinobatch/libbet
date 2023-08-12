@@ -1,80 +1,10 @@
 ;
-; ROM header for Game Boy
-;
-; Copyright 2018, 2020 Damian Yerrick
+; Leaving space for RGBFIX
+; Copyright 2023 Damian Yerrick
+; No rights reserved
 ; 
-; This software is provided 'as-is', without any express or implied
-; warranty.  In no event will the authors be held liable for any damages
-; arising from the use of this software.
-; 
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-; 
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgment in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
-;
-include "src/hardware.inc"
-include "src/global.inc"
-
-; Instead of vectors, LR35902 has RSTs ("reset trampolines"?) spaced
-; 8 bytes apart.  There are eight for short encodings of CALL with
-; specific addresses ($C7, $CF, ..., $FF) and five for interrupt
-; service routines (ISR).  (But fill them elsewhere)
-
-; These interrupts are never enabled in rIE.  The RETI instructions
-; keep the linker from packing something big into this area, so don't
-; add them.
 
 SECTION "header", ROM0[$0100]
   nop
   jp reset_handler
-
-  ; IPL uses this header to ensure D7-D0, A5-A0, and /RD are
-  ; connected before calling something in the game that might
-  ; corrupt battery-backed save RAM.
-  ; TODO: Figure out how much of this RGBFIX can fill in for me
-
-  ds 48, 0  ; skip troubleshooting logo, which RGBFIX inserts
-
-  ; 11-character title
-  DB "LIBBET"
-  DB 0, 0, 0, 0, 0
-
-  ; Serial code (is ADME Doom or Animal Crossing?)
-  DS 4
-
-  ; Execution mode (GBC runs in GBC mode if bit 7 is true)
-  DB CART_COMPATIBLE_DMG_GBC
-
-  ; $0144: Developer ID
-  DB "OK"
-
-  ; SGB mode
-  DB SGB_SUPPORT
-
-  ; Mapper
-  DB CART_ROM
-
-  ; $0148: ceil(log2(ROM size / 32768))
-  DB $00
-  
-  ; log2(RAM size / 512)/2
-  DB $00
-
-  ; Region code
-  DB REGION_UE
-
-  ; Old hex developer ID: $33 means "see $0144"
-  DB $33
-  
-  ; ROM version number
-  DB $00
-
-  ; Leave space for header checksum to be filled in by rgbfix
-  DS 3
+  ds 76, 0  ; RGBFIX
