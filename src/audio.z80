@@ -370,19 +370,17 @@ audio_update_ch_hl:
   ; Seek to the appropriate audio channel's updater
   ld a,l
   sub low(audio_channels)
-  ; rgbasm's nightmare of a parser can't subtract.
-  ; Parallels to lack of "sub hl,*"?
   rept LOG_SIZEOF_CHANNEL + (-1)
     rra
   endr
-  and $06
+  and %00000110
 
-  ld hl,channel_writing_jumptable
-  add l
-  jr nc,.nohlwrap
-    inc h
-  .nohlwrap:
-  ld l,a
+  tailcalls channel_writing_jumptable
+  add low(channel_writing_jumptable)
+  ld l, a
+  adc high(channel_writing_jumptable)
+  sub l
+  ld h, a
   jp hl
 
 ; Channel hardware updaters ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

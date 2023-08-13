@@ -11,10 +11,9 @@ SHOW_JUMP_ALWAYS = False
 
 class AsmFile(object):
     def __init__(self, lines=None):
-        self.toplabel = None
+        self.toplabel = self.jumptable_contents = None
         self.last_was_jump = False
-        self.section_is_bss = False
-        self.in_macro = False
+        self.in_macro = self.in_jumptable = self.section_is_bss = False
         self.seen_nonjump_opcodes = {
             'ld', 'add', 'adc', 'sub', 'sbc', 'xor', 'or', 'and', 'cp',
             'rlca', 'rla', 'rrca', 'rra', 'rlc', 'rl', 'rrc', 'rr',
@@ -41,7 +40,7 @@ class AsmFile(object):
         if label: self.add_label(label, is_exported)
         if not line: return
 
-        # Determine whether line is unconditional jump
+        # Handle some directives
         opcode, operands = self.opcode_split(line)
         if opcode == 'section':
             self.add_section(operands)
@@ -59,7 +58,19 @@ class AsmFile(object):
                 raise ValueError("nested macro not supported")
             self.in_macro = True
             return
+        if opcode == 'jumptable':
+            if self.toplabel is None:
+                raise ValueError("jumptable without top-level label")
+            self.in_jumptable = True
+            return
+        if opcode == 'dw':
+            if self.in_macro: return
+            if self.toplabel is None:
+                raise ValueError("dw without top-level label")
+            self.add_jumptable_entries(operands)
+            return
 
+        # Determine whether line is unconditional jump
         preserves_jump = self.opcode_preserves_jump_always(opcode, operands)
         is_jump = self.opcode_is_jump_always(opcode, operands)
         if SHOW_JUMP_ALWAYS and not self.section_is_bss:
@@ -71,16 +82,12 @@ class AsmFile(object):
 
         if self.opcode_can_jump(opcode):
             _, target = self.condition_split(operands)
-##            if opcode == 'fallthrough':
-##                print("%d: adding fallthrough from %s to %s"
-##                      % (self.linenum, self.toplabel, target), file=sys.stderr)
             self.add_tailcall(self.toplabel, target)
         elif self.opcode_can_call(opcode):
             _, target = self.condition_split(operands)
             self.add_call(self.toplabel, target)
         else:
-            if (opcode not in self.seen_nonjump_opcodes
-                and not preserves_jump):
+            if opcode not in self.seen_nonjump_opcodes and not preserves_jump:
                 self.seen_nonjump_opcodes.add(opcode)
                 print("%d: note: %s not jump or call"
                       % (self.linenum, opcode), file=sys.stderr)
@@ -103,6 +110,7 @@ class AsmFile(object):
                 and not self.section_is_bss):
                 print("%d: warning: %s may fall through to %s"
                       % (self.linenum, self.toplabel, label), file=sys.stderr)
+            self.flush_jumptable()
             self.toplabel = label
 
         if is_exported: self.exports.add(label)
@@ -115,11 +123,22 @@ class AsmFile(object):
             print("%d: warning: %s may fall off end of section"
                   % (self.linenum, self.toplabel), file=sys.stderr)
 
+        self.flush_jumptable()
         self.toplabel = None
         self.last_was_jump = True
         memory_area = operands[1].split('[', 1)[0].strip().upper()
         ramsection_names = ("WRAM", "SRAM", "HRAM")
         self.section_is_bss = memory_area.startswith(ramsection_names)
+
+    def flush_jumptable(self):
+        """Have the current toplabel tailcall all jumptable_contents members.
+
+Call this before setting or clearing a toplabel.
+"""
+        if self.toplabel is not None and self.in_jumptable:
+            for row in self.jumptable_contents:
+                self.add_tailcall(self.toplabel, row)
+        self.in_jumptable, self.jumptable_contents = False, set()
 
     def add_call(self, fromlabel, tolabel):
         # disregard calls within function
@@ -132,8 +151,13 @@ class AsmFile(object):
         if tolabel.startswith((':', '.')): return
         # disregard whole-function loops
         if tolabel == fromlabel: return
+        # jp hl is handled by "tailcalls some_table"
+        if tolabel.lower() == 'hl': return
 
         self.tailcalls[fromlabel].add(tolabel)
+
+    def add_jumptable_entries(self, operands):
+        self.jumptable_contents.update(operands)
 
     @staticmethod
     def label_split(line):
@@ -194,7 +218,7 @@ Return (opcode, [operand, ...])
 
     @staticmethod
     def opcode_can_call(opcode):
-        return opcode in ('call', 'calls')
+        return opcode in ('call', 'rst', 'calls')
 
     @staticmethod
     def condition_split(operands):
@@ -207,39 +231,6 @@ Return (opcode, [operand, ...])
                   else '')
         return is_conditional, target
 
-def load_file(lines):
-    toplabel = None
-    exported_labels = set()
-    for linenum, line in enumerate(lines):
-        line = line.strip()
-        line = line
-        colonsplit = line.split(':', 1)
-        if len(colonsplit) == 1 and line.startswith('.'):
-            # local labels can be terminated by whitespace instead of colon
-            colonsplit = line.split(None, 1)
-        if len(colonsplit) > 1:
-            label, line = colonsplit
-            label = label.strip()
-            if label.startswith(':'):
-                print("%d: disregarding anonymous label %s in %s"
-                      % (linenum + 1, label, toplabel))
-            else:
-                if label.startswith('.'):
-                    if toplabel is None:
-                        raise ValueError("%d: no top-level label for local label %s"
-                                         % (linenum + 1, label))
-                    label = toplabel + label
-                else:
-                    toplabel = label
-                print("label", label)
-                is_exported = line.startswith(':')
-                if is_exported:
-                    line = line[1:]
-                    exported_labels.add(label)
-                    print("export %s" % label)
-        if not line: continue
-        print("line of code", repr(line))
-
 def parse_argv(argv):
     p = argparse.ArgumentParser(description="Parses RGBASM source to determine a call graph")
     p.add_argument("sourcefile", nargs="+",
@@ -251,7 +242,13 @@ def main(argv=None):
     for filename in args.sourcefile:
         print("parsing %s" % filename, file=sys.stderr)
         with open(filename, "r") as infp:
-            result = AsmFile(infp)
+            result = AsmFile()
+            try:
+                result.extend(infp)
+            except Exception as e:
+                print("%s:%d: %s" % (filename, result.linenum, e),
+                      file=sys.stderr)
+                raise
 
 if __name__=='__main__':
     if 'idlelib' in sys.modules:

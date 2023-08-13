@@ -154,6 +154,7 @@ achievements_frame::
   ; Now the achievements display engine state machine
   ld a,[ach_display_step]
   ld de,ach_display_step_handlers
+  tailcalls ach_display_step_handlers
   call de_index_a
   jp hl
 
@@ -276,7 +277,7 @@ facing_to_airrot::
 
 ; Achievements display ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-ach_display_step_handlers:
+ach_display_step_handlers: jumptable
   dw ach_idle, ach_draw, ach_show
 
 ;;

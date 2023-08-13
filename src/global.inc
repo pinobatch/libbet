@@ -23,12 +23,19 @@
   IF  !DEF(GB_INC)
 def GB_INC equ 1
 
-; sm83 asm niceties ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; do we want lb?
+; call graph annotation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 macro fallthrough
   assert (\1) == @
+endm
+
+macro calls
+endm
+
+macro tailcalls
+endm
+
+macro jumptable
 endm
 
 ; things left out of hardware.inc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
