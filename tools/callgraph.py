@@ -37,7 +37,7 @@ class AsmFile(object):
 
         # Process labels
         label, line, is_exported = self.label_split(line)
-        if label: self.add_label(label, is_exported)
+        if label and not self.in_macro: self.add_label(label, is_exported)
         if not line: return
 
         # Handle some directives
@@ -57,12 +57,18 @@ class AsmFile(object):
             if self.in_macro:
                 raise ValueError("nested macro not supported")
             self.in_macro = True
+            self.seen_nonjump_opcodes.add(operands[0])
             return
         if opcode == 'jumptable':
             if self.toplabel is None:
                 raise ValueError("jumptable without top-level label")
             self.in_jumptable = True
             return
+
+        # Remaining opcodes add code if and only if they're
+        # not inside a macro.
+        if self.in_macro: return
+
         if opcode == 'dw':
             if self.in_macro: return
             if self.toplabel is None:
@@ -73,12 +79,6 @@ class AsmFile(object):
         # Determine whether line is unconditional jump
         preserves_jump = self.opcode_preserves_jump_always(opcode, operands)
         is_jump = self.opcode_is_jump_always(opcode, operands)
-        if SHOW_JUMP_ALWAYS and not self.section_is_bss:
-            print("%d: note: %s %s %s jump always"
-                  % (self.linenum, opcode, operands,
-                     "preserves" if preserves_jump
-                     else "is" if is_jump else "is not"),
-                     file=sys.stderr)
 
         if self.opcode_can_jump(opcode):
             _, target = self.condition_split(operands)
@@ -106,20 +106,21 @@ class AsmFile(object):
                                  % (label,))
             label = self.toplabel + label
         else:
-            if (self.toplabel is not None and not self.last_was_jump
-                and not self.section_is_bss):
+            if (self.toplabel is not None and not self.section_is_bss
+                and not self.last_was_jump and self.last_was_jump is not None):
                 print("%d: warning: %s may fall through to %s"
                       % (self.linenum, self.toplabel, label), file=sys.stderr)
             self.flush_jumptable()
             self.toplabel = label
+            self.last_was_jump = None
 
         if is_exported: self.exports.add(label)
 
     def add_section(self, operands):
         if len(operands) < 2:
             raise ValueError("section %s has no memory area!")
-        if (self.toplabel is not None and not self.last_was_jump
-            and not self.section_is_bss):
+        if (self.toplabel is not None and not self.section_is_bss
+            and not self.last_was_jump and self.last_was_jump is not None):
             print("%d: warning: %s may fall off end of section"
                   % (self.linenum, self.toplabel), file=sys.stderr)
 
@@ -255,7 +256,9 @@ if __name__=='__main__':
         folder = "../src"
         args = ["./callgraph.py"]
         args.extend(os.path.join(folder, file)
-                    for file in sorted(os.listdir(folder)))
+                    for file in sorted(os.listdir(folder))
+                    if os.path.splitext(file)[1].lower()
+                    in ('.z80', '.asm', '.s', '.inc'))
         main(args)
     else:
         main()
