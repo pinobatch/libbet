@@ -9,23 +9,31 @@ from collections import defaultdict
 
 SHOW_JUMP_ALWAYS = False
 
+nonjump_opcodes = {
+    'ld', 'add', 'adc', 'sub', 'sbc', 'xor', 'or', 'and', 'cp',
+    'rlca', 'rla', 'rrca', 'rra', 'rlc', 'rl', 'rrc', 'rr',
+    'swap', 'srl', 'sra', 'sla', 'bit', 'set', 'res',
+    'ccf', 'scf', 'cpl', 'daa', 'di', 'ei', 'ret', 'reti',
+    'dec', 'inc', 'ret', 'ldh', 'push', 'pop', 'nop', 'halt', 'stop',
+}
+
+def rgbint(s):
+    if s.startswith('$'): return int(s[1:], 16)
+    if s.startswith('%'): return int(s[1:], 2)
+    return int(s[1:], 10)
+
 class AsmFile(object):
     def __init__(self, lines=None):
         self.toplabel = self.jumptable_contents = None
         self.last_was_jump = False
         self.in_macro = self.in_jumptable = self.section_is_bss = False
-        self.seen_nonjump_opcodes = {
-            'ld', 'add', 'adc', 'sub', 'sbc', 'xor', 'or', 'and', 'cp',
-            'rlca', 'rla', 'rrca', 'rra', 'rlc', 'rl', 'rrc', 'rr',
-            'swap', 'srl', 'sra', 'sla', 'bit', 'set', 'res',
-            'ccf', 'scf', 'cpl', 'daa', 'di', 'ei', 'ret', 'reti',
-            'dec', 'inc', 'ret', 'ldh', 'push', 'pop', 'nop', 'halt', 'stop',
-        }
-        self.exports = set()
+        self.unknown_opcodes = set()
+        self.exports = {}
         self.calls = defaultdict(set)
         self.tailcalls = defaultdict(set)
         self.linenum = 0
         self.warnings = []
+        self.is_fixlabel = None
         if lines: self.extend(lines)
 
     def extend(self, lines):
@@ -46,7 +54,7 @@ class AsmFile(object):
             self.add_section(operands)
             return
         if opcode in ('export', 'global'):
-            self.exports.update(operands)
+            self.add_exports(operands)
             return
         if opcode == 'endm':
             if not self.in_macro:
@@ -57,7 +65,7 @@ class AsmFile(object):
             if self.in_macro:
                 raise ValueError("nested macro not supported")
             self.in_macro = True
-            self.seen_nonjump_opcodes.add(operands[0])
+            self.unknown_opcodes.add(operands[0])
             return
         if opcode == 'jumptable':
             if self.toplabel is None:
@@ -86,18 +94,21 @@ class AsmFile(object):
         elif self.opcode_can_call(opcode):
             _, target = self.condition_split(operands)
             self.add_call(self.toplabel, target)
-        else:
-            if opcode not in self.seen_nonjump_opcodes and not preserves_jump:
-                self.seen_nonjump_opcodes.add(opcode)
-                print("%d: note: %s not jump or call"
-                      % (self.linenum, opcode), file=sys.stderr)
+        elif opcode not in nonjump_opcodes and not preserves_jump:
+            # Treat unknown opcodes as probably data macros defined
+            # in an include file.  (The tool skips include files
+            # because unlike in C and ca65, RGBASM include paths
+            # are relative to the CWD, and the CWD is unknown.)
+            if opcode not in self.unknown_opcodes:
+                self.unknown_opcodes.add(opcode)
+                self.warn("unknown instruction %s" % (opcode,))
+            preserves_jump = True
 
         if not preserves_jump: self.last_was_jump = is_jump
 
     def add_label(self, label, is_exported=False):
         if label == '':
-            print("%d: %s: disregarding anonymous label"
-                  % (self.linenum, self.toplabel), file=sys.stderr)
+            self.warn("%s: disregarding anonymous label" % (self.toplabel,))
             return
 
         if label.startswith('.'):
@@ -108,28 +119,50 @@ class AsmFile(object):
         else:
             if (self.toplabel is not None and not self.section_is_bss
                 and not self.last_was_jump and self.last_was_jump is not None):
-                print("%d: warning: %s may fall through to %s"
-                      % (self.linenum, self.toplabel, label), file=sys.stderr)
+                if self.is_fixlabel:
+                    self.warn("fixlabel %s falls through to %s"
+                              % (self.toplabel, label))
+                    self.add_tailcall(self.toplabel, label)
+                    self.is_fixlabel = False
+                else:
+                    self.warn("%s may fall through to %s"
+                              % (self.toplabel, label))
             self.flush_jumptable()
             self.toplabel = label
             self.last_was_jump = None
 
-        if is_exported: self.exports.add(label)
+        if is_exported: self.add_exports([label])
+
+    def warn(self, msg):
+        self.warnings.append((self.linenum, msg))
+
+    def add_exports(self, new_exports):
+        for label in new_exports:
+            self.exports[label] = self.linenum
 
     def add_section(self, operands):
         if len(operands) < 2:
             raise ValueError("section %s has no memory area!")
         if (self.toplabel is not None and not self.section_is_bss
             and not self.last_was_jump and self.last_was_jump is not None):
-            print("%d: warning: %s may fall off end of section"
-                  % (self.linenum, self.toplabel), file=sys.stderr)
-
+            self.warn("%s may fall off end of section" % (self.toplabel,))
         self.flush_jumptable()
         self.toplabel = None
         self.last_was_jump = True
-        memory_area = operands[1].split('[', 1)[0].strip().upper()
+        self.is_fixlabel = False
+        op1split = operands[1].split('[', 1)
+        memory_area = op1split[0].strip().upper()
         ramsection_names = ("WRAM", "SRAM", "HRAM")
         self.section_is_bss = memory_area.startswith(ramsection_names)
+
+        # Try to assign fixed memory addresses, so as to find things like
+        # RST $00, $08, $10, ..., $38, and entry point at $100
+        fixaddr = op1split[1].rstrip(']').strip() if len(op1split) > 1 else ''
+        if fixaddr and memory_area == "ROM0":
+            fixlabel = self.canonicalize_call_target(fixaddr)
+            self.add_label(fixlabel)
+            self.add_exports([fixlabel])
+            self.is_fixlabel = True
 
     def flush_jumptable(self):
         """Have the current toplabel tailcall all jumptable_contents members.
@@ -145,7 +178,7 @@ Call this before setting or clearing a toplabel.
         # disregard calls within function
         if tolabel.startswith('.'): return
 
-        self.tailcalls[fromlabel].add(tolabel)
+        self.calls[fromlabel].add(self.canonicalize_call_target(tolabel))
 
     def add_tailcall(self, fromlabel, tolabel):
         # disregard jumps within function
@@ -155,7 +188,7 @@ Call this before setting or clearing a toplabel.
         # jp hl is handled by "tailcalls some_table"
         if tolabel.lower() == 'hl': return
 
-        self.tailcalls[fromlabel].add(tolabel)
+        self.tailcalls[fromlabel].add(self.canonicalize_call_target(tolabel))
 
     def add_jumptable_entries(self, operands):
         self.jumptable_contents.update(operands)
@@ -222,6 +255,19 @@ Return (opcode, [operand, ...])
         return opcode in ('call', 'rst', 'calls')
 
     @staticmethod
+    def canonicalize_call_target(target):
+        """Convert numbers used as call targets to 4-digit hex.
+
+Convert '56' and '$38' to '$0038', and leave non-numbers unchanged.
+""" 
+        try:
+            fixlabel = rgbint(target)
+        except ValueError:
+            return target
+        else:
+            return "$%04X" % fixlabel
+
+    @staticmethod
     def condition_split(operands):
         condition_codes = ('c', 'nc', 'z', 'nz')
         is_conditional = (len(operands) > 0
@@ -236,20 +282,52 @@ def parse_argv(argv):
     p = argparse.ArgumentParser(description="Parses RGBASM source to determine a call graph")
     p.add_argument("sourcefile", nargs="+",
                    help="name of source code file")
+    p.add_argument("-v", "--verbose", action="store_true",
+                   help="print more debugging information")
     return p.parse_args(argv[1:])
 
 def main(argv=None):
     args = parse_argv(argv or sys.argv)
+    files = {}
+    all_errors, all_warnings = [], []
     for filename in args.sourcefile:
-        print("parsing %s" % filename, file=sys.stderr)
         with open(filename, "r") as infp:
             result = AsmFile()
             try:
                 result.extend(infp)
             except Exception as e:
-                print("%s:%d: %s" % (filename, result.linenum, e),
-                      file=sys.stderr)
-                raise
+                if args.verbose:
+                    from traceback import print_exc
+                    print_exc()
+                all_errors.append(filename, result.linenum, str(e))
+            else:
+                files[filename] = result
+            finally:
+                all_warnings.extend((filename, ln, msg)
+                                    for ln, msg in result.warnings)
+
+    all_exports = {}  # {symbol: (filename, linenum), ...}
+    for filename, result in files.items():
+        for symbol, linenum in result.exports.items():
+            try:
+                old_filename, old_linenum = all_exports[symbol]
+            except KeyError:
+                all_exports[symbol] = filename, linenum
+            else:
+                all_errors.append((filename, linenum, "%s reexported" % symbol))
+                all_errors.append((old_filename, old_linenum,
+                                   "%s had been exported here" % symbol))
+
+##    print("root:", all_exports['$0100'])
+
+    if all_errors:
+        print("\n".join(
+            "%s:%d: error: %s" % row for row in all_warnings
+        ), file=sys.stderr)
+    if all_warnings:
+        print("\n".join(
+            "%s:%d: warning: %s" % row for row in all_warnings
+        ), file=sys.stderr)
 
 if __name__=='__main__':
     if 'idlelib' in sys.modules:
