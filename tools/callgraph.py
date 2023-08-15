@@ -6,6 +6,7 @@ by Damian Yerrick
 """
 import os, sys, argparse
 from collections import defaultdict
+from itertools import chain
 
 SHOW_JUMP_ALWAYS = False
 
@@ -140,9 +141,12 @@ class AsmFile(object):
         for label in new_exports:
             self.exports[label] = self.linenum
 
-    def add_section(self, operands):
-        if len(operands) < 2:
-            raise ValueError("section %s has no memory area!")
+    def end_section(self):
+        """Perform tasks at the end of a section.
+
+Make sure to call this after appending all lines from a file.
+Otherwise, a jump table that occurs last may not be found.
+"""
         if (self.toplabel is not None and not self.section_is_bss
             and not self.last_was_jump and self.last_was_jump is not None):
             self.warn("%s may fall off end of section" % (self.toplabel,))
@@ -150,6 +154,14 @@ class AsmFile(object):
         self.toplabel = None
         self.last_was_jump = True
         self.is_fixlabel = False
+
+    def add_section(self, operands):
+        if len(operands) < 2:
+            raise ValueError("section %s has no memory area!")
+        self.end_section()
+
+        # Determine whether this is a RAM section.  RAM sections
+        # don't issue fallthrough warnings.
         op1split = operands[1].split('[', 1)
         memory_area = op1split[0].strip().upper()
         ramsection_names = ("WRAM", "SRAM", "HRAM")
@@ -256,14 +268,16 @@ Return (opcode, [operand, ...])
 
     @staticmethod
     def canonicalize_call_target(target):
-        """Convert numbers used as call targets to 4-digit hex.
+        """Convert numbers used as call targets to 4-digit hex and remove sub-labels.
 
-Convert '56' and '$38' to '$0038', and leave non-numbers unchanged.
+Convert '56' and '$38' to '$0038' and 'routine.loop' to 'routine'.
 """ 
         try:
             fixlabel = rgbint(target)
         except ValueError:
-            return target
+            # treat a call to a sub-label as a call to its top label
+            s = target.split('.', 1)
+            return s[0] or target
         else:
             return "$%04X" % fixlabel
 
@@ -286,27 +300,47 @@ def parse_argv(argv):
                    help="print more debugging information")
     return p.parse_args(argv[1:])
 
-def main(argv=None):
-    args = parse_argv(argv or sys.argv)
-    files = {}
-    all_errors, all_warnings = [], []
-    for filename in args.sourcefile:
+def load_files(filenames, verbose=False):
+    """Load and parse source code files.
+
+filenames -- iterable of things to open()
+verbose -- if True, print exception stack traces to stderr
+
+Return a 2-tuple (files, all_errors, all_warnings)
+- files -- {filename: AsmFile instance, ...}
+- all_errors -- [(filename, linenum, msg), ...] of exceptions
+- all_warnings -- (filename, linenum, msg), ...] of warnings
+"""
+    if verbose:
+        from traceback import print_exc
+
+    files, all_errors, all_warnings = {}, [], []
+    for filename in filenames:
         with open(filename, "r") as infp:
             result = AsmFile()
             try:
                 result.extend(infp)
+                result.end_section()
             except Exception as e:
-                if args.verbose:
-                    from traceback import print_exc
-                    print_exc()
+                if verbose: print_exc()
                 all_errors.append(filename, result.linenum, str(e))
             else:
                 files[filename] = result
             finally:
                 all_warnings.extend((filename, ln, msg)
                                     for ln, msg in result.warnings)
+    return files, all_errors, all_warnings
 
-    all_exports = {}  # {symbol: (filename, linenum), ...}
+def get_exports(files):
+    """Find exports in a set of parsed source files.
+
+files -- {filename: AsmFile instance, ...}
+
+Return a 2-tuple (exports, errors)
+exports -- {symbol: (filename, linenum), ...}
+errors -- [(filename, linenum, msg), ...]
+"""
+    all_exports, all_errors = {}, []
     for filename, result in files.items():
         for symbol, linenum in result.exports.items():
             try:
@@ -317,8 +351,70 @@ def main(argv=None):
                 all_errors.append((filename, linenum, "%s reexported" % symbol))
                 all_errors.append((old_filename, old_linenum,
                                    "%s had been exported here" % symbol))
+    return all_exports, all_errors
 
-##    print("root:", all_exports['$0100'])
+# TODO: see if changing the toposort from postorder to breadth-first search
+# would help the core usage
+
+def postorder_callees(files, exports, start_label="$0100"):
+    """Sort labels reachable from the start by callees first.
+
+files: a dict {filename: AsmFile instance, ...}
+exports: a dict {label: (filename, ...), ...}
+start_label: the first label to call (in GB, usually $0100)
+
+"""
+    stack = [(exports[start_label][0], start_label)]
+    itoposort = {}  # {(filename, label): index, ...}
+    while stack:
+        filename, label = stack.pop()
+        if filename is None:
+            filename = exports[label][0]
+        routine_key = filename, label
+        if routine_key in itoposort: continue
+
+        # Find all callees that aren't already in the toposort
+        # or in the stack
+        module = files[filename]
+        callees = module.calls[label]
+        tailcallees = module.tailcalls[label]
+        new_callees = []
+        for callee in chain(callees, tailcallees):
+            try:
+                callee_filename = exports[callee]
+            except KeyError:
+                callee_filename = filename
+            else:
+                callee_filename = callee_filename[0]
+            callee_key = callee_filename, callee
+            if callee_key not in itoposort and callee_key not in stack:
+                new_callees.append(callee_key)
+
+        # If any callee hasn't been seen, toposort all callees first
+        # and come back later
+        if new_callees:
+            stack.append(routine_key)
+            stack.extend(new_callees)
+        else:
+            itoposort[routine_key] = len(itoposort)
+
+    toposort = [None] * len(itoposort)
+    for symbol, index in itoposort.items():
+        toposort[index] = symbol
+    return toposort, itoposort
+
+def main(argv=None):
+    args = parse_argv(argv or sys.argv)
+    result = load_files(args.sourcefile, verbose=args.verbose)
+    files, all_errors, all_warnings = result
+    exports, errors = get_exports(files)
+    all_errors.extend(errors)
+    toposort, itoposort = postorder_callees(files, exports)
+    print("All reachable routines, callees first:")
+    print("\n".join(
+        "%s::%s" % (os.path.splitext(os.path.basename(filename))[0], label)
+        for filename, label in toposort
+    ))
 
     if all_errors:
         print("\n".join(
