@@ -32,6 +32,7 @@ section "pb16", ROM0
 ; 1: Repeat from 2 bytes ago
 
 pb16_unpack_packet:
+  local hByte0
   ; Read first bit of control byte.  Treat B as a ring counter with
   ; a 1 bit as the sentinel.  Once the 1 bit reaches carry, B will
   ; become 0, meaning the 8-byte packet is complete.

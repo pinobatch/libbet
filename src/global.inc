@@ -38,6 +38,9 @@ endm
 macro jumptable
 endm
 
+macro local
+endm
+
 ; things left out of hardware.inc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 def CHRRAM0 EQU $8000  ; Sprite tiles 0-127; BG tiles 0-127 if BG_CHR01 on

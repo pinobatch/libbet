@@ -325,6 +325,7 @@ def hCurMovedir rb 1
 ;;
 ; Finds all reachable cells in a freshly generated floor.
 find_reachable::
+  local hFound  ; if nonzero, this pass found new reachable cells
   call cursor_to_home
   call floor_read_at_cursor
   or FWDREACHED|REVREACHED
@@ -490,8 +491,11 @@ movedir_to_trackbit::
   ret
 
 ;;
-; Put the field's maximum score in A
+; Calculate the floor's maximum score as the sum of all cells;
+; move direction population counts.
+; @return A the floor's score
 count_max_score::
+  local hFound  ; bitfield of which move directions are possible
   xor a
   ld [max_score],a
   .rowloop:

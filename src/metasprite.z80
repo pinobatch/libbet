@@ -80,6 +80,22 @@ section "metasprite", ROM0
 ; @param hmsprBaseTile index of this sprite sheet in VRAM
 ; Uses 8 bytes of locals for arguments and 4 bytes for scratch
 draw_metasprite::
+  ; Arguments
+  local hmsprYLo
+  local hmsprYHi
+  local hmsprXLo
+  local hmsprXHi
+  local hmsprAttr
+  local hmsprSheetID
+  local hmsprFrame
+  local hmsprBaseTile
+
+  ; Internals
+  local hmsprXAdd
+  local hmsprStripY
+  local hmsprStripXLo
+  local hmsprStripXHi
+
   ldh a,[hmsprAttr]
   ld c,a  ; C = flip flags
 

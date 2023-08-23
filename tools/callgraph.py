@@ -35,6 +35,7 @@ class AsmFile(object):
         self.linenum = 0
         self.warnings = []
         self.is_fixlabel = None
+        self.locals_size = {}  # {funcname: {varname: size, ...}, ...}
         if lines: self.extend(lines)
 
     def extend(self, lines):
@@ -77,6 +78,10 @@ class AsmFile(object):
         # Remaining opcodes add code if and only if they're
         # not inside a macro.
         if self.in_macro: return
+
+        if opcode == 'local':
+            self.add_local(operands)
+            return
 
         if opcode == 'dw':
             if self.in_macro: return
@@ -121,7 +126,7 @@ class AsmFile(object):
             if (self.toplabel is not None and not self.section_is_bss
                 and not self.last_was_jump and self.last_was_jump is not None):
                 if self.is_fixlabel:
-                    self.warn("fixlabel %s falls through to %s"
+                    self.warn("fixed address label %s falls through to %s"
                               % (self.toplabel, label))
                     self.add_tailcall(self.toplabel, label)
                     self.is_fixlabel = False
@@ -185,6 +190,20 @@ Call this before setting or clearing a toplabel.
             for row in self.jumptable_contents:
                 self.add_tailcall(self.toplabel, row)
         self.in_jumptable, self.jumptable_contents = False, set()
+
+    def add_local(self, operands):
+        varname = operands[0]
+        if self.toplabel is None:
+            raise ValueError("local %s without top-level label" % (varname,))
+        function_locals = self.locals_size.setdefault(self.toplabel, {})
+        try:
+            size = function_locals[varname]
+        except KeyError:
+            size = operands[1] if len(operands) > 1 else ''
+            function_locals[varname] = size = int(size or '1')
+        else:
+            raise ValueError("redefined local %s; previous size was %d"
+                             % (varname, size))
 
     def add_call(self, fromlabel, tolabel):
         # disregard calls within function
@@ -323,7 +342,7 @@ Return a 2-tuple (files, all_errors, all_warnings)
                 result.end_section()
             except Exception as e:
                 if verbose: print_exc()
-                all_errors.append(filename, result.linenum, str(e))
+                all_errors.append((filename, result.linenum, str(e)))
             else:
                 files[filename] = result
             finally:
@@ -363,14 +382,19 @@ files: a dict {filename: AsmFile instance, ...}
 exports: a dict {label: (filename, ...), ...}
 start_label: the first label to call (in GB, usually $0100)
 
+Return (toposort, itoposort)
+where toposort is [(filename, label), ...]
+and itoposort is its inverse {(filename, label): index into toposort, ...}
 """
-    stack = [(exports[start_label][0], start_label)]
+    # stack is a list of stack frames to be visited
+    # each stack frame is [(module, label), ...]
+    stack = [[(exports[start_label][0], start_label)]]
     itoposort = {}  # {(filename, label): index, ...}
     while stack:
-        filename, label = stack.pop()
-        if filename is None:
-            filename = exports[label][0]
-        routine_key = filename, label
+        stackframe = stack.pop()
+        routine_key = stackframe[-1]
+        filename, label = routine_key
+        assert filename is not None
         if routine_key in itoposort: continue
 
         # Find all callees that aren't already in the toposort
@@ -387,14 +411,17 @@ start_label: the first label to call (in GB, usually $0100)
             else:
                 callee_filename = callee_filename[0]
             callee_key = callee_filename, callee
-            if callee_key not in itoposort and callee_key not in stack:
+            if callee_key not in itoposort and callee_key not in stackframe:
                 new_callees.append(callee_key)
 
         # If any callee hasn't been seen, toposort all callees first
         # and come back later
         if new_callees:
-            stack.append(routine_key)
-            stack.extend(new_callees)
+            stack.append(stackframe)
+            for callee in new_callees:
+                new_frame = list(stackframe)
+                new_frame.append(callee)
+                stack.append(new_frame)
         else:
             itoposort[routine_key] = len(itoposort)
 
@@ -402,6 +429,52 @@ start_label: the first label to call (in GB, usually $0100)
     for symbol, index in itoposort.items():
         toposort[index] = symbol
     return toposort, itoposort
+
+def allocate(files, exports, toposort):
+    # {(filename, label): (callee_use_end, self_use_end), ...}
+    func_allocation = {}
+    for caller_key in toposort:
+        filename, label = caller_key
+        module = files[filename]
+        caller_locals = module.locals_size.get(label, {})
+
+        # find module for each callee
+        callees = module.calls[label]
+        tailcallees = module.tailcalls[label]
+        callee_file = {}
+        for callee in chain(callees, tailcallees):
+            try:
+                x = exports[callee]
+            except KeyError:
+                callee_file[callee] = filename
+            else:
+                callee_file[callee] = x[0]
+
+        # Start caller's variables after the self_use_end of its callees
+        # and after the callee_use_end of its tail callees
+        callee_max = 0
+        for callee in callees:
+            callee_key = callee_file[callee], callee
+            callee_uses = func_allocation[callee_key]
+##            print("  callee %s in %s uses %d-%d <-"
+##                  % (callee, callee_key[1], callee_uses[0], callee_uses[1]))
+            callee_max = max(callee_uses[1], callee_max)
+        for callee in tailcallees:
+            callee_key = callee_file[callee], callee
+            try:
+                callee_uses = func_allocation[callee_key]
+            except KeyError:
+                print("warning: %s in %s tailcall loop to %s in %s"
+                      % (callee_key[1], callee_key[0], label, filename),
+                      file=sys.stderr)
+                continue
+##            print("  tail callee %s in %s uses -> %d-%d"
+##                  % (callee, callee_key[1], callee_uses[0], callee_uses[1]))
+            callee_max = max(callee_uses[0], callee_max)
+
+        self_total = sum(caller_locals.values())
+        func_allocation[caller_key] = callee_max, callee_max + self_total
+    return func_allocation
 
 def main(argv=None):
     args = parse_argv(argv or sys.argv)
@@ -415,10 +488,14 @@ def main(argv=None):
         "%s::%s" % (os.path.splitext(os.path.basename(filename))[0], label)
         for filename, label in toposort
     ))
+    allocation = allocate(files, exports, toposort)
+    # TODO:
+    # 1. figure out what to do with tail call loops
+    # 2. write out allocation
 
     if all_errors:
         print("\n".join(
-            "%s:%d: error: %s" % row for row in all_warnings
+            "%s:%d: error: %s" % row for row in all_errors
         ), file=sys.stderr)
     if all_warnings:
         print("\n".join(
