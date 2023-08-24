@@ -23,7 +23,7 @@
 include "src/hardware.inc"
 include "src/global.inc"
 
-def LIBBET_NUM_TILES = 48
+def LIBBET_NUM_TILES equ 48  ; number of unique tiles on sprite sheet
 
 section "floorsizes", ROM0
 floor_sizes:
@@ -53,7 +53,8 @@ last_tried_move: ds 1
 
 section "main", ROM0
 
-clear_all_vram:
+clear_vram_bank_A:
+  ldh [rVBK], a
   ld de, $8000
   ld h, e
   ld bc, $2000
@@ -63,11 +64,11 @@ main::
   ; If init detected not a Super Game Boy, head straight in.
   ld a, [hw_capability]
   rra
-  jr nc, no_clear_vram_main
+  jr nc, .soft_reset_preserve_vram
 
   ; Send all the SGB enhancements, such as border and palette,
-  ; then wait for the SGB to finish the last 30=40 frames of its
-  ; boot animation.
+  ; then wait for the SGB to finish the last 30 to 40 frames of
+  ; its boot animation.
   ; Only DMG/MGB get to see the (R) fly off.
   xor a
   ldh [rBGP], a
@@ -80,23 +81,16 @@ main::
 
   ld a, LCDCF_ON
   ldh [rLCDC], a
-  fallthrough clear_vram_main
 
 ; A+B+Select+Start lands here
-clear_vram_main:
+.soft_reset:
   call lcd_off
-  ld a, [hw_capability]
-  rlca
-  jr nc, .not_gbc
-    ldh [rVBK], a
-    call clear_all_vram
-    xor a
-    ldh [rVBK], a
-  .not_gbc:
-  call clear_all_vram
-  fallthrough no_clear_vram_main
+  ld a, 1
+  call clear_vram_bank_A
+  xor a
+  call clear_vram_bank_A
 
-no_clear_vram_main:
+.soft_reset_preserve_vram:
   ; Set up vblank handler
   ld a,IEF_VBLANK
   ldh [rIE],a  ; enable IRQs
@@ -106,32 +100,20 @@ no_clear_vram_main:
   ei
 
   call audio_init
-
-  if 0
-    call fade_in
-    ld a, $80
-    ld [vblank_lcdc_value], a
-    jr straight_to_attract
-  endc
-
   call show_intro  ; Roll over the Nintendo logo
-  fallthrough skip_intro
-skip_intro:
+
+.show_title:
   call do_instructions  ; Title screen
 
   ; Start a new game or the demo based on which button was pressed
   ; to close the instructions
   ld a,[new_keys]
   and PADF_SELECT
-  fallthrough straight_to_attract
-straight_to_attract:
+.new_game:  ; Start new game (0: play; 1: attract)
   ld [attract_mode],a
 
   ; Set up VRAM for the new game
   call lcd_off
-
-;  call sgbfade_calc_palettes
-
   call load_floor_chr
   call load_statusbar_chr
   ld hl,CHRRAM0
@@ -148,9 +130,8 @@ straight_to_attract:
   ld a,7+48
   ldh [rWX],a
   call achievements_new_game
-  fallthrough another_floor
 
-another_floor:
+.new_floor:
   if RANDOMIZE_SEED
     call rand
     ld a,[nmis]
@@ -255,9 +236,8 @@ another_floor:
   ld a,LCDCF_ON|LCDCF_BG9800|LCDCF_SCRNADDR|LCDCF_BGON|LCDCF_OBJON|LCDCF_WINON
   ld [vblank_lcdc_value],a
   ldh [rLCDC],a
-  fallthrough forever
 
-forever:
+.forever:
 
   if 0
   ld a,[move_flags]
@@ -303,7 +283,7 @@ forever:
   ; A+B+Select+Start: reset
   ld a,[cur_keys]
   cp PADF_A|PADF_B|PADF_SELECT|PADF_START
-  jp z, clear_vram_main
+  jp z, .soft_reset
 
   ; Hold Start: pause (if Restless test harness enabled)
   if SPRING_LOAD_PAUSE
@@ -316,7 +296,7 @@ forever:
   jr z,.not_attract_startcheck
     ld a,[new_keys]
     bit PADB_START,a
-    jp nz, skip_intro
+    jp nz, .show_title
   .not_attract_startcheck:
 
   ; 90%: Exit just opened
@@ -333,8 +313,8 @@ forever:
       ; Exit door in attract mode means return to menu
       ld a,[attract_mode]
       or a
-      jr z,.next_floor
-      jp skip_intro
+      jr z,.finish_floor
+      jp .show_title
     .not_next_floor:
 
     ; Sitting on a dead end after last move?
@@ -366,7 +346,7 @@ forever:
       call attract_update
       bit PADB_START,a
       jr z, .have_keys
-      jp skip_intro
+      jp .show_title
     .not_attract_keyread:
       ld a,[cur_keys]
     .have_keys:
@@ -376,13 +356,13 @@ forever:
   if SELECT_RESTARTS
   ld a,[new_keys]
   bit PADB_SELECT, a
-  jp nz,another_floor
+  jp nz,.new_floor
   endc
 
   call achievements_frame
-  jp forever
+  jp .forever
 
-.next_floor:
+.finish_floor:
   ; Save score for this floor
   ld a,[cur_floor]
   add a
@@ -402,9 +382,9 @@ forever:
   inc a
   ld [cur_floor],a
   cp NUM_FLOORS
-  jp c,another_floor
+  jp c,.new_floor
   call debrief
-  jp clear_vram_main
+  jp .soft_reset
 
 try_move:
   ld b,a
