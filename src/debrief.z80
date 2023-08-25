@@ -208,24 +208,27 @@ wr1_de:
   inc de
   ret
 
+; If you get an error about scope, upgrade to RGBDS 0.6.2 or later,
+; or a build after 2023-08-19 when #1159 was merged.
+stpcpy.continue:
+  inc de
 ;;
 ; Copies from HL to DE, stopping at a $00 byte
 ; @param HL source
 ; @param DE destination
-; @return A = 0; D = pointer to final NUL
-stpcpy_continue:
-  inc de
-  fallthrough stpcpy
+; @return A = 0; DE = pointer to final NUL
 stpcpy::
   ld a,[hl+]
   ld [de],a
   or a
-  jr nz,stpcpy_continue
+  jr nz, .continue
   ret
 
 results_msg: db "Results",0
 floor_names:
+  dw floor0_name
   dw floor1_name, floor2_name, floor3_name, floor4_name, floor5_name
+floor0_name: db "Closet", 0
 floor1_name: db "Corridor",0
 floor2_name: db "Anteroom",0
 floor3_name: db "Abcde6x4",0

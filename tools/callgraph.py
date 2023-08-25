@@ -123,6 +123,11 @@ class AsmFile(object):
                                  % (label,))
             label = self.toplabel + label
         else:
+            # since https://github.com/gbdev/rgbds/pull/1159
+            # a local label may appear outside the scope of the
+            # corresponding global label, for an "in medias res"
+            # routine like stpcpy
+            label = label.split(".")[0]
             if (self.toplabel is not None and not self.section_is_bss
                 and not self.last_was_jump and self.last_was_jump is not None):
                 if self.is_fixlabel:
@@ -130,7 +135,7 @@ class AsmFile(object):
                               % (self.toplabel, label))
                     self.add_tailcall(self.toplabel, label)
                     self.is_fixlabel = False
-                else:
+                elif self.toplabel != label:
                     self.warn("%s may fall through to %s"
                               % (self.toplabel, label))
             self.flush_jumptable()
