@@ -92,24 +92,24 @@ intro_draw_character:
   add a
   add a
   add $40
-  ldh [hmsprBaseTile], a
+  ldh [draw_metasprite.hmsprBaseTile], a
   ld a, b
   and $10
   swap a
-  ldh [hmsprFrame], a
+  ldh [draw_metasprite.hmsprFrame], a
 
   ld a, [cursor_x]
   sub 16
-  ldh [hmsprXLo], a
+  ldh [draw_metasprite.hmsprXLo], a
   sbc a
-  ldh [hmsprXHi], a
+  ldh [draw_metasprite.hmsprXHi], a
   ld a, 88
-  ldh [hmsprYLo], a
+  ldh [draw_metasprite.hmsprYLo], a
   ld a, 1
-  ldh [hmsprSheetID], a
+  ldh [draw_metasprite.hmsprSheetID], a
   xor a
-  ldh [hmsprAttr], a
-  ldh [hmsprYHi], a
+  ldh [draw_metasprite.hmsprAttr], a
+  ldh [draw_metasprite.hmsprYHi], a
   call draw_metasprite
   fallthrough intro_kick_check
 

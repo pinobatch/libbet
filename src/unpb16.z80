@@ -20,8 +20,6 @@
 ;
 include "src/global.inc"
 
-  rsset hLocals
-def pb16_byte0 rb 1
 
 section "pb16", ROM0
 
@@ -44,12 +42,12 @@ pb16_unpack_packet:
 .byteloop:
   ; If the bit from the control byte is clear, plane 0 is is literal
   jr nc,.p0_is_literal
-  ldh a,[pb16_byte0]
+  ldh a,[.hByte0]
   jr .have_p0
 .p0_is_literal:
   ld a,[de]
   inc de
-  ldh [pb16_byte0],a
+  ldh [.hByte0],a
 .have_p0:
   ld [hl+],a
 
@@ -76,7 +74,7 @@ pb16_unpack_packet:
 pb16_unpack_block::
   ; Prefill with zeroes
   xor a
-  ldh [pb16_byte0],a
+  ldh [pb16_unpack_packet.hByte0],a
   ld c,a
 .packetloop:
   push bc

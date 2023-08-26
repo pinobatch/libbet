@@ -393,29 +393,29 @@ move_player_anim::
 
 draw_player::
   ld a,$00
-  ldh [hmsprSheetID],a
-  ldh [hmsprBaseTile],a
+  ldh [draw_metasprite.hmsprSheetID],a
+  ldh [draw_metasprite.hmsprBaseTile],a
 
   ld a,[roll_prio]  ; Priority bit means falling in hole so no shadow
   rla
   jr nc,.no_need_holecover
     rra
-    ldh [hmsprAttr],a
+    ldh [draw_metasprite.hmsprAttr],a
     ld a,[roll_x]
-    ldh [hmsprXLo],a
+    ldh [draw_metasprite.hmsprXLo],a
     ld a,[roll_y]
-    ldh [hmsprYLo],a
+    ldh [draw_metasprite.hmsprYLo],a
     xor a
-    ldh [hmsprXHi],a
-    ldh [hmsprYHi],a
+    ldh [draw_metasprite.hmsprXHi],a
+    ldh [draw_metasprite.hmsprYHi],a
     ld a,FRAME_Libbet_holecover
-    ldh [hmsprFrame],a
+    ldh [draw_metasprite.hmsprFrame],a
     call draw_metasprite
   .no_need_holecover:
 
 
   ld a,[roll_x]
-  ldh [hmsprXLo],a
+  ldh [draw_metasprite.hmsprXLo],a
   ld a,[roll_z]
   ; Calculate roughly Z + Z/2 / 16, or 3*Z / 32, or roughly Z / 11
   ld b,a
@@ -427,7 +427,7 @@ draw_player::
   ld b,a
   ld a,[roll_y]
   sub b
-  ldh [hmsprYLo],a
+  ldh [draw_metasprite.hmsprYLo],a
 
   ; Decide based on facing and frame list which cel to show
   ld a,[cursor_facing]
@@ -435,7 +435,7 @@ draw_player::
   call de_index_a
   ld a,[roll_prio]
   or l
-  ldh [hmsprAttr],a
+  ldh [draw_metasprite.hmsprAttr],a
   ld b,h
   ld a,[roll_frame]
   ld de,Libbet_framelist
@@ -443,10 +443,10 @@ draw_player::
   ld a,$0F
   and l
   add b
-  ldh [hmsprFrame],a
+  ldh [draw_metasprite.hmsprFrame],a
   xor a
-  ldh [hmsprXHi],a
-  ldh [hmsprYHi],a
+  ldh [draw_metasprite.hmsprXHi],a
+  ldh [draw_metasprite.hmsprYHi],a
   call draw_metasprite
 
   ; If high enough, and not just launched from ball return,
@@ -463,17 +463,17 @@ draw_player::
     rra    ; bit 0 into carry
     sbc a  ; and then into all other bits
     and OAMF_XFLIP
-    ldh [hmsprAttr], a
+    ldh [draw_metasprite.hmsprAttr], a
 
     ld a,FRAME_Libbet_shadow
-    ldh [hmsprFrame],a
+    ldh [draw_metasprite.hmsprFrame],a
     ld a,[roll_x]
-    ldh [hmsprXLo],a
+    ldh [draw_metasprite.hmsprXLo],a
     ld a,[roll_y]
-    ldh [hmsprYLo],a
+    ldh [draw_metasprite.hmsprYLo],a
     xor a
-    ldh [hmsprXHi],a
-    ldh [hmsprYHi],a
+    ldh [draw_metasprite.hmsprXHi],a
+    ldh [draw_metasprite.hmsprYHi],a
     call draw_metasprite
 
   .no_shadow:

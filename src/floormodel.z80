@@ -318,24 +318,21 @@ def REVCHECKED equ $40
 def REVREACHED equ $80
 def DEADEND equ $04
 
-  rsset hLocals
-def hFound rb 1
-def hCurMovedir rb 1
-
 ;;
 ; Finds all reachable cells in a freshly generated floor.
 find_reachable::
   local hFound  ; if nonzero, this pass found new reachable cells
+  local hCurMovedir
   call cursor_to_home
   call floor_read_at_cursor
   or FWDREACHED|REVREACHED
   ld [hl],a
-  ldh [hFound],a
+  ldh [.hFound],a
   jr .start_from_home
   
 .tryagain:
   xor a
-  ldh [hFound],a
+  ldh [.hFound],a
   .rowloop:
     ld [cursor_y],a
     xor a
@@ -370,22 +367,22 @@ find_reachable::
     jr c,.rowloop
 
   ; If any cells were searched, there may be more to check
-  ldh a,[hFound]
+  ldh a,[.hFound]
   or a
   jr nz,.tryagain
   jp find_deadends
 
 .search_cell:
-  ldh [hFound],a
+  ldh [.hFound],a
   xor a
   push hl
   .movedirloop:
-    ldh [hCurMovedir],a
+    ldh [.hCurMovedir],a
     call is_valid_move
 
     ; If checking forward, and the forward move is valid,
     ; mark HL as forward reached    
-    ldh a,[hFound]
+    ldh a,[.hFound]
     bit 5,a
     jr z,.noCheckForward
     ld a,c
@@ -398,7 +395,7 @@ find_reachable::
 
     ; If checking reverse, and the reverse move is valid,
     ; mark HL as reverse reached
-    ldh a,[hFound]
+    ldh a,[.hFound]
     bit 7,a
     jr z,.noCheckReverse
     ld a,b
@@ -409,7 +406,7 @@ find_reachable::
       set 7,[hl]
     .noCheckReverse:
 
-    ldh a,[hCurMovedir]
+    ldh a,[.hCurMovedir]
     inc a
     cp 8
     jr c,.movedirloop
@@ -496,6 +493,7 @@ movedir_to_trackbit::
 ; @return A the floor's score
 count_max_score::
   local hFound  ; bitfield of which move directions are possible
+  local hCurMovedir
   xor a
   ld [max_score],a
   .rowloop:
@@ -509,27 +507,27 @@ count_max_score::
       
       ; So the cel is reachable
       xor a
-      ldh [hFound],a  ; found: which movedirs are possible
+      ldh [.hFound],a  ; found: which movedirs are possible
       .moveloop:
         ; If this is a valid move onto the next shade, add the track
-        ldh [hCurMovedir],a
+        ldh [.hCurMovedir],a
         call is_valid_move
         cp 1
         jr nz,.not_scoring_move
           ; Find which track this move grants
-          ldh a,[hCurMovedir]
+          ldh a,[.hCurMovedir]
           call movedir_to_trackbit
-          ldh a,[hFound]
+          ldh a,[.hFound]
           or b
-          ldh [hFound],a
+          ldh [.hFound],a
         .not_scoring_move:
-        ldh a,[hCurMovedir]
+        ldh a,[.hCurMovedir]
         inc a
         cp 8
         jr nz,.moveloop
 
       ; Add count of track bits to score
-      ldh a,[hFound]
+      ldh a,[.hFound]
       or a
       jr z,.cell_has_no_score
       ld hl,max_score

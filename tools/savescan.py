@@ -1,14 +1,108 @@
 #!/usr/bin/env python3
 """
-experimental call graph reader for RGBASM
+savescan.py: Static Automatic Variable Earmarker
+local variable allocation for RGBASM
 
-by Damian Yerrick
+Copyright 2023 Damian Yerrick
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 """
+"""
+Static Automatic Variable Earmarker is a tool to allocate local
+variables for subroutines in programs written in Game Boy
+assembly language.  It helps you save time over automatic allocation
+in stack frames and save memory over fully static allocation.
+
+Programming languages give a function's local variables either an
+"automatic" lifetime or a "static" lifetime.  The default in C and
+C++ is automatic, lasting until a function returns.  An automatic
+variable is usually allocated in a stack frame and then deallocated
+at return.  By contrast, a static variable persists with the same
+address until the program ends, like a global variable.
+
+Vintage processors, such as 8080 family, are slow to read and
+write variables in a stack frame.  Many programs for such machines
+declare variables static for speed at the cost of wasting memory for
+variables that never live at the same time.  Fortunately, one can do
+better.  The lifetime of a non-recursive function's variables won't
+overlap itself.  Nor will the lifetimes of different functions'
+variables overlap each other unless one calls the other directly
+or indirectly.  Determining lack of overlap at build time allows
+placing each function's automatic variables at a fixed address.
+This matches 8080 addressing better than a stack frame.
+
+Though some commercial compilers offer this allocation paradigm,
+there appears to be no widely accepted term for it in the literature:
+
+- Microchip calls the technique "compiled stack", a term inherited
+  from HI-TECH PICC.
+  <https://stackoverflow.com/a/58408272/2738262>
+  <http://ww1.microchip.com/downloads/en/DeviceDoc/50002053G.pdf>
+- Dwedit calls it "stack flattening".
+  <https://forums.nesdev.org/viewtopic.php?p=249782#p249782>
+- Oziphantom calls it "window allocator".
+  <https://forums.nesdev.org/viewtopic.php?p=249801#p249801>
+
+In your programs, define `local`, `calls`, `tailcalls`, and
+`jumptable` macros that do nothing, and define `fallthrough`
+that asserts that its argument's address is the program counter.
+SAVE uses these macros to infer the call graph structure:
+
+- `local hVarname[, size]`  
+  Allocates a local variable with a given size.  Must be a decimal
+  or hex literal.
+- `calls otherFunc`  
+  Mark this function as a caller of `otherFunc`.  The `call`
+  instruction also does this.
+- `tailcalls otherFunc`  
+  Mark this function as a tail caller of `otherFunc`.  The `jp` and
+  `jr` instructions also do this.
+- `fallthrough otherFunc`  
+  Mark this function as an inline tail caller of `otherFunc`.
+  (An "inline tail call" happens when execution falls off the end
+  of one function into another.)  Also helps express intent during
+  refactoring.  If this is missing, SAVE may emit a diagnostic.
+- `jumptable`  
+  Treats labels in `dw` arguments in this scope as tail callees.
+  The subroutine reading this table should `tailcalls` the table
+  as well.
+
+For each function, SAVE calculates a start and end offset.
+
+- A function's start offset is the largest end offset of its callees.
+- A function's end offset is its start offset plus the size of its
+  local variables, but no less than the largest end offset of its
+  tail callees.
+
+One limit is that SAVE cannot see macros defined in an include file.
+SAVE does not follow `INCLUDE` directives because RGBDS searches for
+them relative to the current working directory, not the directory
+containing the including source file.
+"""
+
 import os, sys, argparse
 from collections import defaultdict
 from itertools import chain
 
-SHOW_JUMP_ALWAYS = False
+# rgbasm parsing ####################################################
 
 nonjump_opcodes = {
     'ld', 'add', 'adc', 'sub', 'sbc', 'xor', 'or', 'and', 'cp',
@@ -35,7 +129,7 @@ class AsmFile(object):
         self.linenum = 0
         self.warnings = []
         self.is_fixlabel = None
-        self.locals_size = {}  # {funcname: {varname: size, ...}, ...}
+        self.locals_size = {}  # {funcname: [(varname, size), ...], ...}
         if lines: self.extend(lines)
 
     def extend(self, lines):
@@ -200,15 +294,13 @@ Call this before setting or clearing a toplabel.
         varname = operands[0]
         if self.toplabel is None:
             raise ValueError("local %s without top-level label" % (varname,))
-        function_locals = self.locals_size.setdefault(self.toplabel, {})
-        try:
-            size = function_locals[varname]
-        except KeyError:
-            size = operands[1] if len(operands) > 1 else ''
-            function_locals[varname] = size = int(size or '1')
-        else:
+        func_locals = self.locals_size.setdefault(self.toplabel, [])
+        prev_sizes = [row[1] for row in func_locals if row[0] == varname]
+        if prev_sizes:
             raise ValueError("redefined local %s; previous size was %d"
-                             % (varname, size))
+                             % (varname, prev_sizes[0]))
+        size = operands[1] if len(operands) > 1 else ''
+        func_locals.append((varname, int(size or '1')))
 
     def add_call(self, fromlabel, tolabel):
         # disregard calls within function
@@ -316,14 +408,6 @@ Convert '56' and '$38' to '$0038' and 'routine.loop' to 'routine'.
                   else '')
         return is_conditional, target
 
-def parse_argv(argv):
-    p = argparse.ArgumentParser(description="Parses RGBASM source to determine a call graph")
-    p.add_argument("sourcefile", nargs="+",
-                   help="name of source code file")
-    p.add_argument("-v", "--verbose", action="store_true",
-                   help="print more debugging information")
-    return p.parse_args(argv[1:])
-
 def load_files(filenames, verbose=False):
     """Load and parse source code files.
 
@@ -355,6 +439,8 @@ Return a 2-tuple (files, all_errors, all_warnings)
                                     for ln, msg in result.warnings)
     return files, all_errors, all_warnings
 
+# call graph sorting and allocation #################################
+
 def get_exports(files):
     """Find exports in a set of parsed source files.
 
@@ -376,9 +462,6 @@ errors -- [(filename, linenum, msg), ...]
                 all_errors.append((old_filename, old_linenum,
                                    "%s had been exported here" % symbol))
     return all_exports, all_errors
-
-# TODO: see if changing the toposort from postorder to breadth-first search
-# would help the core usage
 
 def postorder_callees(files, exports, start_label="$0100"):
     """Sort labels reachable from the start by callees first.
@@ -436,12 +519,23 @@ and itoposort is its inverse {(filename, label): index into toposort, ...}
     return toposort, itoposort
 
 def allocate(files, exports, toposort):
-    # {(filename, label): (callee_use_end, self_use_end), ...}
+    """Allocate local variables per a topological sort.
+
+files -- {filename: module, ...} where
+    module.calls is {label, ...}
+    module.tailcalls is {label, ...}
+    module.locals_size is {label: [(name, size), ...], ...}
+exports -- {symbol: (filename, ...), ...}
+toposort -- [(filename, label), ...] with callees first
+
+Return an allocation
+{(filename, label): (callee_use_end, self_use_end), ...}
+"""
     func_allocation = {}
     for caller_key in toposort:
         filename, label = caller_key
         module = files[filename]
-        caller_locals = module.locals_size.get(label, {})
+        caller_locals = module.locals_size.get(label, [])
 
         # find module for each callee
         callees = module.calls[label]
@@ -457,12 +551,10 @@ def allocate(files, exports, toposort):
 
         # Start caller's variables after the self_use_end of its callees
         # and after the callee_use_end of its tail callees
-        callee_max = 0
+        callee_max = tailcallee_max = 0
         for callee in callees:
             callee_key = callee_file[callee], callee
             callee_uses = func_allocation[callee_key]
-##            print("  callee %s in %s uses %d-%d <-"
-##                  % (callee, callee_key[1], callee_uses[0], callee_uses[1]))
             callee_max = max(callee_uses[1], callee_max)
         for callee in tailcallees:
             callee_key = callee_file[callee], callee
@@ -473,13 +565,60 @@ def allocate(files, exports, toposort):
                       % (callee_key[1], callee_key[0], label, filename),
                       file=sys.stderr)
                 continue
-##            print("  tail callee %s in %s uses -> %d-%d"
-##                  % (callee, callee_key[1], callee_uses[0], callee_uses[1]))
-            callee_max = max(callee_uses[0], callee_max)
+            tailcallee_max = max(callee_uses[1], tailcallee_max)
 
-        self_total = sum(caller_locals.values())
-        func_allocation[caller_key] = callee_max, callee_max + self_total
+        self_total = sum(row[1] for row in caller_locals)
+        self_end = max(tailcallee_max, self_total + callee_max)
+        func_allocation[caller_key] = callee_max, self_end
     return func_allocation
+
+def format_allocation(files, allocation):
+    """Format an allocation as RGBASM source code.
+
+files -- {filename: module, ...} where
+    module.locals_size is {label: [(name, size), ...], ...}
+allocation -- {(filename, label): (callee_use_end, self_use_end), ...}
+"""
+    lines = [
+        '; Generated with savescan.py - Static Automatic Variable Earmarker',
+        '; for RGBASM 0.6.2 or later',
+        'section "hSAVE_locals",HRAM',
+        '  union',
+    ]
+    max_end = 0
+    for func_key, (start, end) in allocation.items():
+        if end <= start: continue
+        module_name, label = func_key
+        module = files[module_name]
+        try:
+            func_locals = module.locals_size[label]
+        except KeyError:
+            # This happens when a function has no local variables and
+            # its tail callees' end has propagated to it.
+            continue
+
+        if max_end > 0: lines.append('  nextu')
+        max_end = max(end, max_end)
+        if start > 0: lines.append("    ds %d" % start)
+        lines.extend("    %s.%s:: ds %d" % (label, varname, size)
+                     for varname, size in func_locals)
+    lines.append('  endu')
+    lines.append('; maximum size of live local variables: %d bytes' % max_end)
+    lines.append('')
+    return '\n'.join(lines)
+
+# command line ######################################################
+
+def parse_argv(argv):
+    usageMsg = "Parses RGBASM source to determine a call graph and allocate local variables."
+    p = argparse.ArgumentParser(description=usageMsg)
+    p.add_argument("sourcefile", nargs="+",
+                   help="names of all source code files")
+    p.add_argument("-v", "--verbose", action="store_true",
+                   help="print more debugging information")
+    p.add_argument("-o", "--output", default="-",
+                   help="write allocation to this file instead of standard output")
+    return p.parse_args(argv[1:])
 
 def main(argv=None):
     args = parse_argv(argv or sys.argv)
@@ -487,17 +626,6 @@ def main(argv=None):
     files, all_errors, all_warnings = result
     exports, errors = get_exports(files)
     all_errors.extend(errors)
-    toposort, itoposort = postorder_callees(files, exports)
-    print("All reachable routines, callees first:")
-    print("\n".join(
-        "%s::%s" % (os.path.splitext(os.path.basename(filename))[0], label)
-        for filename, label in toposort
-    ))
-    allocation = allocate(files, exports, toposort)
-    # TODO:
-    # 1. figure out what to do with tail call loops
-    # 2. write out allocation
-
     if all_errors:
         print("\n".join(
             "%s:%d: error: %s" % row for row in all_errors
@@ -506,11 +634,21 @@ def main(argv=None):
         print("\n".join(
             "%s:%d: warning: %s" % row for row in all_warnings
         ), file=sys.stderr)
+    if all_errors:
+        exit(1)
+    toposort, itoposort = postorder_callees(files, exports)
+    allocation = allocate(files, exports, toposort)
+    tallocation = format_allocation(files, allocation)
+    if args.output == '-':
+        sys.stdout.write(tallocation)
+    else:
+        with open(args.output, "w") as outfp:
+            outfp.write(tallocation)
 
 if __name__=='__main__':
     if 'idlelib' in sys.modules:
         folder = "../src"
-        args = ["./callgraph.py"]
+        args = ["./savescan.py"]
         args.extend(os.path.join(folder, file)
                     for file in sorted(os.listdir(folder))
                     if os.path.splitext(file)[1].lower()

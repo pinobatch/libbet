@@ -15,7 +15,7 @@ version:=0.07
 
 # Space-separated list of asm files without .z80 extension
 # (use a backslash to continue on the next line)
-objlist := header init \
+objlist := header init localvars \
   main floormodel \
   rolling prevcombo \
   instructions debrief achievements intro \
@@ -99,6 +99,11 @@ obj/gb/main.o: \
 obj/gb/sgb.o: \
   obj/gb/sgbborder.border
 
+# Local variable allocation
+
+obj/gb/localvars.z80: tools/savescan.py $(wildcard src/*.z80)
+	$(PY) $^ -o $@
+
 # Graphics conversion
 
 # .2bpp (CHR data for Game Boy) denotes the 2-bit tile format
@@ -109,8 +114,7 @@ obj/gb/%.2bpp: tilesets/%.png
 	rgbgfx -o $@ $<
 
 obj/gb/%-h.2bpp: tilesets/%.png
-	rgbgfx -h -o $@ $<
-	@echo "(a warning means you have successfully upgraded rgbgfx)"
+	rgbgfx -Z -o $@ $<
 
 obj/gb/%-h.chr1: tilesets/%.png
 	rgbgfx -d1 -h -o $@ $<
@@ -121,9 +125,8 @@ obj/gb/%-h.chr1: tilesets/%.png
 obj/gb/vwf7.z80: tools/vwfbuild.py tilesets/vwf7_cp144p.png
 	$(PY) $^ $@
 
-# One Make quirk that's very annoying to work around is that it's
-# remotely possible for recipes with multiple outputs to fall out
-# of sync.
+# One quirk of Make pre-4.3 that's annoying to work around is that
+# recipes with multiple outputs may fall out of sync.
 
 obj/gb/Libbet.2bpp: tools/extractcels.py tilesets/Libbet.ec tilesets/Libbet.png
 	$(PY) $^ $@ obj/gb/Libbet.z80

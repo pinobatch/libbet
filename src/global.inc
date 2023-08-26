@@ -73,12 +73,6 @@ endm
 
 ; global constants and the like ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Allowing different subroutines to share local variables in HRAM
-; without having to declare all memory in one file requires an
-; allocation strategy using ".rsset".
-def hLocals equ $FF80
-def locals_size equ 16
-
 ; Bits 7-4 of floor_map entries are the same as PADF_ and PADB_
 ; from hardware.inc. Bits 2 and 3 are defined thus
 def FLOORB_DEADEND equ 2
