@@ -59,7 +59,7 @@ export FIRST_PRINTABLE_CU
 ; not drawing space (" ") at all
 ; skipping shifting for $00 slivers
 
-section "vwfPutTile",ROM0,align[LOG_GLYPH_HEIGHT]
+section "vwfPutTile", ROM0, align[3]  ; log(CHAR_BIT) to not cross page
 not_ff_shr_x:: db $00,$80,$C0,$E0,$F0,$F8,$FC,$FE
 
 ; The second half of the routine comes before the first half to ease alignment
@@ -67,7 +67,7 @@ vwfPutTile_shifter:
   local hShifterMask, 1
   local hDestAddrLo, 1
 
-  rept GLYPH_HEIGHT_MINUS_1
+  rept CHAR_BIT-1
     rrca
   endr
   ld h,a  ; H: all glyph bits, circularly rotated
