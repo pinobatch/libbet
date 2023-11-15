@@ -1,3 +1,24 @@
+0.08 (2023-11-xx)
+* Wait before detecting Super Game Boy
+* Correct note periods to concert pitch
+* Make shadow during jump more visible
+* Revamp instructions with visual aids
+* Add tutorial floor "Closet"
+* SGB, GBC: Lighten green to reduce Helmholtz-Kohlrausch
+* SGB: make border tile 0 transparent to reduce flash during fade
+* Upgrade to new hardware.inc
+* Prepare for RGBDS 0.6: HALT NOP, LD to LDH, SET to =, MACRO name
+* Prepare for SAVE: DEF LEPPARD EQU, fallthrough, jumptable
+* Use SAVE to allocate subroutines' local variables
+* Use Pillow 9.2: getpalette() output can be smaller than 48 bytes
+* extractcels.py: add repeats keyword
+* extractcels.py: add 8x16-pixel object tile support
+* extractcels.py: add streaming object tile format
+* Make header with rgbfix
+* Document sound effects driver, including its stream format
+* how_to_encode.md: recommend CamStudio codec (CSCD) (thanks beware)
+* how_to_encode.md: vertical video
+
 0.07 (2021-01-18)
 * Achievements: Don't get stuck if player earns "No scope" just
   before reaching the exit
