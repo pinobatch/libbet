@@ -117,7 +117,7 @@ obj/gb/%-h.2bpp: tilesets/%.png
 	rgbgfx -Z -o $@ $<
 
 obj/gb/%-h.chr1: tilesets/%.png
-	rgbgfx -d1 -h -o $@ $<
+	rgbgfx -d1 -Z -o $@ $<
 
 %.pb16: tools/pb16.py %
 	$(PY) $^ $@
