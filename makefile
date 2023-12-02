@@ -36,6 +36,12 @@ else
   PY := python3
 endif
 
+# Support out-of-PATH RGBDS
+RGBASM  := $(RGBDS)rgbasm
+RGBLINK := $(RGBDS)rgblink
+RGBGFX  := $(RGBDS)rgbgfx
+RGBFIX  := $(RGBDS)rgbfix
+
 .SUFFIXES:
 .PHONY: run all dist zip
 
@@ -74,14 +80,14 @@ obj/gb/index.txt: makefile
 objlisto = $(foreach o,$(objlist),obj/gb/$(o).o)
 
 $(title).gb: $(objlisto)
-	rgblink -p 0xFF -m$(title).map -n$(title).sym -o$@ $^
-	rgbfix -jvsc -k "OK" -l 0x33 -m ROM -p 0xFF -t "LIBBET" -v $@
+	$(RGBLINK) -p 0xFF -m$(title).map -n$(title).sym -o$@ $^
+	$(RGBFIX) -jvsc -k "OK" -l 0x33 -m ROM -p 0xFF -t "LIBBET" -v $@
 
 obj/gb/%.o: src/%.z80 src/hardware.inc src/global.inc
-	rgbasm -h -o $@ $<
+	${RGBASM} -h -o $@ $<
 
 obj/gb/%.o: obj/gb/%.z80
-	rgbasm -h -o $@ $<
+	${RGBASM} -h -o $@ $<
 
 # Files that will be included with incbin
 
@@ -111,13 +117,13 @@ obj/gb/localvars.z80: tools/savescan.py $(wildcard src/*.z80)
 # mode 0 (all planes), mode 1 (third plane), and modes 4 and 5
 # (second plane).
 obj/gb/%.2bpp: tilesets/%.png
-	rgbgfx -o $@ $<
+	${RGBGFX} -o $@ $<
 
 obj/gb/%-h.2bpp: tilesets/%.png
-	rgbgfx -Z -o $@ $<
+	${RGBGFX} -Z -o $@ $<
 
 obj/gb/%-h.chr1: tilesets/%.png
-	rgbgfx -d1 -Z -o $@ $<
+	${RGBGFX} -d1 -Z -o $@ $<
 
 %.pb16: tools/pb16.py %
 	$(PY) $^ $@
