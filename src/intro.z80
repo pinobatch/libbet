@@ -160,7 +160,6 @@ intro_kick_check:
     inc [hl]
     ld a, 2
     jp audio_play_fx
-    ret
   .already_kicked:
     inc [hl]
     ret
@@ -241,7 +240,7 @@ show_intro::
     add 3
     ld [cursor_x], a
 
-    ; Play a rolling sound effect every 3 frames
+    ; Play a rolling sound effect every 32 frames
     ld hl, cursor_y
     ld a, [hl]
     inc [hl]

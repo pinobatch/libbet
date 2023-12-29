@@ -29,7 +29,7 @@ def PREVCOMBO_START_DY equ -20
 def PREVCOMBO_FRAMES equ 80
 
 section "prevcomboram", WRAM0
-prevcombo_timeleft: ds 1
+prevcombo_timeleft:: ds 1
 prevcombo_dy: ds 1
 prevcombo_y: ds 1
 prevcombo_digits: ds 1

@@ -45,7 +45,9 @@ def Channel_envpitch equ 3
 
 section "wavebank", ROM0, ALIGN[4]
 wavebank:
-  db $FF,$EE,$DD,$CC,$BB,$AA,$99,$88,$77,$66,$55,$44,$33,$22,$11,$00
+;  db $FF,$EE,$DD,$CC,$BB,$AA,$99,$88,$77,$66,$55,$44,$33,$22,$11,$00
+.ping:
+  db $00,$14,$8c,$ff,$fd,$96,$43,$35,$78,$99,$87,$78,$9b,$dd,$da,$73
 
 ; Each entry in sfx_table is 4 bytes
 ; - First byte is the channel to use for the effect
@@ -81,9 +83,8 @@ sfx_table:
   dw fx_combostop
   db 3, 0
   dw fx_lowcombo_bonk
-
-;  db 2, 0
-;  dw fx_wavetest
+  db 2, 0
+  dw fx_ping
 
 sgb_sfx_table:
   ; To be filled in later
@@ -212,9 +213,12 @@ fx_lowcombo_bonk:
   db ENVF_DPAR|ENVF_PITCH|2, $43, $5D
   db ENVF_PITCH|2, $4D
   db $FF
-
-fx_wavetest:
-  db ENVF_DPAR|ENVF_PITCH|$0F, $00, 24
+fx_ping:
+  db ENVF_DPAR|ENVF_PITCH|$40, (wavebank.ping-wavebank)/16, 31
+  db $01, $41, $80
+  db ENVF_PITCH|$40, 36
+  db $01, $41, $81
+  db $C1
   db $FF
 
 

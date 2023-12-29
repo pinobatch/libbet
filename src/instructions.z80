@@ -370,6 +370,13 @@ attract_update::
     add 8
     cp $C0
     jr c,.clear_have_tile_id
+      ; beep if combo loss particle not visible
+      ; (that is, if combo loss sound isn't playing)
+      ld a, [prevcombo_timeleft]
+      or a
+      ld a, 12
+      call z, audio_play_fx
+
       ld a,8
       ld [attract_vwf_x],a
       swap a  ; ld a,$80
@@ -676,9 +683,9 @@ attract_script:
 
 ; dead ends:
   db FF
-  db "Tiles with no exits",LF
-  db "contain a trap door that",LF
-  db "leads to the entrance,",LF
+  db "Tiles with no path home",LF
+  db "contain a trap door",LF
+  db "leading to the entrance,",LF
   db "so she doesn't get stuck."
 ; b4+ d4+ [c1] a1+ a2 c2 c4+ d4 [c1]
   db AM_R, AM_RR
