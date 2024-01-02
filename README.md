@@ -48,27 +48,15 @@ harder to earn than others.
 Building
 --------
 
-Building the game requires [RGBDS] 0.6.2 or later, [Python] 3,
-[Pillow], and [GNU Make].  Once you have these installed,
-run this command:
+Building the game requires [RGBDS] 0.7 or later, [Python] 3,
+[Pillow], [GNU Make], and GNU Coreutils.  Once you have these
+installed, run this command:
 
     make
 
-Until RGBDS 0.6.2 is released, use the development version (`master`)
-instead.  To install the development version on Windows without WSL:
-
-1. Open "Installing [RGBDS]".
-2. Follow "using a development version".
-3. Scroll down to "Using our CI" and follow "made available on
-   GitHub".
-4. Under "workflow run results", follow the name of the most recent
-   pull request with a green checkmark next to `master`.
-5. Scroll down to "Artifacts" and follow `rgbds-canary-win64`, which
-   is a link to a zip archive.
-6. Install the programs in the archive per the instructions in
-   "Installing RGBDS".
-
-To add GNU Make to an installation of [Git for Windows], follow
+If you're using Windows and not using WSL, it may be convenient to
+obtain Coreutils through [Git for Windows], which contains a
+distribution of MSYS2.  To add GNU Make to Git for Windows, follow
 [evanwill's instructions] to download the latest Make without Guile
 from [ezwinports].
 
@@ -83,7 +71,7 @@ from [ezwinports].
 Legal
 -----
 Copyright 2002, 2012 Martin Korth  
-Copyright 2018, 2021 Damian Yerrick
+Copyright 2018, 2024 Damian Yerrick
 
 This program is free software.  Permission is granted to use it
 subject to the terms of the zlib License.  See the file `LICENSE`.

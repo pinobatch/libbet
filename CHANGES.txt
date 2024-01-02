@@ -4,7 +4,7 @@
 * Make shadow during jump more visible
 * Revamp instructions with visual aids
 * Add tutorial floor "Closet"
-* SGB, GBC: Lighten green to reduce Helmholtz-Kohlrausch
+* SGB, GBC: Lighten green to reduce Helmholtz-Kohlrausch illusion
 * SGB: make border tile 0 transparent to reduce flash during fade
 * Upgrade to new hardware.inc
 * Prepare for RGBDS 0.6: HALT NOP, LD to LDH, SET to =, MACRO name
@@ -15,7 +15,9 @@
 * extractcels.py: add 8x16-pixel object tile support
 * extractcels.py: add streaming object tile format
 * Make header with rgbfix
+* Allow building with out-of-tree RGBDS for regression testing
 * Document sound effects driver, including its stream format
+* Document some inspirations for the character design
 * how_to_encode.md: recommend CamStudio codec (CSCD) (thanks beware)
 * how_to_encode.md: vertical video
 
