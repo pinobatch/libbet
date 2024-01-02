@@ -1,4 +1,4 @@
-0.08 (2023-11-xx)
+0.08 (2024-01-02)
 * Wait before detecting Super Game Boy
 * Correct note periods to concert pitch
 * Make shadow during jump more visible

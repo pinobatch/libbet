@@ -180,7 +180,7 @@ pages_end:
 page1txt:
  db LF
  db "Libbet and the Magic Floor",LF
- db "v0.08 (2024-01-xx)",LF
+ db "v0.08 (2024-01-02)",LF
  ; Row skipped because B=3
  ; Can't cut 1 line here because "rearranging" and "passage" are long
  db "One day, Libbet was",LF
