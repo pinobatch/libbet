@@ -18,6 +18,8 @@ Controls:
 - Control Pad: Roll
 - A + Control Pad: Jump
 
+[Magic Floor]: https://problemkaputt.de/magicflr.htm
+
 Installation
 ------------
 The game plays in SameBoy, Emulicious, bgb, or mGBA emulator, or on a
@@ -54,9 +56,9 @@ installed, run this command:
 
     make
 
-If you're using Windows and not using WSL, it may be convenient to
-obtain Coreutils through [Git for Windows], which contains a
-distribution of MSYS2.  To add GNU Make to Git for Windows, follow
+On Windows without WSL, it may be convenient to obtain Coreutils
+through [Git for Windows], which contains a distribution of MSYS2.
+To add GNU Make to Git for Windows, follow
 [evanwill's instructions] to download the latest Make without Guile
 from [ezwinports].
 
@@ -75,10 +77,3 @@ Copyright 2018, 2024 Damian Yerrick
 
 This program is free software.  Permission is granted to use it
 subject to the terms of the zlib License.  See the file `LICENSE`.
-
-
-[Magic Floor]: https://problemkaputt.de/magicflr.htm
-[RGBDS]: https://rgbds.gbdev.io/install
-[Python]: https://www.python.org/
-[Pillow]: https://pillow.readthedocs.io/
-[GNU Make]: https://www.gnu.org/software/make/

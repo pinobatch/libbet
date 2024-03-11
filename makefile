@@ -81,6 +81,7 @@ objlisto = $(foreach o,$(objlist),obj/gb/$(o).o)
 
 $(title).gb: $(objlisto)
 	$(RGBLINK) -p 0xFF -m$(title).map -n$(title).sym -o$@ $^
+	$(PY) tools/beforefix.py $@
 	$(RGBFIX) -jvsc -k "OK" -l 0x33 -m ROM -p 0xFF -t "LIBBET" -v $@
 
 obj/gb/%.o: src/%.z80 src/hardware.inc src/global.inc
