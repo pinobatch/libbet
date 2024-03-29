@@ -108,7 +108,7 @@ obj/gb/sgb.o: \
 
 # Local variable allocation
 
-obj/gb/localvars.z80: tools/savescan.py $(wildcard src/*.z80)
+obj/gb/localvars.z80: tools/savescan.py $(sort $(wildcard src/*.z80))
 	$(PY) $^ -o $@
 
 # Graphics conversion
