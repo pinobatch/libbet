@@ -658,6 +658,11 @@ def main(argv=None):
     if all_errors:
         exit(1)
     toposort, itoposort = postorder_callees(files, exports)
+    if args.verbose:
+        print("savescan.py: topological sort of reachable subroutines from inner to outer", file=sys.stderr)
+        print("\n".join(
+            "    %s in %s" % (subname, filename) for filename, subname in toposort
+        ), file=sys.stderr)
     allocation = allocate(files, exports, toposort)
     tallocation = format_allocation(files, allocation)
     if args.output == '-':
