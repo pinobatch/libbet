@@ -208,8 +208,7 @@ wr1_de:
   inc de
   ret
 
-; If you get an error about scope, upgrade to RGBDS 0.6.2 or later,
-; or a build after 2023-08-19 when #1159 was merged.
+; If you get an error about scope, upgrade to RGBDS 0.7 or later
 stpcpy.continue:
   inc de
 ;;
