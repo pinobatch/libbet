@@ -85,10 +85,10 @@ $(title).gb: $(objlisto)
 	$(RGBFIX) -jvsc -k "OK" -l 0x33 -m ROM -p 0xFF -t "LIBBET" -v $@
 
 obj/gb/%.o: src/%.z80 src/hardware.inc src/global.inc
-	${RGBASM} -h -o $@ $<
+	${RGBASM} -o $@ $<
 
 obj/gb/%.o: obj/gb/%.z80
-	${RGBASM} -h -o $@ $<
+	${RGBASM} -o $@ $<
 
 # Files that will be included with incbin
 
