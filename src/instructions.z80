@@ -651,10 +651,8 @@ def PEEKWAIT equ $0F
 attract_script:
 ; Start at c1
 ; roll/jump on same color:
-  db "The floor tiles have four",LF
-  db "shades. Libbet can roll",LF
-  db "or jump between tiles of",LF
-  db "the same shade."
+  db "Libbet can move 1 or 2",LF
+  db "cells at once."
 ; b1 b3 a3 b3 b1 c1
   db AM_L, AM_UU, AM_L, AM_R, AM_DD, AM_R
 
@@ -669,24 +667,22 @@ attract_script:
 ; so far: 0/20 (0%)
 ; roll/jump on different colors:
   db FF, HIDESHADES, SHOWSHADES
-  db "She can roll or jump to",LF
-  db "the next brighter shade.", PEEKWAIT
+  db "She moves on one shade",LF
+  db "or to the next brighter.", PEEKWAIT
   db AM_L, AM_L, AM_U   ; b1 a1+ a2+
   db AM_R, AM_U, AM_RR  ; b2+ b3+ d3+
 ; so far: 5/20 (25%)
   db FF
-  db "Changing shades leaves a",LF
-  db "track in the direction."
+  db "She leaves a track",LF
+  db "when changing shades."
   db AM_D, AM_L, AM_U, AM_LL, AM_U  ; d2 c2+ c3+ a3+ a4+
   db PEEKWAIT, HIDESHADES
 ; so far: 9/20 (45%)
 
 ; dead ends:
   db FF
-  db "Tiles with no path home",LF
-  db "contain a trap door",LF
-  db "leading to the entrance,",LF
-  db "so she doesn't get stuck."
+  db "Holes at dead ends",LF
+  db "lead back to start."
 ; b4+ d4+ [c1] a1+ a2 c2 c4+ d4 [c1]
   db AM_R, AM_RR
   db AM_LL, AM_U, AM_RR, AM_UU, AM_R
@@ -694,9 +690,9 @@ attract_script:
 
 ; finish the job:
   db FF
-  db "Leave 90 percent of",LF
-  db "possible tracks and roll",LF
-  db "to the exit at top to win."
+  db "Find 90 percent of",LF
+  db "possible tracks to",LF
+  db "open the exit."
 ; a1 a2 c2 c4 c3+ c1+
   db AM_LL, AM_U, AM_RR, AM_UU, AM_D, AM_DD
 ; b1 b3 a3 a4 a2+ c2 b2+ b1+
