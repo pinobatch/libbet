@@ -263,7 +263,7 @@ section "gbcfadecode", ROM0
 ; @param HL data source
 ; @return HL at end, C increased by 1, B = 0
 set_gbc_palette_hblank:
-  ld [$FF00+c],a
+  ldh [$FF00+c],a
   inc c
 
   ; catch all VRAM slots
@@ -288,10 +288,10 @@ set_gbc_palette_hblank:
   nop
   ; At worst, we get 85 dots of mode 0 plus 80 dots of mode 2
   ; on next line, for 165 dots or 41 cycles. We'll use 30.
-  ld [$FF00+c], a
+  ldh [$FF00+c], a
     rept 7
     ld a, [hl+]
-    ld [$FF00+c], a
+    ldh [$FF00+c], a
   endr
   dec b
   jr nz, .palblastloop
