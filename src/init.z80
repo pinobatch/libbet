@@ -38,6 +38,11 @@ section "bootregs", WRAM0
 initial_a:: ds 1
 initial_b:: ds 1
 
+section "no_rst", ROM0[$0000]
+  rept 41
+    ld l, l
+  endr
+
 section "rom_init", ROM0
 reset_handler::
   di  ; Disable interrupts

@@ -682,7 +682,7 @@ attract_script:
 ; dead ends:
   db FF
   db "Holes at dead ends",LF
-  db "lead back to start."
+  db "lead back to the start."
 ; b4+ d4+ [c1] a1+ a2 c2 c4+ d4 [c1]
   db AM_R, AM_RR
   db AM_LL, AM_U, AM_RR, AM_UU, AM_R
