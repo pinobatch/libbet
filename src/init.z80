@@ -124,6 +124,9 @@ reset_handler::
 ; Writes BC bytes of value H starting at DE.
 memset::
   ; Increment B if C is nonzero
+  ; Before: BC is the number of bytes to copy
+  ; After: B is the number of loops or fractions thereof, and C is
+  ; the number of bytes in the first "fraction thereof" (0 means 256)
   dec bc
   inc b
   inc c
@@ -141,6 +144,9 @@ memset::
 ; Copies BC bytes from HL to DE.
 memcpy::
   ; Increment B if C is nonzero
+  ; Before: BC is the number of bytes to copy
+  ; After: B is the number of loops or fractions thereof, and C is
+  ; the number of bytes in the first "fraction thereof" (0 means 256)
   dec bc
   inc b
   inc c
