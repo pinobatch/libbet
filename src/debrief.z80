@@ -57,10 +57,10 @@ debrief::
     call stpcpy
 
     ; Separator
-    ld a,":"
+    ld a, ':'
     ld [de],a
     inc de
-    ld a," "
+    ld a, ' '
     ld [de],a
     inc de
 
@@ -75,17 +75,17 @@ debrief::
     ; L: actual score; H: maximum score
     ld a,l
     call wr2bcd_de
-    ld a,"/"
+    ld a, '/'
     ld [de],a
     inc de
     ld a,h
     call wr2bcd_de
 
     ; Separator
-    ld a," "
+    ld a, ' '
     ld [de],a
     inc de
-    ld a,"("
+    ld a, '('
     ld [de],a
     inc de
 
@@ -93,7 +93,7 @@ debrief::
     ld a,l
     cp h
     jr c,.not100
-      ld a,"1"
+      ld a, '1'
       ld [de],a
       inc de
       xor a
@@ -104,14 +104,14 @@ debrief::
     ld h,d
     ld l,e
     call pctdigit
-    or "0"
+    or '0'
     ld [hl+],a
     call pctdigit
-    or "0"
+    or '0'
     ld [hl+],a
-    ld a,"%"
+    ld a, '%'
     ld [hl+],a
-    ld a,")"
+    ld a, ')'
     ld [hl+],a
 
     ; Terminate and write string
@@ -203,7 +203,7 @@ wr2bcd_de:
   fallthrough wr1_de
 wr1_de:
   and $0F
-  or "0"
+  or '0'
   ld [de],a
   inc de
   ret
