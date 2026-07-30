@@ -23,17 +23,19 @@ objlist := header init localvars \
   ppuclear pads unpb16 rand bcd metasprite vwfdraw vwf7 \
   popslide sgb
 
-ifdef COMSPEC
-  ifndef GBEMU
-    GBEMU := start ""
-  endif
+ifneq ($(strip $(shell which py)),)
+  # The Python launcher on Windows
   PY := py -3
 else
-  ifndef GBEMU
-    # I now use a shell script in ~/.local/bin
-    GBEMU := bgb
-  endif
+  # The typical Python 3 cross-platform binary
   PY := python3
+endif
+
+ifneq ($(strip $(shell which bgb)),)
+  # I now use a shell script in ~/.local/bin
+  GBEMU := bgb
+else
+  GBEMU := start ""
 endif
 
 # Support out-of-PATH RGBDS
